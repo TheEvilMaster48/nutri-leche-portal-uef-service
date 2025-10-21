@@ -55,6 +55,16 @@ class MenuScreen extends StatelessWidget {
           const Color(0xFF9575CD)
         ],
       },
+      {
+        'titulo': 'Perfil',
+        'subtitulo': 'Ver y editar información personal',
+        'icono': Icons.person_rounded,
+        'ruta': '/perfil',
+        'colores': [
+          const Color.fromARGB(255, 255, 153, 0),
+          const Color.fromARGB(255, 255, 183, 77),
+        ],
+      },
     ];
 
     return Scaffold(
@@ -83,34 +93,55 @@ class MenuScreen extends StatelessWidget {
                   ],
                 ),
 
-                // Logo Nutri Leche
+                // Foto de Perfil del Usuario
                 Container(
                   width: 130,
                   height: 130,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    image: const DecorationImage(
-                      image: AssetImage('assets/icono/nutrileche.png'),
-                      fit: BoxFit.contain,
-                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: Colors.black26,
+                        blurRadius: 12,
+                        offset: Offset(0, 6),
                       ),
                     ],
+                  ),
+                  child: ClipOval(
+                    child: Image.network(
+                      // Usa la foto del backend si existe, o una por defecto
+                      (usuario?.foto != null && usuario!.foto!.isNotEmpty)
+                          ? usuario.foto!
+                          : 'https://servicioslsa.nutri.com.ec/alimentacion/0350149357.jpeg',
+
+                      fit: BoxFit.cover, // hace que llene todo el círculo
+                      errorBuilder: (context, error, stackTrace) {
+                        // Si falla la imagen, mostrar logo local de Nutri Leche
+                        return Image.asset(
+                          'assets/icono/nutrileche.png',
+                          fit: BoxFit.cover,
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 16),
-
-                // Nombre del usuario
+                // Nombre del Usuario
                 Text(
-                  usuario?.nombre.isNotEmpty == true
-                      ? usuario!.nombre
-                      : 'Usuario Invitado',
+                  usuario?.nombre ?? '',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -149,7 +180,7 @@ class MenuScreen extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
-                // Botones Principales
+                // Menú 2x2 (perfil al centro)
                 Wrap(
                   spacing: 18,
                   runSpacing: 18,
@@ -177,7 +208,6 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
-  /// Retorna descripción formateada del usuario (área o cargo)
   String _obtenerDescripcionUsuario(Usuario? usuario) {
     if (usuario == null) return 'Sin datos de usuario';
     if (usuario.areaUsuario.isNotEmpty) {
@@ -189,7 +219,6 @@ class MenuScreen extends StatelessWidget {
     }
   }
 
-  /// Botón de Menú Principal
   Widget _buildMenuButton(
     BuildContext context,
     String title,

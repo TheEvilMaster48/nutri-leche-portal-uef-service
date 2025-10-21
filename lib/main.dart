@@ -33,6 +33,10 @@ import 'screens/acerca_screen.dart';
 import 'screens/noticias.dart';
 import 'screens/crear_publicacion.dart';
 
+// ✅ CORRECTO: pantalla de perfil
+import 'screens/perfil.dart';
+import 'services/perfil_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -52,6 +56,12 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => UsuarioService()),
         ChangeNotifierProvider(create: (_) => GlobalNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageService()),
+
+        // 🔹 Añadimos PerfilService correctamente vinculado a AuthService
+        ChangeNotifierProxyProvider<AuthService, PerfilService>(
+          create: (context) => PerfilService(context.read<AuthService>()),
+          update: (context, auth, previous) => PerfilService(auth),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -103,6 +113,7 @@ class MyApp extends StatelessWidget {
             '/acerca': (context) => const AcercaScreen(),
             '/noticias': (context) => const NoticiasScreen(),
             '/crear_publicacion': (context) => const CrearPublicacionScreen(),
+            '/perfil': (context) => const PerfilScreen(),
           },
 
           // Navegación dinámica para chats

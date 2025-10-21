@@ -6,6 +6,7 @@ class Usuario {
   final String cargo;
   final String areaUsuario;
   final String modulos;
+  final String? foto; 
 
   Usuario({
     required this.id,
@@ -15,17 +16,23 @@ class Usuario {
     required this.cargo,
     required this.areaUsuario,
     required this.modulos,
+    this.foto,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
     return Usuario(
       id: json['id'] ?? 0,
-      nombre: json['nombre'] ?? '',
-      correo: json['correo'] ?? '',
+      nombre: json['nombre'] ??
+          json['nombresCompletos'] ??
+          json['nombres'] ??
+          json['usuario'] ??
+          '',
+      correo: json['correo'] ?? json['email'] ?? '',
       telefono: json['telefono'] ?? '',
-      cargo: json['cargo'] ?? '',
-      areaUsuario: json['areaUsuario'] ?? '',
-      modulos: json['modulos'] ?? '',
+      cargo: json['cargo'] ?? json['cargoNombre'] ?? '',
+      areaUsuario: json['areaUsuario'] ?? json['area'] ?? '',
+      modulos: json['modulos']?.toString() ?? '',
+      foto: json['foto'] ?? json['imagenUrl'] ?? '',
     );
   }
 
@@ -38,8 +45,7 @@ class Usuario {
       'cargo': cargo,
       'areaUsuario': areaUsuario,
       'modulos': modulos,
+      'foto': foto,
     };
   }
-
-  String get nombreCompleto => nombre;
 }
