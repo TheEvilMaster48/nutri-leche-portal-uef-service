@@ -8,40 +8,62 @@ class UsuarioService extends ChangeNotifier {
 
   Usuario? get usuarioActual => _usuarioActual;
 
-  Future<void> cargarUsuarioActual(String username) async {
+  // Cargar Usuario por ID
+  Future<void> cargarUsuarioActual(String idUsuario) async {
     final prefs = await SharedPreferences.getInstance();
     final String? usuariosJson = prefs.getString('usuarios');
-    
+
     if (usuariosJson != null) {
       final List<dynamic> decoded = json.decode(usuariosJson);
       final usuarios = decoded.map((e) => Usuario.fromJson(e)).toList();
-      _usuarioActual = usuarios.firstWhere(
-        (u) => u.username == username,
-        orElse: () => usuarios.first,
-      );
+
+      try {
+        _usuarioActual = usuarios.firstWhere(
+          (u) => u.id == idUsuario,
+          orElse: () => usuarios.first,
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ No se encontró el usuario con ID $idUsuario');
+        }
+        _usuarioActual = null;
+      }
+
       notifyListeners();
     }
   }
 
-  Future<void> actualizarUsuario(Usuario usuario) async {
+  // Actualizar los Datos del Usuario
+  Future<void> actualizarUsuario(Usuario usuarioActualizado) async {
     final prefs = await SharedPreferences.getInstance();
     final String? usuariosJson = prefs.getString('usuarios');
-    
+
     if (usuariosJson != null) {
       final List<dynamic> decoded = json.decode(usuariosJson);
-      List<Usuario> usuarios = decoded.map((e) => Usuario.fromJson(e)).toList();
-      
-      final index = usuarios.indexWhere((u) => u.id == usuario.id);
+      List<Usuario> usuarios =
+          decoded.map((e) => Usuario.fromJson(e)).toList();
+
+      final index = usuarios.indexWhere(
+          (u) => u.id == usuarioActualizado.id);
+
       if (index != -1) {
-        usuarios[index] = usuario;
-        final String encoded = json.encode(usuarios.map((e) => e.toJson()).toList());
+        usuarios[index] = usuarioActualizado;
+
+        /*final String encoded =
+            json.encode(usuarios.map((e) => e.toJson()).toList());
         await prefs.setString('usuarios', encoded);
-        _usuarioActual = usuario;
+*/
+        _usuarioActual = usuarioActualizado;
         notifyListeners();
+      } else {
+        if (kDebugMode) {
+          print('⚠️ Usuario no encontrado en la lista para actualizar');
+        }
       }
     }
   }
 
+  // Cerrar Sesión 
   void cerrarSesion() {
     _usuarioActual = null;
     notifyListeners();

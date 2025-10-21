@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+// import 'package:file_picker/file_picker.dart';
 
 import '../models/evento.dart' as evento_model;
 import '../models/usuario.dart';
 import '../services/evento_service.dart';
-import '../services/notificacion_service.dart';
 import '../services/auth_service.dart';
 import '../core/notification_banner.dart';
 
@@ -24,11 +23,13 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
   final _fechaController = TextEditingController();
 
   File? _imagen;
-  File? _archivo;
+  // File? _archivo;
+
   String? _horaSeleccionada;
   final ImagePicker _picker = ImagePicker();
+  bool _modoEdicion = false;
+  String? _idEventoEditado;
 
-  // Lista de horas
   final List<String> _horasDisponibles = [
     "08H30", "09H00", "09H30", "10H00", "10H30", "11H00",
     "11H30", "12H00", "12H30", "13H00", "13H30", "14H00",
@@ -36,26 +37,46 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _fechaController.text = DateTime.now().toString().split(' ')[0];
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final evento_model.Evento? evento =
+        ModalRoute.of(context)?.settings.arguments as evento_model.Evento?;
+
+    if (evento != null && !_modoEdicion) {
+      _modoEdicion = true;
+      _idEventoEditado = evento.id;
+      _tituloController.text = evento.titulo;
+      _descripcionController.text = evento.descripcion;
+
+      final partes = evento.fecha.split(' - ');
+      _fechaController.text = partes[0];
+      _horaSeleccionada = partes.length > 1 ? partes[1] : null;
+
+      if (evento.imagenPath != null && evento.imagenPath!.isNotEmpty) {
+        _imagen = File(evento.imagenPath!);
+      }
+
+      /*
+       if (evento.archivoPath != null && evento.archivoPath!.isNotEmpty) {
+         _archivo = File(evento.archivoPath!);
+       }
+      */
+    }
   }
 
-  // Seleccionar imagen
   Future<void> _seleccionarImagen() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (!mounted) return;
     if (image != null) {
       setState(() => _imagen = File(image.path));
       NotificationBanner.show(
-        context,
-        'Imagen seleccionada correctamente',
-        NotificationType.success,
-      );
+          context, 'Imagen seleccionada', NotificationType.success);
     }
   }
 
-  // Seleccionar archivo
+  // Boton Archivo 
+  /*
   Future<void> _seleccionarArchivo() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -65,14 +86,11 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
     if (result != null) {
       setState(() => _archivo = File(result.files.single.path!));
       NotificationBanner.show(
-        context,
-        'Archivo seleccionado correctamente',
-        NotificationType.success,
-      );
+          context, 'Documento seleccionado', NotificationType.success);
     }
   }
+  */
 
-  // Seleccionar fecha
   Future<void> _seleccionarFecha() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -89,205 +107,158 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
     }
   }
 
-  // Guardar evento
   Future<void> _guardarEvento() async {
     if (_tituloController.text.isEmpty ||
         _descripcionController.text.isEmpty ||
         _fechaController.text.isEmpty ||
         _horaSeleccionada == null) {
       NotificationBanner.show(
-        context,
-        'Por favor completa todos los campos requeridos',
-        NotificationType.error,
-      );
+          context, 'Completa todos los campos', NotificationType.error);
       return;
     }
 
     final eventoService = context.read<EventoService>();
-    final notificacionService = context.read<NotificacionService>();
     final authService = context.read<AuthService>();
     final Usuario? usuarioActual = authService.currentUser;
 
     if (usuarioActual == null) {
       NotificationBanner.show(
-        context,
-        'Error: No hay sesión activa.',
-        NotificationType.error,
-      );
+          context, 'No hay sesión activa', NotificationType.error);
       return;
     }
 
-    // Lista de roles autorizados
-    const rolesPermitidos = ['admin', 'recursos', 'bodega', 'produccion', 'ventas'];
-
-    if (!rolesPermitidos.contains(usuarioActual.rol)) {
-      NotificationBanner.show(
-        context,
-        'Acceso denegado. No tienes permisos para crear, editar o eliminar eventos.',
-        NotificationType.error,
-      );
-      return;
-    }
-
-    final nuevoEvento = evento_model.Evento(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final evento = evento_model.Evento(
+      id: _modoEdicion
+          ? _idEventoEditado!
+          : DateTime.now().millisecondsSinceEpoch.toString(),
       titulo: _tituloController.text.trim(),
       descripcion: _descripcionController.text.trim(),
       fecha: "${_fechaController.text} - $_horaSeleccionada",
-      creadoPor:
-          '${usuarioActual.nombreCompleto} (#${usuarioActual.codigoEmpleado})',
+      creadoPor: usuarioActual.nombre,
+      planta: usuarioActual.areaUsuario,
+      horaEvento: _horaSeleccionada ?? '',
       imagenPath: _imagen?.path,
-      archivoPath: _archivo?.path,
+      archivoPath: null,
     );
 
     try {
-      await eventoService.crearEvento(nuevoEvento, usuarioActual);
-
-      notificacionService.agregarNotificacion(
-        'Nuevo evento creado',
-        'Se ha creado el evento "${nuevoEvento.titulo}" por ${usuarioActual.nombreCompleto} para la fecha ${nuevoEvento.fecha}',
-        'evento',
-      );
+      if (_modoEdicion) {
+        await eventoService.modificarEvento(evento.id, evento, usuarioActual);
+        NotificationBanner.show(context, 'Evento actualizado correctamente',
+            NotificationType.success);
+      } else {
+        await eventoService.crearEvento(evento, usuarioActual);
+        NotificationBanner.show(context, 'Evento creado exitosamente',
+            NotificationType.success);
+      }
 
       if (!mounted) return;
-
-      NotificationBanner.show(
-        context,
-        'Evento creado exitosamente',
-        NotificationType.success,
-      );
-
       Navigator.pop(context);
     } catch (e) {
-      if (!mounted) return;
       NotificationBanner.show(
-        context,
-        'Error: ${e.toString()}',
-        NotificationType.error,
-      );
+          context, 'Error: ${e.toString()}', NotificationType.error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
-    final usuario = auth.currentUser;
-    const rolesPermitidos = ['admin', 'recursos', 'bodega', 'produccion', 'ventas'];
-    final bool tienePermiso = rolesPermitidos.contains(usuario?.rol);
-
     return Scaffold(
       appBar: AppBar(
-        title:
-            const Text('Crear Evento', style: TextStyle(color: Colors.white)),
+        title: Text(
+          _modoEdicion ? 'Editar Evento' : 'Crear Evento',
+          style: const TextStyle(color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF3B82F6),
         iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: tienePermiso
-          ? SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _tituloController,
-                    decoration: InputDecoration(
-                      labelText: 'Título *',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.title),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _descripcionController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: 'Descripción *',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.description),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _fechaController,
-                    readOnly: true,
-                    onTap: _seleccionarFecha,
-                    decoration: InputDecoration(
-                      labelText: 'Fecha *',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.calendar_today),
-                      suffixIcon: const Icon(Icons.arrow_drop_down),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _horaSeleccionada,
-                    decoration: InputDecoration(
-                      labelText: 'Hora del Evento *',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.access_time),
-                    ),
-                    items: _horasDisponibles.map((hora) {
-                      return DropdownMenuItem(value: hora, child: Text(hora));
-                    }).toList(),
-                    onChanged: (valor) =>
-                        setState(() => _horaSeleccionada = valor),
-                  ),
-                  const SizedBox(height: 24),
-                  OutlinedButton.icon(
-                    onPressed: _seleccionarImagen,
-                    icon: const Icon(Icons.image),
-                    label: Text(_imagen == null
-                        ? 'Añadir Imagen'
-                        : 'Imagen seleccionada'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _seleccionarArchivo,
-                    icon: const Icon(Icons.attach_file),
-                    label: Text(_archivo == null
-                        ? 'Añadir Documento'
-                        : 'Documento seleccionado'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _guardarEvento,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Crear Evento',
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
-                  ),
-                ],
-              ),
-            )
-          : const Center(
-              child: Text(
-                'Acceso denegado. Solo roles autorizados pueden crear eventos.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.red),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _tituloController,
+              decoration: const InputDecoration(
+                labelText: 'Título *',
+                prefixIcon: Icon(Icons.title),
+                border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descripcionController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Descripción *',
+                prefixIcon: Icon(Icons.description),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _fechaController,
+              readOnly: true,
+              onTap: _seleccionarFecha,
+              decoration: const InputDecoration(
+                labelText: 'Fecha *',
+                prefixIcon: Icon(Icons.calendar_today),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _horaSeleccionada,
+              items: _horasDisponibles
+                  .map((hora) =>
+                      DropdownMenuItem(value: hora, child: Text(hora)))
+                  .toList(),
+              onChanged: (valor) =>
+                  setState(() => _horaSeleccionada = valor),
+              decoration: const InputDecoration(
+                labelText: 'Hora del evento *',
+                prefixIcon: Icon(Icons.access_time),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: _seleccionarImagen,
+              icon: const Icon(Icons.image),
+              label: Text(
+                  _imagen == null ? 'Añadir Imagen' : 'Cambiar Imagen'),
+            ),
+            const SizedBox(height: 16),
+
+            // Botón Archivo (opcional)
+            /*
+            OutlinedButton.icon(
+              onPressed: _seleccionarArchivo,
+              icon: const Icon(Icons.attach_file),
+              label: Text(_archivo == null
+                  ? 'Añadir Archivo'
+                  : 'Cambiar Archivo'),
+            ),
+            const SizedBox(height: 32),
+            */
+
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _guardarEvento,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                padding: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                _modoEdicion ? 'Guardar Cambios' : 'Crear Evento',
+                style:
+                    const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

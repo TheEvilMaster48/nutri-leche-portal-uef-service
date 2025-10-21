@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../models/usuario.dart';
 import 'dart:async';
 
 class LoginScreen extends StatefulWidget {
@@ -34,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo personalizado
+                // Logo
                 Container(
                   width: 120,
                   height: 120,
@@ -56,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Título principal
+                // Título
                 const Text(
                   'Nutri Leche',
                   style: TextStyle(
@@ -162,8 +163,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             if (success) {
                               _ocultarMensajeInmediato();
-                              final rol = authService.currentUser?.rol ?? 'empleado';
-                              debugPrint('✅ Sesión iniciada como: $rol');
+
+                              final Usuario? user =
+                                  authService.currentUser;
+
+                              if (user != null) {
+                                // Muestra los datos del usuario autenticado (provenientes del backend)
+                                debugPrint('✅ Sesión iniciada correctamente');
+                                debugPrint('🧩 ID: ${user.id}');
+                                debugPrint('👤 Nombre: ${user.nombre}');
+                                debugPrint('📧 Correo: ${user.correo}');
+                                debugPrint('📞 Teléfono: ${user.telefono}');
+                                debugPrint('💼 Cargo: ${user.cargo}');
+                                debugPrint('🏢 Área: ${user.areaUsuario}');
+                                debugPrint('🧭 Módulos: ${user.modulos}');
+                              }
+
+                              // Redirigir al menú principal
                               Navigator.pushReplacementNamed(context, '/menu');
                             } else {
                               _mostrarMensaje(
@@ -189,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Mensaje de error (autooculta en 12 seg)
+                      // Mensaje de error
                       AnimatedOpacity(
                         opacity: _mensajeError.isNotEmpty ? 1.0 : 0.0,
                         duration: const Duration(milliseconds: 400),
@@ -210,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 8),
 
-                      // Enlace de registro
+                      // Enlace registro
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

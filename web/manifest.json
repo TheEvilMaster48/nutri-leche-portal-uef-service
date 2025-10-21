@@ -1,6 +1,6 @@
 {
-    "name": "nutri_leche_portal",
-    "short_name": "nutri_leche_portal",
+    "name": "nutri_leche",
+    "short_name": "nutri_leche",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

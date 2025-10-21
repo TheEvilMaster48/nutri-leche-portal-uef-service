@@ -1,18 +1,18 @@
 class Recurso {
-  final String id;
+  final int id;
   final String titulo;
-  final String descripcion;
-  final String tipo; // 'pdf', 'documento', 'imagen'
+  final String? descripcion;
   final String? contenido;
-  final DateTime fechaCreacion;
+  final String? categoria;
+  final String? fechaPublicacion;
 
   Recurso({
     required this.id,
     required this.titulo,
-    required this.descripcion,
-    required this.tipo,
+    this.descripcion,
     this.contenido,
-    required this.fechaCreacion,
+    this.categoria,
+    this.fechaPublicacion,
   });
 
   Map<String, dynamic> toJson() {
@@ -20,20 +20,20 @@ class Recurso {
       'id': id,
       'titulo': titulo,
       'descripcion': descripcion,
-      'tipo': tipo,
       'contenido': contenido,
-      'fechaCreacion': fechaCreacion.toIso8601String(),
+      'categoria': categoria,
+      'fechaPublicacion': fechaPublicacion,
     };
   }
 
   factory Recurso.fromJson(Map<String, dynamic> json) {
     return Recurso(
-      id: json['id'],
-      titulo: json['titulo'],
+      id: json['id'] ?? 0,
+      titulo: json['titulo'] ?? '',
       descripcion: json['descripcion'],
-      tipo: json['tipo'],
       contenido: json['contenido'],
-      fechaCreacion: DateTime.parse(json['fechaCreacion']),
+      categoria: json['categoria'],
+      fechaPublicacion: json['fechaPublicacion'],
     );
   }
 }

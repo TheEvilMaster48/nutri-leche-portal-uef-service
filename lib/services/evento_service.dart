@@ -1,165 +1,110 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../models/evento.dart';
 import '../models/usuario.dart';
 
 class EventoService extends ChangeNotifier {
   List<Evento> _eventos = [];
-
   List<Evento> get eventos => _eventos;
 
-  EventoService() {
-    _loadEventosPorPlanta('todos');
-  }
+  static const String baseUrl =
+      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1/eventos";
 
-  // Devuelve el nombre correcto del archivo según la planta
-  String _nombreArchivoPorPlanta(String planta) {
-    final normalizado = planta.toLowerCase().trim();
-    if (normalizado.contains('administrativa')) return 'eventos_admin';
-    if (normalizado.contains('recursos')) return 'eventos_recursos';
-    if (normalizado.contains('bodega')) return 'eventos_bodega';
-    if (normalizado.contains('produccion') ||
-        normalizado.contains('producción')) {
-      return 'eventos_produccion';
-    }
-    if (normalizado.contains('ventas')) return 'eventos_ventas';
-    return 'eventos_todos';
-  }
-
-  // Cargar eventos según la planta
-  Future<void> _loadEventosPorPlanta(String planta) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _nombreArchivoPorPlanta(planta);
-    final eventosJson = prefs.getString(key);
-
-    if (eventosJson != null && eventosJson.isNotEmpty) {
-      try {
-        final List decoded = json.decode(eventosJson);
-        _eventos = decoded.map((e) => Evento.fromJson(e)).toList();
-      } catch (e) {
-        _eventos = [];
+  // Obtener Todos los Eventos (Backend UEF Services)
+  Future<void> obtenerEventos() async {
+    try {
+      final response = await http.get(Uri.parse(baseUrl));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final lista = data is List ? data : data['data'] ?? [];
+        _eventos = lista.map<Evento>((e) => Evento.fromJson(e)).toList();
+        notifyListeners();
+      } else {
+        throw Exception("Error al cargar eventos (${response.statusCode})");
       }
-    } else {
-      _eventos = [];
-    }
-    notifyListeners();
-  }
-
-  // Guardar eventos por planta
-  Future<void> _saveEventosPorPlanta(String planta) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _nombreArchivoPorPlanta(planta);
-    final data = json.encode(_eventos.map((e) => e.toJson()).toList());
-    await prefs.setString(key, data);
-    debugPrint('💾 Guardado en $key (${_eventos.length} eventos)');
-  }
-
-  // Roles con acceso total
-  bool _tieneAccesoTotal(Usuario usuario) {
-    const rolesPermitidos = [
-      'admin',
-      'recursos',
-      'bodega',
-      'produccion',
-      'ventas'
-    ];
-    return rolesPermitidos.contains(usuario.rol);
-  }
-
-  // CREAR EVENTO
-  Future<void> crearEvento(Evento nuevo, Usuario usuarioActual) async {
-    if (!_tieneAccesoTotal(usuarioActual)) {
-      throw Exception('Solo los roles autorizados pueden crear eventos');
-    }
-
-    // Cargar eventos de la planta correcta
-    await _loadEventosPorPlanta(usuarioActual.planta);
-
-    final eventoConPlanta = Evento(
-      id: nuevo.id,
-      titulo: nuevo.titulo,
-      descripcion: nuevo.descripcion,
-      fecha: nuevo.fecha,
-      creadoPor: '${usuarioActual.nombreCompleto} (${usuarioActual.planta})',
-      imagenPath: nuevo.imagenPath,
-      archivoPath: nuevo.archivoPath,
-    );
-
-    _eventos.add(eventoConPlanta);
-    await _saveEventosPorPlanta(usuarioActual.planta);
-    await recargarEventos(usuario: usuarioActual);
-    notifyListeners();
-  }
-
-  // EDITAR EVENTO
-  Future<void> editarEvento(
-      String id, Evento actualizado, Usuario usuarioActual) async {
-    if (!_tieneAccesoTotal(usuarioActual)) {
-      throw Exception('Solo los roles autorizados pueden editar eventos');
-    }
-
-    await _loadEventosPorPlanta(usuarioActual.planta);
-
-    final index = _eventos.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      _eventos[index] = actualizado;
-      await _saveEventosPorPlanta(usuarioActual.planta);
-      await recargarEventos(usuario: usuarioActual);
-      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ Error obteniendo eventos: $e");
+      rethrow;
     }
   }
 
-  // ELIMINAR EVENTO
-  Future<void> eliminarEvento(String id, Usuario usuarioActual) async {
-    if (!_tieneAccesoTotal(usuarioActual)) {
-      throw Exception('Solo los roles autorizados pueden eliminar eventos');
-    }
+  //  Crear Evento
+  Future<void> crearEvento(Evento nuevoEvento, Usuario usuarioActual) async {
+    try {
+      final body = jsonEncode({
+        "titulo": nuevoEvento.titulo,
+        "descripcion": nuevoEvento.descripcion,
+        "fecha": nuevoEvento.fecha,
+        "creadoPor": usuarioActual.nombre,
+        "planta": usuarioActual.areaUsuario,
+        "horaEvento": nuevoEvento.horaEvento,
+        "imagenPath": nuevoEvento.imagenPath ?? "",
+        "archivoPath": nuevoEvento.archivoPath ?? "",
+      });
 
-    await _loadEventosPorPlanta(usuarioActual.planta);
-    _eventos.removeWhere((e) => e.id == id);
-    await _saveEventosPorPlanta(usuarioActual.planta);
-    await recargarEventos(usuario: usuarioActual);
-    notifyListeners();
-  }
+      final response = await http.post(
+        Uri.parse(baseUrl),
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
 
-  // RECARGAR EVENTOS
-  Future<void> recargarEventos({Usuario? usuario}) async {
-    if (usuario == null) {
-      await _loadEventosPorPlanta('todos');
-    } else if (_tieneAccesoTotal(usuario)) {
-      await _loadEventosPorPlanta(usuario.planta);
-    } else {
-      await _loadEventosPorPlanta('todos');
-    }
-  }
-
-  // OBTENER TODOS LOS EVENTOS (VISUALIZACIÓN GLOBAL)
-  Future<List<Evento>> obtenerTodosLosEventos() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<Evento> todos = [];
-
-    final claves = [
-      'eventos_admin',
-      'eventos_recursos',
-      'eventos_bodega',
-      'eventos_produccion',
-      'eventos_ventas'
-    ];
-
-    for (final key in claves) {
-      final data = prefs.getString(key);
-      if (data != null && data.isNotEmpty) {
-        try {
-          final List decoded = json.decode(data);
-          todos.addAll(decoded.map((e) => Evento.fromJson(e)).toList());
-        } catch (e) {
-          debugPrint('⚠️ Error cargando $key: $e');
-        }
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await obtenerEventos();
+      } else {
+        throw Exception("Error al crear evento (${response.statusCode})");
       }
+    } catch (e) {
+      debugPrint("❌ Error creando evento: $e");
+      rethrow;
     }
+  }
 
-    debugPrint('📦 Total eventos combinados: ${todos.length}');
-    return todos;
+  //  Editar Evento Existente
+  Future<void> modificarEvento(
+      String id, Evento eventoActualizado, Usuario usuarioActual) async {
+    try {
+      final body = jsonEncode({
+        "titulo": eventoActualizado.titulo,
+        "descripcion": eventoActualizado.descripcion,
+        "fecha": eventoActualizado.fecha,
+        "creadoPor": usuarioActual.nombre,
+        "planta": usuarioActual.areaUsuario,
+        "horaEvento": eventoActualizado.horaEvento,
+        "imagenPath": eventoActualizado.imagenPath ?? "",
+        "archivoPath": eventoActualizado.archivoPath ?? "",
+      });
+
+      final response = await http.put(
+        Uri.parse("$baseUrl/$id"),
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        await obtenerEventos();
+      } else {
+        throw Exception("Error al actualizar evento (${response.statusCode})");
+      }
+    } catch (e) {
+      debugPrint("❌ Error modificando evento: $e");
+      rethrow;
+    }
+  }
+
+  // Eliminar Evento
+  Future<void> eliminarEvento(String id) async {
+    try {
+      final response = await http.delete(Uri.parse("$baseUrl/$id"));
+      if (response.statusCode == 200) {
+        _eventos.removeWhere((e) => e.id == id);
+        notifyListeners();
+      } else {
+        throw Exception("Error al eliminar evento (${response.statusCode})");
+      }
+    } catch (e) {
+      debugPrint("❌ Error eliminando evento: $e");
+      rethrow;
+    }
   }
 }

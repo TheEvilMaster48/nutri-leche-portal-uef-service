@@ -5,7 +5,7 @@ class Mensaje {
   final String senderName;
   final String content;
   final DateTime timestamp;
-  final bool isMe;
+  final bool isRead;
 
   Mensaje({
     required this.id,
@@ -14,30 +14,30 @@ class Mensaje {
     required this.senderName,
     required this.content,
     required this.timestamp,
-    required this.isMe,
+    this.isRead = false,
   });
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'chatId': chatId,
       'senderId': senderId,
       'senderName': senderName,
       'content': content,
-      'timestamp': timestamp.toIso8601String(),
-      'isMe': isMe,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+      'isRead': isRead,
     };
   }
 
-  factory Mensaje.fromJson(Map<String, dynamic> json) {
+  factory Mensaje.fromMap(Map<String, dynamic> map) {
     return Mensaje(
-      id: json['id'],
-      chatId: json['chatId'],
-      senderId: json['senderId'],
-      senderName: json['senderName'],
-      content: json['content'],
-      timestamp: DateTime.parse(json['timestamp']),
-      isMe: json['isMe'],
+      id: map['id'],
+      chatId: map['chatId'],
+      senderId: map['senderId'],
+      senderName: map['senderName'],
+      content: map['content'],
+      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
+      isRead: map['isRead'] ?? false,
     );
   }
 }

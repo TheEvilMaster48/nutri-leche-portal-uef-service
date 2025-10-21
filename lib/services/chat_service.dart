@@ -1,94 +1,100 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/chat.dart';
 import '../models/mensaje.dart';
 
+/// ChatService — chat en tiempo real sin Firebase.
+/// Usa WebSockets para enviar y recibir mensajes instantáneamente.
 class ChatService {
-  static const String _chatsKey = 'chats';
-  static const String _mensajesKey = 'mensajes';
+  // URL del servidor WebSocket (puede ser local o remoto)
+  final String serverUrl = 'wss://tu-servidor-de-chat.com/socket';
+  late WebSocketChannel _channel;
 
-  // Obtener todos los chats
-  Future<List<Chat>> getChats() async {
-    final prefs = await SharedPreferences.getInstance();
-    final chatsJson = prefs.getString(_chatsKey);
-    
-    if (chatsJson == null) return [];
-    
-    final List<dynamic> chatsList = json.decode(chatsJson);
-    return chatsList.map((json) => Chat.fromJson(json)).toList();
+  // Controladores para emitir actualizaciones
+  final StreamController<List<Chat>> _chatsController =
+      StreamController.broadcast();
+  final StreamController<List<Mensaje>> _mensajesController =
+      StreamController.broadcast();
+
+  // Listas internas de chats y mensajes
+  List<Chat> _chats = [];
+  List<Mensaje> _mensajes = [];
+
+  // Conectar al servidor WebSocket
+  Future<void> connect() async {
+    _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
+
+    _channel.stream.listen((data) {
+      final decoded = json.decode(data);
+
+      if (decoded['type'] == 'chat_list') {
+        _chats = (decoded['data'] as List)
+            .map((c) => Chat.fromMap(Map<String, dynamic>.from(c)))
+            .toList();
+        _chatsController.add(_chats);
+      }
+
+      if (decoded['type'] == 'message_list') {
+        _mensajes = (decoded['data'] as List)
+            .map((m) => Mensaje.fromMap(Map<String, dynamic>.from(m)))
+            .toList();
+        _mensajesController.add(_mensajes);
+      }
+
+      if (decoded['type'] == 'new_message') {
+        final mensaje =
+            Mensaje.fromMap(Map<String, dynamic>.from(decoded['data']));
+        _mensajes.insert(0, mensaje);
+        _mensajesController.add(_mensajes);
+      }
+    }, onError: (error) {
+      print('❌ Error WebSocket: $error');
+    });
+  }
+
+  // Cerrar la conexión
+  void disconnect() {
+    _channel.sink.close();
+  }
+
+  // Enviar nuevo mensaje al servidor en tiempo real
+  Future<void> sendMensaje(Mensaje mensaje) async {
+    final jsonMsg = json.encode({
+      'type': 'send_message',
+      'data': mensaje.toMap(),
+    });
+    _channel.sink.add(jsonMsg);
   }
 
   // Crear un nuevo chat
   Future<void> createChat(Chat chat) async {
-    final prefs = await SharedPreferences.getInstance();
-    final chats = await getChats();
-    
-    chats.add(chat);
-    
-    final chatsJson = json.encode(chats.map((c) => c.toJson()).toList());
-    await prefs.setString(_chatsKey, chatsJson);
+    final jsonChat = json.encode({
+      'type': 'create_chat',
+      'data': chat.toMap(),
+    });
+    _channel.sink.add(jsonChat);
   }
 
-  // Obtener mensajes de un chat
-  Future<List<Mensaje>> getMensajes(String chatId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final mensajesJson = prefs.getString('$_mensajesKey\_$chatId');
-    
-    if (mensajesJson == null) return [];
-    
-    final List<dynamic> mensajesList = json.decode(mensajesJson);
-    return mensajesList.map((json) => Mensaje.fromJson(json)).toList();
+  // Escuchar la lista de chats en tiempo real
+  Stream<List<Chat>> getChats() => _chatsController.stream;
+
+  // Escuchar mensajes de un chat específico en tiempo real
+  Stream<List<Mensaje>> getMensajes(String chatId) {
+    final request = json.encode({
+      'type': 'get_messages',
+      'chatId': chatId,
+    });
+    _channel.sink.add(request);
+    return _mensajesController.stream;
   }
 
-  // Enviar un mensaje
-  Future<void> sendMensaje(Mensaje mensaje) async {
-    final prefs = await SharedPreferences.getInstance();
-    final mensajes = await getMensajes(mensaje.chatId);
-    
-    mensajes.add(mensaje);
-    
-    final mensajesJson = json.encode(mensajes.map((m) => m.toJson()).toList());
-    await prefs.setString('$_mensajesKey\_${mensaje.chatId}', mensajesJson);
-    
-    // Actualizar último mensaje del chat
-    await _updateLastMessage(mensaje.chatId, mensaje.content, mensaje.timestamp);
-  }
-
-  // Actualizar último mensaje del chat
-  Future<void> _updateLastMessage(String chatId, String message, DateTime time) async {
-    final chats = await getChats();
-    final chatIndex = chats.indexWhere((c) => c.id == chatId);
-    
-    if (chatIndex != -1) {
-      final updatedChat = Chat(
-        id: chats[chatIndex].id,
-        userId: chats[chatIndex].userId,
-        userName: chats[chatIndex].userName,
-        userRole: chats[chatIndex].userRole,
-        lastMessage: message,
-        lastMessageTime: time,
-        isOnline: chats[chatIndex].isOnline,
-      );
-      
-      chats[chatIndex] = updatedChat;
-      
-      final prefs = await SharedPreferences.getInstance();
-      final chatsJson = json.encode(chats.map((c) => c.toJson()).toList());
-      await prefs.setString(_chatsKey, chatsJson);
-    }
-  }
-
-  // Eliminar un chat
+  // Eliminar chat completo
   Future<void> deleteChat(String chatId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final chats = await getChats();
-    
-    chats.removeWhere((c) => c.id == chatId);
-    
-    final chatsJson = json.encode(chats.map((c) => c.toJson()).toList());
-    await prefs.setString(_chatsKey, chatsJson);
-    
-    // Eliminar mensajes del chat
-    await prefs.remove('$_mensajesKey\_$chatId');
+    final request = json.encode({
+      'type': 'delete_chat',
+      'chatId': chatId,
+    });
+    _channel.sink.add(request);
   }
 }

@@ -1,4 +1,4 @@
-package com.nutrileche.nutri_leche_portal
+package com.example.nutri_leche
 
 import io.flutter.embedding.android.FlutterActivity
 

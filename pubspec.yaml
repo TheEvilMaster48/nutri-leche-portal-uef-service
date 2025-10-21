@@ -9,24 +9,39 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  web_socket_channel: ^3.0.1
 
-  # Gestión de estado y servicios
+  # Contactos del dispositivo
+  flutter_contacts: ^1.1.9+2
+
+  # Firebase (Chat en tiempo real)
+  # firebase_core: ^3.15.2
+  # cloud_firestore: ^5.6.12
+  # firebase_messaging: ^15.2.10
+
+  # Utilidades
+  uuid: ^4.5.1
   provider: ^6.1.2
   shared_preferences: ^2.3.2
 
-  # Internacionalización y localización
+  # Localización e internacionalización
+  flutter_native_splash: ^2.2.11
   intl: ^0.20.2
   flutter_localizations:
     sdk: flutter
 
-  # Archivos y almacenamiento
+  # Archivos y multimedia
   path_provider: ^2.1.4
   file_picker: ^8.1.2
   image_picker: ^1.1.2
 
-  # PDF y herramientas de impresión
+  # PDF y herramientas
   pdf: ^3.11.0
   printing: ^5.12.0
+
+  # Íconos del App
+  flutter_launcher_icons: ^0.14.4
+  http: ^1.5.0
 
 dev_dependencies:
   flutter_test:
@@ -35,5 +50,22 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Imágenes y logos
   assets:
     - assets/icono/nutrileche.png
+
+# Configuración para generar el Logotipo de la App
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icono/nutrileche.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icono/nutrileche.png"
+
+# Pantalla de carga
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/icono/nutrileche.png
+  android: true
+  ios: true

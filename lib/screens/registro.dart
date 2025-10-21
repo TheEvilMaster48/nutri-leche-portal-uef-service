@@ -20,19 +20,13 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final _confirmPasswordController = TextEditingController();
   final _nombreController = TextEditingController();
   final _correoController = TextEditingController();
-  final _codigoEmpleadoController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _cargoController = TextEditingController();
-  final _plantaController = TextEditingController();
+  final _areaController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _codigoValidado = false;
   String? _paisSeleccionado;
-
-  String? _mensajeCodigo;
-  Color _colorMensaje = Colors.transparent;
-
   final List<Pais> _paises = Pais.getPaises();
 
   @override
@@ -69,6 +63,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
+
+                  // Contenedor blanco
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -77,6 +73,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     ),
                     child: Column(
                       children: [
+                        // Usuario
                         _buildTextField(
                           controller: _usernameController,
                           label: 'Usuario',
@@ -89,6 +86,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
+
+                        // Contraseña
                         _buildTextField(
                           controller: _passwordController,
                           label: 'Contraseña',
@@ -106,12 +105,14 @@ class _RegistroScreenState extends State<RegistroScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.length < 6) {
-                              return 'La contraseña debe tener al menos 6 caracteres';
+                              return 'Debe tener al menos 6 caracteres';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 16),
+
+                        // Confirmar contraseña
                         _buildTextField(
                           controller: _confirmPasswordController,
                           label: 'Confirmar Contraseña',
@@ -136,18 +137,22 @@ class _RegistroScreenState extends State<RegistroScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
+
+                        // Nombre completo
                         _buildTextField(
                           controller: _nombreController,
-                          label: 'Nombres Completos',
+                          label: 'Nombre completo',
                           icon: Icons.badge,
                           validator: (value) =>
                               EmpleadoValidator.validarNombreCompleto(
                                   value ?? ''),
                         ),
                         const SizedBox(height: 16),
+
+                        // Correo
                         _buildTextField(
                           controller: _correoController,
-                          label: 'Correo Electrónico',
+                          label: 'Correo electrónico',
                           icon: Icons.email,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) =>
@@ -155,71 +160,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Campo de código de empleado
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildTextField(
-                                    controller: _codigoEmpleadoController,
-                                    label: 'Código de Empleado',
-                                    icon: Icons.numbers,
-                                    keyboardType: TextInputType.text,
-                                    validator: (value) {
-                                      if (!_codigoValidado) {
-                                        return 'Debe validar el código';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    final valido =
-                                        EmpleadoValidator.validarCodigoEmpleado(
-                                            _codigoEmpleadoController.text);
-                                    setState(() {
-                                      _codigoValidado = valido;
-                                      if (valido) {
-                                        _mensajeCodigo =
-                                            'Código de empleado validado ✅';
-                                        _colorMensaje = Colors.green;
-                                      } else {
-                                        _mensajeCodigo =
-                                            'Código de empleado no válido ❌';
-                                        _colorMensaje = Colors.red;
-                                      }
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF3B82F6),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 16),
-                                  ),
-                                  child: const Text(
-                                    'Validar',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (_mensajeCodigo != null) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                _mensajeCodigo!,
-                                style: TextStyle(
-                                  color: _colorMensaje,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
+                        // País y Teléfono
                         Row(
                           children: [
                             DropdownButton<String>(
@@ -271,9 +212,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
+
+                        // Cargo
                         _buildTextField(
                           controller: _cargoController,
-                          label: 'Cargo',
+                          label: 'Cargo o Puesto',
                           icon: Icons.work,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -283,18 +226,22 @@ class _RegistroScreenState extends State<RegistroScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
+
+                        // Área o Planta
                         _buildTextField(
-                          controller: _plantaController,
-                          label: 'Planta',
+                          controller: _areaController,
+                          label: 'Área o Planta',
                           icon: Icons.location_on,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'La planta es requerida';
+                              return 'El área o planta es requerida';
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 24),
+
+                        // Botón de registro
                         SizedBox(
                           width: double.infinity,
                           height: 56,
@@ -304,31 +251,42 @@ class _RegistroScreenState extends State<RegistroScreen> {
                                 final paisSeleccionado = _paises.firstWhere(
                                     (p) => p.nombre == _paisSeleccionado);
 
-                                final usuario = Usuario(
-                                  id: DateTime.now()
-                                      .millisecondsSinceEpoch
-                                      .toString(),
-                                  username: _usernameController.text.trim(),
-                                  password: _passwordController.text.trim(),
-                                  nombreCompleto: _nombreController.text.trim(),
+                                // Crear objeto usuario real
+                                final nuevoUsuario = Usuario(
+                                  id: 0, // el backend asignará el ID real
+                                  nombre: _nombreController.text.trim(),
                                   correo: _correoController.text.trim(),
-                                  codigoEmpleado:
-                                      _codigoEmpleadoController.text.trim(),
                                   telefono:
                                       '${paisSeleccionado.prefijo} ${_telefonoController.text.trim()}',
                                   cargo: _cargoController.text.trim(),
-                                  planta: _plantaController.text.trim(),
-                                  fechaRegistro: DateTime.now(),
-                                  rol:
-                                      'empleado', // Todos los registros nuevos son empleados
+                                  areaUsuario: _areaController.text.trim(),
+                                  modulos: '',
                                 );
 
                                 final authService = context.read<AuthService>();
-                                final success =
-                                    await authService.register(usuario);
+                                final success = await authService.register(
+                                    nuevoUsuario);
+
                                 if (!mounted) return;
+
                                 if (success) {
-                                  Navigator.pushReplacementNamed(context, '/');
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Registro exitoso. Ahora puede iniciar sesión.'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  Navigator.pushReplacementNamed(
+                                      context, '/');
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Error al registrar. Intente nuevamente.'),
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
                                 }
                               }
                             },
@@ -349,11 +307,16 @@ class _RegistroScreenState extends State<RegistroScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
+
+                        // Volver a inicio
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context);
                           },
-                          child: const Text('¿Ya tienes cuenta? Inicia sesión'),
+                          child: const Text(
+                            '¿Ya tienes cuenta? Inicia sesión',
+                            style: TextStyle(color: Color(0xFF1E3A8A)),
+                          ),
                         ),
                       ],
                     ),
@@ -399,10 +362,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
     _confirmPasswordController.dispose();
     _nombreController.dispose();
     _correoController.dispose();
-    _codigoEmpleadoController.dispose();
     _telefonoController.dispose();
     _cargoController.dispose();
-    _plantaController.dispose();
+    _areaController.dispose();
     super.dispose();
   }
 }

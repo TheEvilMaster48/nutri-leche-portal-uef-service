@@ -1,60 +1,45 @@
 class Usuario {
-  final String id;
-  final String username;
-  final String password;
-  final String nombreCompleto;
+  final int id;
+  final String nombre;
   final String correo;
-  final String codigoEmpleado;
   final String telefono;
   final String cargo;
-  final String planta;
-  final DateTime fechaRegistro;
-  final String rol; 
+  final String areaUsuario;
+  final String modulos;
 
   Usuario({
     required this.id,
-    required this.username,
-    required this.password,
-    required this.nombreCompleto,
+    required this.nombre,
     required this.correo,
-    required this.codigoEmpleado,
     required this.telefono,
     required this.cargo,
-    required this.planta,
-    required this.fechaRegistro,
-    this.rol = 'empleado', 
+    required this.areaUsuario,
+    required this.modulos,
   });
+
+  factory Usuario.fromJson(Map<String, dynamic> json) {
+    return Usuario(
+      id: json['id'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      correo: json['correo'] ?? '',
+      telefono: json['telefono'] ?? '',
+      cargo: json['cargo'] ?? '',
+      areaUsuario: json['areaUsuario'] ?? '',
+      modulos: json['modulos'] ?? '',
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'username': username,
-      'password': password,
-      'nombreCompleto': nombreCompleto,
+      'nombre': nombre,
       'correo': correo,
-      'codigoEmpleado': codigoEmpleado,
       'telefono': telefono,
       'cargo': cargo,
-      'planta': planta,
-      'fechaRegistro': fechaRegistro.toIso8601String(),
-      'rol': rol,
+      'areaUsuario': areaUsuario,
+      'modulos': modulos,
     };
   }
 
-  factory Usuario.fromJson(Map<String, dynamic> json) {
-    return Usuario(
-      id: json['id'] ?? '',
-      username: json['username'] ?? '',
-      password: json['password'] ?? '',
-      nombreCompleto: json['nombreCompleto'] ?? '',
-      correo: json['correo'] ?? '',
-      codigoEmpleado: json['codigoEmpleado'] ?? '',
-      telefono: json['telefono'] ?? '',
-      cargo: json['cargo'] ?? '',
-      planta: json['planta'] ?? '',
-      fechaRegistro: DateTime.tryParse(json['fechaRegistro'] ?? '') ??
-          DateTime.now(),
-      rol: json['rol'] ?? 'empleado',
-    );
-  }
+  String get nombreCompleto => nombre;
 }

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nutrileche.nutri_leche_portal"
+    namespace = "com.example.nutri_leche"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.nutrileche.nutri_leche_portal"
+        applicationId = "com.example.nutri_leche"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

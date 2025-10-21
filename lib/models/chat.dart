@@ -17,29 +17,29 @@ class Chat {
     this.isOnline = false,
   });
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'userId': userId,
       'userName': userName,
       'userRole': userRole,
       'lastMessage': lastMessage,
-      'lastMessageTime': lastMessageTime?.toIso8601String(),
+      'lastMessageTime': lastMessageTime?.millisecondsSinceEpoch,
       'isOnline': isOnline,
     };
   }
 
-  factory Chat.fromJson(Map<String, dynamic> json) {
+  factory Chat.fromMap(Map<String, dynamic> map) {
     return Chat(
-      id: json['id'],
-      userId: json['userId'],
-      userName: json['userName'],
-      userRole: json['userRole'],
-      lastMessage: json['lastMessage'],
-      lastMessageTime: json['lastMessageTime'] != null
-          ? DateTime.parse(json['lastMessageTime'])
+      id: map['id'],
+      userId: map['userId'],
+      userName: map['userName'],
+      userRole: map['userRole'],
+      lastMessage: map['lastMessage'],
+      lastMessageTime: map['lastMessageTime'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'])
           : null,
-      isOnline: json['isOnline'] ?? false,
+      isOnline: map['isOnline'] ?? false,
     );
   }
 }
