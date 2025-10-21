@@ -109,14 +109,14 @@ class MenuScreen extends StatelessWidget {
                   ),
                   child: ClipOval(
                     child: Image.network(
-                      // Usa la foto del backend si existe, o una por defecto
-                      (usuario?.foto != null && usuario!.foto!.isNotEmpty)
-                          ? usuario.foto!
-                          : 'https://servicioslsa.nutri.com.ec/alimentacion/0350149357.jpeg',
+                      // URL dinámica basada en la cédula del usuario
+                      usuario?.cedula != null && usuario!.cedula!.isNotEmpty
+                          ? 'https://servicioslsa.nutri.com.ec/alimentacion/${usuario.cedula}.jpeg'
+                          : 'https://servicioslsa.nutri.com.ec/alimentacion/default.jpeg',
 
-                      fit: BoxFit.cover, // hace que llene todo el círculo
+                      fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        // Si falla la imagen, mostrar logo local de Nutri Leche
+                        // Si falla la carga, mostrar logo local de Nutri Leche
                         return Image.asset(
                           'assets/icono/nutrileche.png',
                           fit: BoxFit.cover,
@@ -139,6 +139,8 @@ class MenuScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
+
+
                 // Nombre del Usuario
                 Text(
                   usuario?.nombre ?? '',

@@ -261,10 +261,13 @@ class _RegistroScreenState extends State<RegistroScreen> {
                                   cargo: _cargoController.text.trim(),
                                   areaUsuario: _areaController.text.trim(),
                                   modulos: '',
+                                  cedula:
+                                      '', // temporalmente vacío (el backend o formulario la llenará luego)
                                 );
 
                                 final authService = context.read<AuthService>();
-                                final success = await authService.register(
+                                final success =
+                                    await authService.register(
                                     nuevoUsuario);
 
                                 if (!mounted) return;
