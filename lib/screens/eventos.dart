@@ -5,6 +5,7 @@ import '../services/evento_service.dart';
 import '../services/auth_service.dart';
 import '../models/evento.dart';
 import '../models/usuario.dart';
+import '../services/realtime_service.dart'; // 🔹 Agregado para conexión en tiempo real
 
 class EventosScreen extends StatefulWidget {
   const EventosScreen({super.key});
@@ -16,13 +17,34 @@ class EventosScreen extends StatefulWidget {
 class _EventosScreenState extends State<EventosScreen> {
   final Map<String, bool> _categoriaExpandida = {};
   bool mostrarEventosPasados = false;
-
   List<Evento> _eventosTotales = [];
+
+  final RealtimeService _realtime = RealtimeService(); // 🔹 Servicio WebSocket
 
   @override
   void initState() {
     super.initState();
     _cargarEventosIniciales();
+
+    // 🔔 Conectar al WebSocket para recibir mensajes en vivo
+    _realtime.connect((mensaje) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensaje),
+            backgroundColor: Colors.blueAccent,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        _cargarEventosIniciales(); // Refresca lista automáticamente
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _realtime.disconnect(); // Cerrar conexión al salir
+    super.dispose();
   }
 
   Future<void> _cargarEventosIniciales() async {
@@ -84,7 +106,7 @@ class _EventosScreenState extends State<EventosScreen> {
       }
     }
 
-    // Agrupar Eventos por Planta (solo para visualización)
+    // Agrupar Eventos por Planta
     Map<String, List<Evento>> agruparPorPlanta(List<Evento> lista) {
       Map<String, List<Evento>> agrupado = {
         for (var c in categorias) c: [],
@@ -116,7 +138,7 @@ class _EventosScreenState extends State<EventosScreen> {
     final activosPorCategoria = agruparPorPlanta(eventosActivos);
     final pasadosPorCategoria = agruparPorPlanta(eventosPasados);
 
-    // Mostrar todos los eventos directamente (sin roles)
+    // Mostrar todos los eventos directamente
     Map<String, List<Evento>> mostrarMapa =
         mostrarEventosPasados ? pasadosPorCategoria : activosPorCategoria;
 
@@ -246,9 +268,8 @@ class _EventosScreenState extends State<EventosScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Container(
         decoration: BoxDecoration(
-          color: eventoPasado
-              ? const Color(0xFFEDEDED)
-              : const Color(0xFFF3F4F6),
+          color:
+              eventoPasado ? const Color(0xFFEDEDED) : const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
@@ -324,7 +345,6 @@ class _EventosScreenState extends State<EventosScreen> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // BOTÓN EDITAR EVENTO
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blueAccent),
                 tooltip: 'Editar evento',
@@ -338,8 +358,6 @@ class _EventosScreenState extends State<EventosScreen> {
                   await _cargarEventosIniciales();
                 },
               ),
-
-              //  BOTÓN ELIMINAR EVENTO
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
                 tooltip: 'Eliminar evento',
@@ -372,8 +390,7 @@ class _EventosScreenState extends State<EventosScreen> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content:
-                              Text('Evento "${evento.titulo}" eliminado'),
+                          content: Text('Evento "${evento.titulo}" eliminado'),
                           backgroundColor: Colors.redAccent,
                           duration: const Duration(seconds: 2),
                         ),
@@ -403,7 +420,6 @@ class _EventosScreenState extends State<EventosScreen> {
     }
   }
 
-  // Colores por Planta
   Color _colorPorCategoria(String categoria) {
     switch (categoria) {
       case 'Planta Administrativa':

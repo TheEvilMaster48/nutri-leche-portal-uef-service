@@ -76,7 +76,7 @@ class MenuScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             child: Column(
               children: [
-                // Botón cerrar sesión
+                // 🔹 Botón cerrar sesión
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -93,7 +93,7 @@ class MenuScreen extends StatelessWidget {
                   ],
                 ),
 
-                // Foto de Perfil del Usuario
+                // 🔹 Foto de Perfil del Usuario
                 Container(
                   width: 130,
                   height: 130,
@@ -108,30 +108,39 @@ class MenuScreen extends StatelessWidget {
                     ],
                   ),
                   child: ClipOval(
-                    child: Image.network(
-                      // URL dinámica basada en la cédula del usuario
-                      usuario?.cedula != null && usuario!.cedula!.isNotEmpty
-                          ? 'https://servicioslsa.nutri.com.ec/alimentacion/${usuario.cedula}.jpeg'
-                          : 'https://servicioslsa.nutri.com.ec/alimentacion/default.jpeg',
+                    child: Builder(
+                      builder: (context) {
+                        final cedula = usuario?.cedula?.trim() ?? '';
 
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Si falla la carga, mostrar logo local de Nutri Leche
-                        return Image.asset(
-                          'assets/icono/nutrileche.png',
+                        // URL dinámica basada en la cédula del usuario
+                        final imageUrl = (cedula.isNotEmpty)
+                            ? 'https://servicioslsa.nutri.com.ec/alimentacion/$cedula.jpeg'
+                            : 'https://servicioslsa.nutri.com.ec/alimentacion/default.jpeg';
+
+                        return Image.network(
+                          imageUrl,
                           fit: BoxFit.cover,
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    (loadingProgress.expectedTotalBytes ?? 1)
-                                : null,
-                          ),
+                          errorBuilder: (context, error, stackTrace) {
+                            // Si falla la carga, mostrar ícono genérico
+                            return const Icon(
+                              Icons.person,
+                              size: 100,
+                              color: Colors.white70,
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        (loadingProgress.expectedTotalBytes ?? 1)
+                                    : null,
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -140,18 +149,18 @@ class MenuScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-
-                // Nombre del Usuario
+                // 🔹 Nombre del Usuario
                 Text(
-                  usuario?.nombre ?? '',
+                  usuario?.nombre.toUpperCase() ?? '',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
+                  textAlign: TextAlign.center,
                 ),
 
-                // Cargo o área del usuario
+                // 🔹 Cargo o área del usuario
                 Text(
                   _obtenerDescripcionUsuario(usuario),
                   style: const TextStyle(
@@ -162,7 +171,7 @@ class MenuScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Línea divisoria
+                // 🔹 Línea divisoria
                 Container(
                   height: 4,
                   width: screenWidth * 0.9,
@@ -182,7 +191,7 @@ class MenuScreen extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
-                // Menú 2x2 (perfil al centro)
+                // 🔹 Menú principal 2x2 (perfil abajo)
                 Wrap(
                   spacing: 18,
                   runSpacing: 18,
@@ -210,6 +219,7 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
+  // 🔹 Descripción del usuario (área o cargo)
   String _obtenerDescripcionUsuario(Usuario? usuario) {
     if (usuario == null) return 'Sin datos de usuario';
     if (usuario.areaUsuario.isNotEmpty) {
@@ -221,6 +231,7 @@ class MenuScreen extends StatelessWidget {
     }
   }
 
+  // 🔹 Widget de botón de menú reutilizable
   Widget _buildMenuButton(
     BuildContext context,
     String title,

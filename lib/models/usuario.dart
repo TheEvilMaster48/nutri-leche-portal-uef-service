@@ -32,7 +32,12 @@ class Usuario {
       cargo: json['cargo'] ?? json['cargoNombre'] ?? '',
       areaUsuario: json['areaUsuario'] ?? json['area'] ?? '',
       modulos: json['modulos']?.toString() ?? '',
-      cedula: json['cedula'] ?? null,
+      //Imagen
+      cedula: json['cedula'] ??
+          json['usuCedula'] ??
+          json['documento'] ??
+          json['dni'] ??
+          json['ci'],
     );
   }
 

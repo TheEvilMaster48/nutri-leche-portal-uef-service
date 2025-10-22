@@ -32,7 +32,8 @@ class AuthService extends ChangeNotifier {
         }),
       );
 
-      developer.log("📩 Respuesta Login (${response.statusCode}): ${response.body}");
+      developer
+          .log("📩 Respuesta Login (${response.statusCode}): ${response.body}");
 
       if (response.statusCode == 200) {
         if (response.body.isEmpty) {
@@ -46,13 +47,16 @@ class AuthService extends ChangeNotifier {
         // Validar estructura esperada
         if (map.containsKey('correcto')) {
           if (map['correcto'] == true && map['data'] != null) {
-            final dynamic data = map['data'] is String
-                ? json.decode(map['data'])
-                : map['data'];
+            final dynamic data =
+                map['data'] is String ? json.decode(map['data']) : map['data'];
 
             developer.log("✅ Datos recibidos del usuario: $data");
 
             final user = Usuario.fromJson(data);
+
+            //  Verificamos si la cédula llega correctamente
+            developer.log("🧾 Cédula del usuario cargada: ${user.cedula}");
+
             _currentUser = user;
 
             // Guardar sesión local
@@ -64,7 +68,8 @@ class AuthService extends ChangeNotifier {
             return true;
           } else {
             developer.log("⚠️ Inicio de sesión rechazado: ${map['mensaje']}");
-            showNotification(map['mensaje'] ?? "Usuario o contraseña incorrectos", "error");
+            showNotification(
+                map['mensaje'] ?? "Usuario o contraseña incorrectos", "error");
             return false;
           }
         } else {
@@ -74,7 +79,8 @@ class AuthService extends ChangeNotifier {
         }
       } else {
         developer.log("❌ Error HTTP: ${response.statusCode}");
-        showNotification("Error en la conexión (${response.statusCode})", "error");
+        showNotification(
+            "Error en la conexión (${response.statusCode})", "error");
         return false;
       }
     } catch (e) {
@@ -84,7 +90,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // 📝 REGISTRO
+  // REGISTRO
   Future<bool> register(Usuario usuario) async {
     final uri = Uri.parse("$baseUrl/registro");
 
@@ -95,7 +101,8 @@ class AuthService extends ChangeNotifier {
         body: jsonEncode(usuario.toJson()),
       );
 
-      developer.log("📩 Respuesta Registro (${response.statusCode}): ${response.body}");
+      developer.log(
+          "📩 Respuesta Registro (${response.statusCode}): ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final map = json.decode(response.body);
@@ -103,7 +110,13 @@ class AuthService extends ChangeNotifier {
         if (map['correcto'] == true && map['data'] != null) {
           final data = json.decode(map['data']);
           _currentUser = Usuario.fromJson(data);
-          showNotification("Registro exitoso. Bienvenido ${_currentUser!.nombre}", "success");
+
+          developer
+              .log("🧾 Cédula del usuario registrada: ${_currentUser!.cedula}");
+
+          showNotification(
+              "Registro exitoso. Bienvenido ${_currentUser!.nombre}",
+              "success");
           notifyListeners();
           return true;
         } else {
@@ -111,7 +124,8 @@ class AuthService extends ChangeNotifier {
           return false;
         }
       } else {
-        showNotification("Error al registrar (${response.statusCode})", "error");
+        showNotification(
+            "Error al registrar (${response.statusCode})", "error");
         return false;
       }
     } catch (e) {
@@ -120,7 +134,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // 🚪 CERRAR SESIÓN
+  // CERRAR SESIÓN
   Future<void> logout() async {
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
@@ -129,7 +143,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🔔 NOTIFICACIONES
+  // NOTIFICACIONES
   void showNotification(String message, String type) {
     _currentNotification = {"message": message, "type": type};
     notifyListeners();
@@ -159,7 +173,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // 🔁 AUTOLOGIN (restaurar sesión)
+  // AUTOLOGIN
   Future<void> cargarUsuarioGuardado() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -167,10 +181,12 @@ class AuthService extends ChangeNotifier {
       if (userData != null) {
         final decoded = json.decode(userData);
         _currentUser = Usuario.fromJson(decoded);
+
+        developer.log(
+            "🔄 Sesión restaurada automáticamente para ${_currentUser!.nombre}");
+        developer.log("🧾 Cédula restaurada: ${_currentUser!.cedula}");
+
         notifyListeners();
-        if (kDebugMode) {
-          print("✅ Sesión restaurada automáticamente para ${_currentUser!.nombre}");
-        }
       }
     } catch (e) {
       if (kDebugMode) {
