@@ -1,139 +1,139 @@
-# Nutri Leche Portal - Flutter
+# 🥛 Nutri Leche Portal - Flutter & Spring Boot
 
-Portal de Empleados para Nutri Leche Ecuador desarrollado en Flutter/Dart.
+**Portal de Empleados para Nutri Leche Ecuador**, desarrollado en **Flutter/Dart (frontend)** y **Spring Boot (backend)** con integración a **SQL Server 2022 (Docker)**.
 
-## Características
+El sistema permite a los empleados acceder a información interna, descargar documentos institucionales, recibir notificaciones en tiempo real mediante WebSockets (STOMP), y mantener un perfil personal con autenticación local.
 
-- ✅ Sistema de autenticación con registro de usuarios
-- ✅ Gestión de eventos con imágenes y documentos
-- ✅ Sistema de notificaciones en tiempo real
-- ✅ Chat interno entre empleados
-- ✅ Gestión de recursos y documentos descargables en PDF
-- ✅ Perfil de usuario editable
-- ✅ Almacenamiento local con SharedPreferences
+---
 
-## Estructura del Proyecto
+## 🧠 Arquitectura General
 
-\`\`\`
-lib/
-├── core/                      # Funcionalidades principales
-│   ├── app_localizations.dart
-│   ├── locale_provider.dart
-│   ├── notification_banner.dart
-│   └── realtime_manager.dart
-├── models/                    # Modelos de datos
-│   ├── chat.dart
-│   ├── evento.dart
-│   ├── mensaje.dart
-│   ├── notificacion.dart
-│   ├── pais.dart
-│   ├── recurso.dart
-│   └── usuario.dart
-├── screens/                   # Pantallas de la aplicación
-│   ├── acerca_screen.dart
-│   ├── ayuda_screen.dart
-│   ├── chat.dart
-│   ├── chat_detalle.dart
-│   ├── configuracion_screen.dart
-│   ├── crear_evento.dart
-│   ├── crear_publicacion.dart
-│   ├── editar_perfil.dart
-│   ├── eventos.dart
-│   ├── login.dart
-│   ├── menu.dart
-│   ├── noticias.dart
-│   ├── notificaciones.dart
-│   ├── nuevo_chat.dart
-│   ├── perfil.dart
-│   ├── recursos.dart
-│   └── registro.dart
-├── services/                  # Servicios y lógica de negocio
-│   ├── validators/
-│   │   ├── empleado_validator.dart
-│   │   └── telefono_validator.dart
-│   ├── auth_service.dart
-│   ├── chat_service.dart
-│   ├── evento_service.dart
-│   ├── global_notifier.dart
-│   ├── language_service.dart
-│   ├── notificacion_service.dart
-│   ├── recurso_service.dart
-│   └── usuario_service.dart
-├── widget/                    # Widgets reutilizables
-│   └── menuItem.dart
-└── main.dart                  # Punto de entrada
-\`\`\`
+📦 nutri-leche-portal-main
+│
+├── lib/
+│ ├── core/
+│ │ ├── app_localizations.dart
+│ │ ├── locale_provider.dart
+│ │ ├── notification_banner.dart
+│ │ └── realtime_manager.dart
+│ ├── models/
+│ │ ├── chat.dart
+│ │ ├── evento.dart
+│ │ ├── mensaje.dart
+│ │ ├── notificacion.dart
+│ │ ├── pais.dart
+│ │ ├── recurso.dart
+│ │ └── usuario.dart
+│ ├── screens/
+│ │ ├── acerca_screen.dart
+│ │ ├── ayuda_screen.dart
+│ │ ├── chat.dart
+│ │ ├── chat_detalle.dart
+│ │ ├── configuracion_screen.dart
+│ │ ├── crear_evento.dart
+│ │ ├── crear_publicacion.dart
+│ │ ├── editar_perfil.dart
+│ │ ├── eventos.dart
+│ │ ├── login.dart
+│ │ ├── menu.dart
+│ │ ├── noticias.dart
+│ │ ├── notificaciones.dart
+│ │ ├── nuevo_chat.dart
+│ │ ├── perfil.dart
+│ │ ├── recursos.dart
+│ │ └── registro.dart
+│ ├── services/
+│ │ ├── validators/
+│ │ │ ├── empleado_validator.dart
+│ │ │ └── telefono_validator.dart
+│ │ ├── auth_service.dart
+│ │ ├── chat_service.dart
+│ │ ├── evento_service.dart
+│ │ ├── global_notifier.dart
+│ │ ├── language_service.dart
+│ │ ├── notificacion_service.dart
+│ │ ├── recurso_service.dart
+│ │ ├── usuario_service.dart
+│ │ └── realtime_service.dart
+│ ├── widget/
+│ │ └── menuItem.dart
+│ └── main.dart
+│
+├── assets/icono/nutrileche.png
+├── pubspec.yaml
+└── README.md
 
-## Instalación
 
-1. Asegúrate de tener Flutter instalado (versión 3.0.0 o superior)
-2. Clona el repositorio
-3. Ejecuta `flutter pub get` para instalar las dependencias
-4. Ejecuta `flutter run` para iniciar la aplicación
+---
 
-## Dependencias Principales
+## ⚙️ Tecnologías Utilizadas
 
-- **provider**: Gestión de estado
-- **shared_preferences**: Almacenamiento local
-- **pdf**: Generación de documentos PDF
-- **printing**: Descarga e impresión de PDFs
-- **image_picker**: Selección de imágenes
-- **file_picker**: Selección de archivos
+### 🖥️ Frontend (Flutter)
+- **Framework:** Flutter 3.35.6  
+- **Lenguaje:** Dart 3.9.2  
+- **Gestión de estado:** `provider`
+- **Almacenamiento local:** `shared_preferences`
+- **Internacionalización:** `intl`, `flutter_localizations`
+- **Documentos PDF:** `pdf`, `printing`
+- **Imágenes y archivos:** `image_picker`, `file_picker`
+- **Comunicación en tiempo real:** `stomp_dart_client`
+- **Compatibilidad:** Web, Android, Edge
 
-## Funcionalidades por Módulo
+### ⚙️ Backend (Spring Boot)
+- **Framework:** Spring Boot 3.x
+- **Lenguaje:** Java 17+
+- **Seguridad:** Spring Security + JWT
+- **Mensajería:** WebSocket STOMP (`/topic/eventos`)
+- **Base de datos:** SQL Server 2022 (Docker)
+- **Persistencia:** JPA / Hibernate
+- **API REST:** JSON UTF-8
 
-### Autenticación
-- Registro de usuarios con validación completa
-- Login con credenciales guardadas localmente
-- Validación de código de empleado
-- Selector de país con bandera para teléfono
+### 🗄️ Base de Datos (Docker + SQL Server)
+- Imagen: `mcr.microsoft.com/mssql/server:2022-latest`
+- Puerto: `8593`
+- Usuario: `xavier`
+- Password: `FfSantdmm,44`
 
-### Eventos
-- Crear eventos con título, descripción y fecha
-- Adjuntar imágenes y documentos
-- Editar eventos existentes
-- Validación de fechas (no permite fechas pasadas)
+---
 
-### Notificaciones
-- Notificaciones automáticas por cada acción
-- Marcar como leídas
-- Indicador de notificaciones no leídas
-- Detalles completos de cada acción realizada
+## 🚀 Instalación y Configuración
 
-### Chat
-- Lista de contactos
-- Chat en tiempo real
-- Interfaz estilo WhatsApp
-- Envío de mensajes
+### 1️⃣ Requisitos Previos
 
-### Recursos
-- Documentos de la empresa descargables
-- Editor de contenido antes de descargar
-- Generación de PDFs funcional
-- Múltiples categorías de documentos
+| Componente | Versión mínima | Descripción |
+|-------------|----------------|--------------|
+| Flutter SDK | 3.35.6 | Framework UI |
+| Dart SDK | 3.9.2 | Lenguaje base |
+| Java JDK | 17+ | Backend |
+| Maven | 3.9+ | Build y dependencias |
+| Docker | 25+ | Contenedor SQL Server |
+| Android Studio / VS Code | — | IDEs recomendados |
 
-### Perfil
-- Visualización de información personal
-- Edición de datos del usuario
-- Configuración de la cuenta
-- Ayuda y soporte
+---
 
-## Notas de Desarrollo
+### 2️⃣ Instalar dependencias Flutter
 
-- Todos los datos se almacenan localmente usando SharedPreferences
-- Las notificaciones se generan automáticamente para cada acción
-- Los PDFs se pueden editar antes de descargar
-- El sistema valida fechas para no permitir eventos en el pasado
-- La interfaz sigue el diseño proporcionado con colores específicos
+```powershell
+flutter clean
+flutter pub get
 
-## Colores del Sistema
+3️⃣ Ejecutar Backend (Spring Boot)
+mvn spring-boot:run
 
-- Azul (#3B82F6): Eventos y principal
-- Cyan (#22D3EE): Notificaciones
-- Verde (#4ADE80): Chat
-- Morado (#A78BFA): Recursos/Perfil
-- Rojo (#FF6B6B): Alertas
+4️⃣ Crear contenedor SQL Server (Docker)
 
-## Autor
+Ejemplo
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=FfSantdmm,44" `
+  -p 8593:1433 `
+  -v C:/Base/Data:/var/opt/mssql/data `
+  -v C:/Base/Log:/var/opt/mssql/log `
+  -v C:/Base/Secrets:/var/opt/mssql/secrets `
+  --name sql2022dk `
+  -d mcr.microsoft.com/mssql/server:2022-latest
 
-Desarrollado para Nutri Leche Ecuador
+
+5️⃣ Ejecutar Frontend en navegador Edge (sin CORS)
+flutter run -d edge --web-browser-flag="--disable-web-security" --web-browser-flag="--user-data-dir=C:\Temp\EdgeDev"
+
+En Android
+flutter run -d android
