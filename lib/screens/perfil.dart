@@ -37,15 +37,51 @@ class PerfilScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Avatar del usuario
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.grey.shade300,
-              child: const Icon(Icons.person_rounded,
-                  size: 70, color: Colors.white),
+            // FOTO DE PERFIL USUARIO
+            Container(
+              width: 130,
+              height: 130,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 12,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Builder(
+                  builder: (context) {
+                    final cedula = usuario.cedula?.trim() ?? '';
+
+                    // URL dinámica basada en la cédula del usuario
+                    final imageUrl = (cedula.isNotEmpty)
+                        ? 'https://servicioslsa.nutri.com.ec/alimentacion/$cedula.jpeg'
+                        : 'https://servicioslsa.nutri.com.ec/alimentacion/default.jpeg';
+
+                    return Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // 🔸 No mostrar nada si falla la carga
+                        return const SizedBox.shrink();
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        // 🔸 Mantener espacio mientras carga
+                        return const SizedBox.shrink();
+                      },
+                    );
+                  },
+                ),
+              ),
             ),
+
             const SizedBox(height: 20),
 
+            // 🔹 Nombre del usuario
             Text(
               usuario.nombre,
               style: const TextStyle(
@@ -54,16 +90,18 @@ class PerfilScreen extends StatelessWidget {
                 color: Colors.black87,
               ),
             ),
+
             const SizedBox(height: 8),
+
+            // 🔹 Cargo o área
             Text(
-              usuario.cargo.isNotEmpty
-                  ? usuario.cargo
-                  : 'Empleado Nutri Leche',
+              usuario.cargo.isNotEmpty ? usuario.cargo : 'Empleado Nutri Leche',
               style: const TextStyle(fontSize: 18, color: Colors.black54),
             ),
+
             const Divider(height: 40, thickness: 1.2),
 
-            // Información detallada del usuario
+            //  Información detallada
             _buildInfoRow(Icons.badge, 'ID', usuario.id.toString()),
             _buildInfoRow(Icons.email_rounded, 'Correo', usuario.correo),
             _buildInfoRow(Icons.phone_rounded, 'Teléfono', usuario.telefono),
@@ -72,6 +110,7 @@ class PerfilScreen extends StatelessWidget {
 
             const SizedBox(height: 40),
 
+            // Botón Regresar al Menú
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 1, 121, 145),
