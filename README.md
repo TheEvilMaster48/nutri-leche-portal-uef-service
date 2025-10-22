@@ -91,8 +91,8 @@ El sistema permite a los empleados acceder a información interna, descargar doc
 ### 🗄️ Base de Datos (Docker + SQL Server)
 - Imagen: `mcr.microsoft.com/mssql/server:2022-latest`
 - Puerto: `8593`
-- Usuario: `xavier`
-- Password: `FfSantdmm,44`
+- Usuario: `UEFServive`
+- Password: `QAS`
 
 ---
 
@@ -117,8 +117,12 @@ El sistema permite a los empleados acceder a información interna, descargar doc
 flutter clean
 flutter pub get
 
+---
+
 3️⃣ Ejecutar Backend (Spring Boot)
 mvn spring-boot:run
+
+---
 
 4️⃣ Crear contenedor SQL Server (Docker)
 
@@ -131,9 +135,46 @@ docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=FfSantdmm,44" `
   --name sql2022dk `
   -d mcr.microsoft.com/mssql/server:2022-latest
 
+---
 
 5️⃣ Ejecutar Frontend en navegador Edge (sin CORS)
 flutter run -d edge --web-browser-flag="--disable-web-security" --web-browser-flag="--user-data-dir=C:\Temp\EdgeDev"
 
 En Android
 flutter run -d android
+
+---
+
+🧩 Funcionalidades por Módulo
+
+---
+
+🔐 Autenticación
+Registro de usuarios con validaciones.
+Login persistente mediante SharedPreferences.
+Identificación por cédula o código de empleado.
+
+🟣 Eventos
+Crear, editar y eliminar eventos.
+Recepción de eventos en tiempo real desde el backend vía STOMP WebSocket.
+Visualización agrupada por categoría o área.
+
+🔔 Notificaciones
+Se generan automáticamente por cada acción.
+Sincronizadas entre frontend y backend.
+Indicadores visuales de notificaciones no leídas.
+
+💬 Chat
+Mensajería en tiempo real entre empleados.
+Lista de contactos y conversaciones activas.
+Estilo visual tipo WhatsApp.
+
+📄 Recursos
+Descarga y edición de documentos PDF institucionales.
+Encabezado oficial con logo Nutri Leche.
+Control de permisos según área o módulo (RRHH, Producción, Bodega, Ventas).
+
+👤 Perfil
+Visualización completa de datos personales.
+Foto de perfil dinámica (por cédula)
+Edición de campos permitidos (nombre, cargo, área, teléfono).
