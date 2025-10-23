@@ -9,7 +9,7 @@ class EventoService extends ChangeNotifier {
   List<Evento> get eventos => _eventos;
 
   static const String baseUrl =
-      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1/eventos";
+      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/eventos";
 
   // Obtener Todos los Eventos (Backend UEF Services)
   Future<void> obtenerEventos() async {

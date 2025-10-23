@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import '../models/chat.dart';
 import '../services/chat_service.dart';
-import 'chat_detalle_screen.dart';
+import 'chat_detalle.dart';
 import 'package:uuid/uuid.dart';
 
 class NuevoChatScreen extends StatelessWidget {

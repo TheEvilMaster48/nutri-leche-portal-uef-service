@@ -13,7 +13,7 @@ class AuthService extends ChangeNotifier {
   Map<String, dynamic>? get currentNotification => _currentNotification;
 
   static const String baseUrl =
-      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1";
+      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1";
 
   // 🔐 LOGIN
   Future<bool> login(String usuario, String password) async {

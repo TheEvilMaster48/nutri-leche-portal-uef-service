@@ -23,7 +23,7 @@ dependencies:
   # Utilidades
   uuid: ^4.5.1
   provider: ^6.1.2
-  shared_preferences: ^2.3.2
+  shared_preferences: ^2.5.3
 
   # Localización e internacionalización
   flutter_native_splash: ^2.2.11

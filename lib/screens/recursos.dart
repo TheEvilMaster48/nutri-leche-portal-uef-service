@@ -1,99 +1,112 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import '../services/auth_service.dart';
-import '../services/notificacion_service.dart';
 import '../core/notification_banner.dart';
+import '../services/auth_service.dart';
 
 class RecursosScreen extends StatelessWidget {
   const RecursosScreen({super.key});
 
-  // Descargar PDF con logo Nutri Leche
   Future<void> _descargarPDF(
-      BuildContext context, String titulo, String contenido) async {
+    BuildContext context,
+    String titulo,
+    String contenido,
+  ) async {
     try {
       final pdf = pw.Document();
 
-      // Cargar el logo desde assets
-      final logoImage = await imageFromAssetBundle('assets/icono/nutrileche.png');
+      final logoImage =
+          await imageFromAssetBundle('assets/icono/nutrileche.png');
 
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
           build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Encabezado con título y logo
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text(
-                      'Nutri Leche Ecuador',
-                      style: pw.TextStyle(
-                        fontSize: 22,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
+            return pw.Padding(
+              padding: const pw.EdgeInsets.all(32),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            'Nutri Leche Ecuador',
+                            style: pw.TextStyle(
+                              fontSize: 22,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.blue800,
+                            ),
+                          ),
+                          pw.Text(
+                            'Gestión de Recursos Humanos',
+                            style: const pw.TextStyle(
+                              fontSize: 14,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.Container(
+                        width: 60,
+                        height: 60,
+                        child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                      ),
+                    ],
+                  ),
+                  pw.Divider(),
+                  pw.SizedBox(height: 24),
+                  pw.Text(
+                    titulo.toUpperCase(),
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Divider(),
+                  pw.SizedBox(height: 16),
+                  pw.Text(
+                    contenido,
+                    style: const pw.TextStyle(
+                      fontSize: 12,
+                      height: 1.5,
+                      color: PdfColors.black,
+                    ),
+                    textAlign: pw.TextAlign.justify,
+                  ),
+                  pw.Spacer(),
+                  pw.Divider(),
+                  pw.Align(
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      'Fecha de generación: ${DateTime.now().toString().substring(0, 16)}',
+                      style: const pw.TextStyle(
+                        fontSize: 10,
+                        color: PdfColors.grey700,
                       ),
                     ),
-                    pw.Container(
-                      width: 60,
-                      height: 60,
-                      child: pw.Image(logoImage, fit: pw.BoxFit.contain),
-                    ),
-                  ],
-                ),
-                pw.Divider(),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  titulo,
-                  style: pw.TextStyle(
-                    fontSize: 20,
-                    fontWeight: pw.FontWeight.bold,
                   ),
-                ),
-                pw.SizedBox(height: 10),
-                pw.Divider(),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  contenido,
-                  style: const pw.TextStyle(fontSize: 12),
-                  textAlign: pw.TextAlign.justify,
-                ),
-                pw.SizedBox(height: 40),
-                pw.Text(
-                  'Fecha de generación: ${DateTime.now().toString().substring(0, 10)}',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
       );
 
-      // Mostrar el PDF generado
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save(),
-      );
-
-      // Registrar notificación
-      final notificacionService = context.read<NotificacionService>();
-      notificacionService.agregarNotificacion(
-        'Documento descargado',
-        'Se ha descargado el documento "$titulo" correctamente',
-        'recurso',
       );
 
       if (context.mounted) {
         NotificationBanner.show(
           context,
-          'PDF descargado exitosamente',
+          'El documento "$titulo" se ha descargado correctamente.',
           NotificationType.success,
         );
       }
@@ -101,14 +114,13 @@ class RecursosScreen extends StatelessWidget {
       if (context.mounted) {
         NotificationBanner.show(
           context,
-          'Error al descargar el PDF',
+          'Error al descargar el PDF: ${e.toString()}',
           NotificationType.error,
         );
       }
     }
   }
 
-  // Editar y descargar PDF (solo roles con permiso)
   Future<void> _editarYDescargarPDF(
     BuildContext context,
     String titulo,
@@ -121,12 +133,12 @@ class RecursosScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text('Editar: $titulo'),
+          title: Text('Editar documento: $titulo'),
           content: SizedBox(
             width: double.maxFinite,
             child: TextField(
               controller: controller,
-              maxLines: 15,
+              maxLines: 20,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Edita el contenido del documento...',
@@ -138,18 +150,19 @@ class RecursosScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancelar'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
+              icon: const Icon(Icons.download, color: Colors.white),
+              label: const Text(
+                'Descargar PDF',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4ADE80),
+              ),
               onPressed: () {
                 Navigator.pop(dialogContext);
                 _descargarPDF(context, titulo, controller.text);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
-              ),
-              child: const Text(
-                'Descargar PDF',
-                style: TextStyle(color: Colors.white),
-              ),
             ),
           ],
         );
@@ -157,88 +170,95 @@ class RecursosScreen extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
+  bool _tienePermisoEdicion(AuthService auth) {
     final usuario = auth.currentUser;
-
-    //  Determinar permisos según área o módulos
     final area = usuario?.areaUsuario.toLowerCase() ?? '';
     final modulos = usuario?.modulos.toLowerCase() ?? '';
 
-    final bool tienePermiso = area.contains('recursos') ||
-        area.contains('administrativa') ||
+    return area.contains('recursos') ||
+        area.contains('administracion') ||
         area.contains('produccion') ||
         area.contains('bodega') ||
         area.contains('ventas') ||
-        modulos.contains('recursos') ||
         modulos.contains('admin') ||
-        modulos.contains('rrhh');
+        modulos.contains('rrhh') ||
+        modulos.contains('recursos');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthService();
+    final puedeEditar = _tienePermisoEdicion(auth);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recursos', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Recursos',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFA78BFA),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSeccion('Documentos de la Empresa'),
+          _buildTituloSeccion('Documentos Institucionales'),
           _buildDocumentoCard(
             context,
             titulo: 'Manual del Empleado',
             descripcion:
-                'Guía completa sobre políticas y procedimientos de la empresa',
-            icono: Icons.book,
+                'Guía general de normas, políticas y beneficios de Nutri Leche Ecuador.',
+            icono: Icons.book_outlined,
             color: const Color(0xFF3B82F6),
             contenido: _contenidoManualEmpleado,
-            puedeEditar: tienePermiso,
+            puedeEditar: puedeEditar,
           ),
           _buildDocumentoCard(
             context,
             titulo: 'Código de Conducta',
-            descripcion: 'Normas éticas y de comportamiento profesional',
+            descripcion: 'Principios éticos y comportamiento profesional.',
             icono: Icons.gavel,
             color: const Color(0xFF4ADE80),
             contenido: _contenidoCodigoConducta,
-            puedeEditar: tienePermiso,
+            puedeEditar: puedeEditar,
           ),
           _buildDocumentoCard(
             context,
-            titulo: 'Políticas de Seguridad',
-            descripcion: 'Protocolos de seguridad y salud ocupacional',
-            icono: Icons.security,
+            titulo: 'Políticas de Seguridad y Salud',
+            descripcion:
+                'Protocolos de seguridad industrial y prevención de accidentes.',
+            icono: Icons.health_and_safety,
             color: const Color(0xFFFBBF24),
             contenido: _contenidoPoliticasSeguridad,
-            puedeEditar: tienePermiso,
+            puedeEditar: puedeEditar,
           ),
-          const SizedBox(height: 20),
-          _buildSeccion('Formularios'),
+          const SizedBox(height: 30),
+          _buildTituloSeccion('Formularios de Gestión'),
           _buildDocumentoCard(
             context,
             titulo: 'Solicitud de Vacaciones',
-            descripcion: 'Formato para solicitar días de vacaciones',
+            descripcion: 'Formato oficial para solicitar días de descanso.',
             icono: Icons.beach_access,
             color: const Color(0xFFFF6B6B),
             contenido: _contenidoSolicitudVacaciones,
-            puedeEditar: tienePermiso,
+            puedeEditar: puedeEditar,
           ),
           _buildDocumentoCard(
             context,
             titulo: 'Reporte de Incidentes',
-            descripcion: 'Formato para reportar incidentes de seguridad',
+            descripcion:
+                'Formato para registrar accidentes o situaciones de riesgo.',
             icono: Icons.report_problem,
             color: const Color(0xFFA78BFA),
             contenido: _contenidoReporteIncidentes,
-            puedeEditar: tienePermiso,
+            puedeEditar: puedeEditar,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSeccion(String titulo) {
+  Widget _buildTituloSeccion(String titulo) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Text(
@@ -259,7 +279,7 @@ class RecursosScreen extends StatelessWidget {
   }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
@@ -267,7 +287,7 @@ class RecursosScreen extends StatelessWidget {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icono, color: color),
@@ -285,10 +305,9 @@ class RecursosScreen extends StatelessWidget {
           children: [
             if (puedeEditar)
               IconButton(
-                icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                icon: const Icon(Icons.edit_document, color: Colors.blueAccent),
                 tooltip: 'Editar y descargar',
-                onPressed: () =>
-                    _editarYDescargarPDF(context, titulo, contenido),
+                onPressed: () => _editarYDescargarPDF(context, titulo, contenido),
               ),
             IconButton(
               icon: const Icon(Icons.download, color: Colors.indigo),
@@ -300,8 +319,6 @@ class RecursosScreen extends StatelessWidget {
       ),
     );
   }
-
-  // -------------------- CONTENIDO DE LOS DOCUMENTOS --------------------
 
   static const String _contenidoManualEmpleado = '''
 MANUAL DEL EMPLEADO - NUTRI LECHE ECUADOR
@@ -345,19 +362,19 @@ La información confidencial de la empresa debe ser protegida en todo momento.
 ''';
 
   static const String _contenidoPoliticasSeguridad = '''
-POLÍTICAS DE SEGURIDAD - NUTRI LECHE ECUADOR
+POLÍTICAS DE SEGURIDAD Y SALUD OCUPACIONAL
 
 1. SEGURIDAD EN EL TRABAJO
-- Uso obligatorio de equipo de protección personal
-- Reportar inmediatamente cualquier condición insegura
+- Uso obligatorio de equipo de protección personal.
+- Reportar inmediatamente cualquier condición insegura.
 
 2. EMERGENCIAS
-- Conocer las rutas de evacuación
-- Participar en simulacros de emergencia
+- Conocer las rutas de evacuación.
+- Participar en simulacros de emergencia.
 
 3. PREVENCIÓN DE ACCIDENTES
-- Mantener áreas de trabajo limpias y organizadas
-- Seguir todos los procedimientos de seguridad
+- Mantener áreas de trabajo limpias y organizadas.
+- Seguir todos los procedimientos de seguridad.
 ''';
 
   static const String _contenidoSolicitudVacaciones = '''
@@ -389,18 +406,18 @@ Hora: _______________________
 Ubicación: _______________________
 
 Descripción del incidente:
-_______________________
-_______________________
-_______________________
+_____________________________________________________
+_____________________________________________________
+_____________________________________________________
 
 Personas involucradas:
-_______________________
+_____________________________________________________
 
 Testigos:
-_______________________
+_____________________________________________________
 
 Acciones tomadas:
-_______________________
+_____________________________________________________
 
 Reportado por: _______________________
 Firma: _______________________

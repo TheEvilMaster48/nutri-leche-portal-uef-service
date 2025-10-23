@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(), // cerrar teclado
+        onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -192,7 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 }
 
                                 // Redirigir al menú
-                                Navigator.pushReplacementNamed(context, '/menu');
+                                Navigator.pushReplacementNamed(
+                                    context, '/menu');
                                 debugPrint('➡️ Navegando a /menu');
                               } else {
                                 _mostrarMensaje(

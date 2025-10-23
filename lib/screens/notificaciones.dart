@@ -1,130 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/notificacion_service.dart';
+import '../models/notification_item.dart';
+import '../services/notification_service.dart';
+import '../services/auth_service.dart';
 
-class NotificacionesScreen extends StatelessWidget {
+class NotificacionesScreen extends StatefulWidget {
   const NotificacionesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final notificacionService = context.watch<NotificacionService>();
-    final notificaciones = notificacionService.notificaciones;
+  State<NotificacionesScreen> createState() => _NotificacionesScreenState();
+}
 
+class _NotificacionesScreenState extends State<NotificacionesScreen> {
+  late Future<List<NotificationItem>> _futureNotificaciones;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureNotificaciones = _cargarNotificaciones();
+  }
+
+  Future<List<NotificationItem>> _cargarNotificaciones() async {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final usuarioId = auth.currentUser?.id.toString() ?? "0";
+
+    final data = await NotificationService.obtenerNotificaciones(usuarioId);
+
+    final notificaciones = data.map((n) => NotificationItem(
+          tipo: n['tipo'] ?? '',
+          titulo: n['titulo'] ?? '',
+          detalle: n['detalle'] ?? '',
+          fecha: DateTime.tryParse(n['fecha'] ?? '') ?? DateTime.now(),
+        ));
+
+    final lista = notificaciones.toList();
+    lista.sort((a, b) => b.fecha.compareTo(a.fecha));
+    return lista;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notificaciones', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFFFF6B6B),
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (notificaciones.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.done_all),
-              onPressed: () => notificacionService.marcarTodasComoLeidas(),
-              tooltip: 'Marcar todas como leídas',
-            ),
-        ],
       ),
-      body: notificaciones.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_off, size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text('No hay notificaciones',
-                      style: TextStyle(fontSize: 20, color: Colors.grey[600])),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: notificaciones.length,
-              itemBuilder: (context, index) {
-                final notif = notificaciones[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  elevation: notif.leida ? 0 : 2,
-                  color: notif.leida ? Colors.grey[100] : Colors.white,
-                  child: ListTile(
-                    leading: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: _getColorByType(notif.tipo).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(_getIconByType(notif.tipo),
-                          color: _getColorByType(notif.tipo)),
-                    ),
-                    title: Text(
-                      notif.titulo,
-                      style: TextStyle(
-                        fontWeight:
-                            notif.leida ? FontWeight.normal : FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(notif.mensaje),
-                        if (notif.categoria != null) ...[
-                          const SizedBox(height: 4),
-                          Text('Planta: ${notif.categoria}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                        ],
-                        if (notif.creadoPor != null) ...[
-                          const SizedBox(height: 2),
-                          Text('Creado por: ${notif.creadoPor}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-                        ],
-                        const SizedBox(height: 2),
-                        Text(notif.fecha,
-                            style:
-                                TextStyle(fontSize: 12, color: Colors.grey[600])),
-                      ],
-                    ),
-                    trailing: !notif.leida
-                        ? Container(
-                            width: 12,
-                            height: 12,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFF6B6B),
-                              shape: BoxShape.circle,
-                            ),
-                          )
-                        : null,
-                    onTap: () =>
-                        notificacionService.marcarComoLeida(notif.id),
-                  ),
-                );
-              },
-            ),
+      body: FutureBuilder<List<NotificationItem>>(
+        future: _futureNotificaciones,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No hay notificaciones recientes'));
+          }
+
+          final notificaciones = snapshot.data!;
+          return ListView.builder(
+            itemCount: notificaciones.length,
+            itemBuilder: (context, index) {
+              final notif = notificaciones[index];
+              return ListTile(
+                leading: Icon(
+                  notif.tipo.contains("evento")
+                      ? Icons.event
+                      : notif.tipo.contains("chat")
+                          ? Icons.chat
+                          : Icons.notifications,
+                  color: notif.tipo.contains("evento")
+                      ? Colors.blue
+                      : notif.tipo.contains("chat")
+                          ? Colors.green
+                          : Colors.grey,
+                ),
+                title: Text(
+                  notif.titulo,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  "${notif.detalle}\n${_formatearFecha(notif.fecha)}",
+                  style: const TextStyle(fontSize: 13),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
-  IconData _getIconByType(String tipo) {
-    switch (tipo) {
-      case 'evento':
-        return Icons.event;
-      case 'chat':
-        return Icons.chat;
-      case 'recurso':
-        return Icons.folder;
-      default:
-        return Icons.notifications;
-    }
-  }
-
-  Color _getColorByType(String tipo) {
-    switch (tipo) {
-      case 'evento':
-        return const Color(0xFF3B82F6);
-      case 'chat':
-        return const Color(0xFF4ADE80);
-      case 'recurso':
-        return const Color(0xFFA78BFA);
-      default:
-        return const Color(0xFFFF6B6B);
-    }
+  String _formatearFecha(DateTime fecha) {
+    return "${fecha.day}/${fecha.month}/${fecha.year} ${fecha.hour}:${fecha.minute.toString().padLeft(2, '0')}";
   }
 }

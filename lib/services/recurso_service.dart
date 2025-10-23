@@ -5,7 +5,7 @@ import '../models/usuario.dart';
 
 class RecursoService {
   final String baseUrl =
-      'http://10.170.4.15:8080/nutrisoft/rest/app/api/v1';
+      'https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1';
 
   // Obtener todos los recursos del backend UEF Service
   Future<List<Recurso>> obtenerRecursos(Usuario usuario) async {

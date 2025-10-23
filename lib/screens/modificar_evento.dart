@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-// import 'package:file_picker/file_picker.dart';
 
 import '../models/evento.dart' as evento_model;
 import '../models/usuario.dart';
@@ -23,8 +22,6 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
   final _fechaController = TextEditingController();
 
   File? _imagen;
-  // File? _archivo;
-
   String? _horaSeleccionada;
   final ImagePicker _picker = ImagePicker();
   bool _modoEdicion = false;
@@ -39,7 +36,6 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     final evento_model.Evento? evento =
         ModalRoute.of(context)?.settings.arguments as evento_model.Evento?;
 
@@ -56,12 +52,6 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
       if (evento.imagenPath != null && evento.imagenPath!.isNotEmpty) {
         _imagen = File(evento.imagenPath!);
       }
-
-      /*
-       if (evento.archivoPath != null && evento.archivoPath!.isNotEmpty) {
-         _archivo = File(evento.archivoPath!);
-       }
-      */
     }
   }
 
@@ -70,26 +60,9 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
     if (!mounted) return;
     if (image != null) {
       setState(() => _imagen = File(image.path));
-      NotificationBanner.show(
-          context, 'Imagen seleccionada', NotificationType.success);
+      NotificationBanner.show(context, 'Imagen seleccionada', NotificationType.success);
     }
   }
-
-  // Boton Archivo
-  /*
-  Future<void> _seleccionarArchivo() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx'],
-    );
-    if (!mounted) return;
-    if (result != null) {
-      setState(() => _archivo = File(result.files.single.path!));
-      NotificationBanner.show(
-          context, 'Documento seleccionado', NotificationType.success);
-    }
-  }
-  */
 
   Future<void> _seleccionarFecha() async {
     final DateTime? picked = await showDatePicker(
@@ -112,8 +85,7 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
         _descripcionController.text.isEmpty ||
         _fechaController.text.isEmpty ||
         _horaSeleccionada == null) {
-      NotificationBanner.show(
-          context, 'Completa todos los campos', NotificationType.error);
+      NotificationBanner.show(context, 'Completa todos los campos', NotificationType.error);
       return;
     }
 
@@ -122,8 +94,7 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
     final Usuario? usuarioActual = authService.currentUser;
 
     if (usuarioActual == null) {
-      NotificationBanner.show(
-          context, 'No hay sesión activa', NotificationType.error);
+      NotificationBanner.show(context, 'No hay sesión activa', NotificationType.error);
       return;
     }
 
@@ -144,19 +115,16 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
     try {
       if (_modoEdicion) {
         await eventoService.modificarEvento(evento.id, evento, usuarioActual);
-        NotificationBanner.show(
-            context, 'Evento modificado exitosamente', NotificationType.success);
+        NotificationBanner.show(context, 'Evento modificado exitosamente', NotificationType.success);
       } else {
         await eventoService.crearEvento(evento, usuarioActual);
-        NotificationBanner.show(
-            context, 'Evento creado exitosamente', NotificationType.success);
+        NotificationBanner.show(context, 'Evento creado exitosamente', NotificationType.success);
       }
 
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
-      NotificationBanner.show(
-          context, 'Error: ${e.toString()}', NotificationType.error);
+      NotificationBanner.show(context, 'Error: ${e.toString()}', NotificationType.error);
     }
   }
 
@@ -207,13 +175,11 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              initialValue: _horaSeleccionada,
+              value: _horaSeleccionada,
               items: _horasDisponibles
-                  .map((hora) =>
-                      DropdownMenuItem(value: hora, child: Text(hora)))
+                  .map((hora) => DropdownMenuItem(value: hora, child: Text(hora)))
                   .toList(),
-              onChanged: (valor) =>
-                  setState(() => _horaSeleccionada = valor),
+              onChanged: (valor) => setState(() => _horaSeleccionada = valor),
               decoration: const InputDecoration(
                 labelText: 'Hora del evento *',
                 prefixIcon: Icon(Icons.access_time),
@@ -224,36 +190,19 @@ class _ModificarEventoScreenState extends State<ModificarEventoScreen> {
             OutlinedButton.icon(
               onPressed: _seleccionarImagen,
               icon: const Icon(Icons.image),
-              label: Text(
-                  _imagen == null ? 'Añadir Imagen' : 'Cambiar Imagen'),
+              label: Text(_imagen == null ? 'Añadir Imagen' : 'Cambiar Imagen'),
             ),
-            const SizedBox(height: 16),
-
-            // Botón Archivo
-            /*
-            OutlinedButton.icon(
-              onPressed: _seleccionarArchivo,
-              icon: const Icon(Icons.attach_file),
-              label: Text(_archivo == null
-                  ? 'Añadir Archivo'
-                  : 'Cambiar Archivo'),
-            ),
-            const SizedBox(height: 32),
-            */
-
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _guardarEvento,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3B82F6),
                 padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(
                 _modoEdicion ? 'Guardar Cambios' : 'Crear Evento',
-                style:
-                    const TextStyle(color: Colors.white, fontSize: 16),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
           ],
