@@ -6,6 +6,8 @@ import '../services/notification_service.dart';
 import '../core/notification_banner.dart';
 import '../models/notification_item.dart';
 import '../models/usuario.dart';
+import '../core/notification_banner.dart' show NotificationBanner, NotificationType;
+import '../models/notification_item.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});

@@ -32,14 +32,9 @@ import 'screens/eventos.dart';
 import 'screens/notificaciones.dart';
 import 'screens/chat.dart';
 import 'screens/recursos.dart';
-import 'screens/nuevo_chat.dart';
+//import 'screens/nuevo_chat.dart';
 import 'screens/chat_detalle.dart';
 import 'screens/crear_evento.dart';
-import 'screens/configuracion_screen.dart';
-import 'screens/ayuda_screen.dart';
-import 'screens/acerca_screen.dart';
-import 'screens/noticias.dart';
-import 'screens/crear_publicacion.dart';
 import 'screens/perfil.dart';
 
 Future<void> main() async {
@@ -90,15 +85,6 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('es', 'ES'),
-            Locale('en', 'US'),
-          ],
-          locale: localeProvider.locale ?? const Locale('es', 'ES'),
-          theme: ThemeData(
-            colorSchemeSeed: Colors.blue,
-            useMaterial3: true,
-          ),
           initialRoute: '/',
           routes: {
             '/': (context) => const LoginScreen(),

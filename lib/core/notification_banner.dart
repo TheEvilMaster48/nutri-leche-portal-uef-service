@@ -2,15 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/notification_item.dart';
 
-// Tipos de notificación disponibles
-enum NotificationType {
-  success,
-  error,
-  info,
-  warning,
-}
+// TIPOS DE NOTIFICACIÓN DISPONIBLES
+enum NotificationType { success, error, info, warning }
 
-// Banner Flotante
+// CLASE PRINCIPAL DEL BANNER FLOTANTE
 class NotificationBanner extends StatefulWidget {
   final Future<List<NotificationItem>> Function()? load;
   final void Function(NotificationItem item)? onTapItem;
@@ -26,52 +21,96 @@ class NotificationBanner extends StatefulWidget {
   @override
   State<NotificationBanner> createState() => _NotificationBannerState();
 
-  //  Método estático para SnackBars simples (crear/modificar evento)
+  // MÉTODO ESTÁTICO GLOBAL — TODAS LAS NOTIFICACIONES SE MUESTRAN ARRIBA A LA DERECHA
   static void show(BuildContext context, String message, NotificationType type) {
-    final color = switch (type) {
-      NotificationType.success => Colors.green.shade600,
-      NotificationType.error => Colors.redAccent,
-      NotificationType.warning => Colors.orange.shade700,
-      NotificationType.info => Colors.blueAccent,
-    };
+    final overlay = Overlay.of(context);
+    if (overlay == null) return;
 
-    final icon = switch (type) {
-      NotificationType.success => Icons.check_circle,
-      NotificationType.error => Icons.error,
-      NotificationType.warning => Icons.warning_amber_rounded,
-      NotificationType.info => Icons.info_outline,
-    };
+    // CONFIGURACIÓN DE COLOR E ICONO
+    Color bgColor;
+    IconData icon;
+    switch (type) {
+      case NotificationType.success:
+        bgColor = Colors.green.shade600;
+        icon = Icons.check_circle_outline;
+        break;
+      case NotificationType.error:
+        bgColor = Colors.redAccent;
+        icon = Icons.error_outline;
+        break;
+      case NotificationType.warning:
+        bgColor = Colors.orange.shade700;
+        icon = Icons.warning_amber_rounded;
+        break;
+      case NotificationType.info:
+      default:
+        bgColor = Colors.blueAccent;
+        icon = Icons.info_outline;
+        break;
+    }
 
-    // ⏱ Duraciones actualizadas
-    final duration = Duration(
-      seconds: (type == NotificationType.success || type == NotificationType.info)
-          ? 10
-          : 20,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white),
+    // DECLARAR LA VARIABLE ENTRY ANTES DE USARLA
+    OverlayEntry? entry;
+    entry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 60,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 200),
+            offset: const Offset(0, 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              width: 360,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                    onPressed: () => entry?.remove(),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: duration,
       ),
     );
+
+    overlay.insert(entry);
+
+    // SE CIERRA AUTOMÁTICAMENTE TRAS 5 SEGUNDOS
+    Future.delayed(const Duration(seconds: 5)).then((_) {
+      entry?.remove();
+    });
   }
 }
 
+// BANNER AUTOMÁTICO PARA CARGA DE NOTIFICACIONES DEL BACKEND
 class _NotificationBannerState extends State<NotificationBanner> {
   List<NotificationItem> _items = [];
   Timer? _timer;
@@ -82,7 +121,6 @@ class _NotificationBannerState extends State<NotificationBanner> {
     super.initState();
     _refresh();
 
-    // Recarga automática cada 2 minutos
     if (widget.load != null) {
       _timer = Timer.periodic(const Duration(minutes: 2), (_) => _refresh());
     }
@@ -104,7 +142,6 @@ class _NotificationBannerState extends State<NotificationBanner> {
     _autoHideTimer?.cancel();
     final tipo = item.tipo.toLowerCase();
 
-    // ⏱ Ajustar duración automática
     int seconds = 10;
     if (tipo.contains('error') || tipo.contains('urgente') || tipo.contains('warning')) {
       seconds = 20;
@@ -113,16 +150,6 @@ class _NotificationBannerState extends State<NotificationBanner> {
     _autoHideTimer = Timer(Duration(seconds: seconds), () {
       if (mounted) setState(() => _items = []);
     });
-
-    // Recordatorio cada 2 minutos solo para eventos o notificaciones Urgentes
-    if (tipo.contains('error') || tipo.contains('urgente') || tipo.contains('warning')) {
-      Timer(const Duration(minutes: 2), () {
-        if (mounted && _items.isEmpty) {
-          setState(() => _items = [item]);
-          _startAutoHide(item);
-        }
-      });
-    }
   }
 
   @override
