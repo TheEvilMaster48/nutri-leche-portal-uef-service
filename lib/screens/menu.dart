@@ -20,13 +20,17 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
-    // Opcional: notificación inicial al entrar
+
+    // MOSTRAR MENSAJE DE BIENVENIDA
     Future.delayed(const Duration(seconds: 1), () {
       final auth = context.read<AuthService>();
-      auth.showNotification("Bienvenido ${auth.currentUser?.nombre ?? ''}", "success");
+      auth.showNotification(
+        "Bienvenido ${auth.currentUser?.nombre ?? ''}",
+        "success",
+      );
     });
 
-    // Actualización automática cada 2 minutos
+    // TEMPORIZADOR DE REFRESCO AUTOMATICO
     _timer = Timer.periodic(const Duration(minutes: 2), (_) {
       setState(() {});
     });
@@ -44,6 +48,7 @@ class _MenuScreenState extends State<MenuScreen> {
     final Usuario? usuario = auth.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    // LISTA DE MODULOS DEL MENU PRINCIPAL
     final List<Map<String, dynamic>> menus = [
       {
         'titulo': 'Eventos',
@@ -61,21 +66,63 @@ class _MenuScreenState extends State<MenuScreen> {
       },
       {
         'titulo': 'Chat',
-        'subtitulo': 'Comunicación interna',
+        'subtitulo': 'Comunicacion interna',
         'icono': Icons.chat_rounded,
         'ruta': '/chat',
         'colores': [const Color(0xFF009607), const Color(0xFF81C784)],
       },
       {
         'titulo': 'Recursos',
-        'subtitulo': 'Descargar y administrar documentos',
+        'subtitulo': 'Documentos y archivos compartidos',
         'icono': Icons.folder_copy_rounded,
         'ruta': '/recursos',
         'colores': [const Color(0xFF9D00FF), const Color(0xFF9575CD)],
       },
       {
+        'titulo': 'Reconocimientos',
+        'subtitulo': 'Premios y logros de empleados',
+        'icono': Icons.emoji_events_rounded,
+        'ruta': '/reconocimientos',
+        'colores': [const Color(0xFFFFC107), const Color(0xFFFFE082)],
+      },
+      {
+        'titulo': 'Beneficios',
+        'subtitulo': 'Programas y descuentos exclusivos',
+        'icono': Icons.card_giftcard_rounded,
+        'ruta': '/beneficios',
+        'colores': [const Color(0xFF00BCD4), const Color(0xFF4DD0E1)],
+      },
+      {
+        'titulo': 'Cumpleaños y aniversarios',
+        'subtitulo': 'Celebra junto a tus compañeros',
+        'icono': Icons.cake_rounded,
+        'ruta': '/celebraciones',
+        'colores': [const Color(0xFFE91E63), const Color(0xFFF48FB1)],
+      },
+      {
+        'titulo': 'Calendario y eventos',
+        'subtitulo': 'Agenda de actividades laborales',
+        'icono': Icons.calendar_month_rounded,
+        'ruta': '/calendario_eventos',
+        'colores': [const Color(0xFF3F51B5), const Color(0xFF7986CB)],
+      },
+      {
+        'titulo': 'Agenda',
+        'subtitulo': 'Organiza tus reuniones y tareas',
+        'icono': Icons.schedule_rounded,
+        'ruta': '/agenda',
+        'colores': [const Color(0xFF4CAF50), const Color(0xFFA5D6A7)],
+      },
+      {
+        'titulo': 'Buzon de sugerencias',
+        'subtitulo': 'Envia tus ideas y comentarios',
+        'icono': Icons.mail_rounded,
+        'ruta': '/buzon',
+        'colores': [const Color(0xFFFF5722), const Color(0xFFFFAB91)],
+      },
+      {
         'titulo': 'Perfil',
-        'subtitulo': 'Ver y editar información personal',
+        'subtitulo': 'Ver informacion personal',
         'icono': Icons.person_rounded,
         'ruta': '/perfil',
         'colores': [const Color(0xFFFF9900), const Color(0xFFFFB74D)],
@@ -83,17 +130,43 @@ class _MenuScreenState extends State<MenuScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 1, 121, 145),
       body: SafeArea(
         child: Stack(
           children: [
+            // FONDO CON GRADIENTE
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF01579B),
+                    Color(0xFF0277BD),
+                    Color(0xFF03A9F4),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+
+            // LOGO CENTRADO DE FONDO
+            Align(
+              alignment: Alignment.center,
+              child: Image.asset(
+                'assets/icono/nutrileche.png',
+                width: 700,
+                height: 700,
+                fit: BoxFit.contain,
+              ),
+            ),
+
+            // CONTENIDO PRINCIPAL DESPLAZABLE
             SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                 child: Column(
                   children: [
-                    // 🔹 Botón cerrar sesión
+                    // BOTON CERRAR SESION
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -105,12 +178,12 @@ class _MenuScreenState extends State<MenuScreen> {
                             }
                           },
                           icon: const Icon(Icons.logout, color: Colors.white),
-                          tooltip: 'Cerrar Sesión',
+                          tooltip: 'Cerrar Sesion',
                         ),
                       ],
                     ),
 
-                    // 🔹 Foto de perfil del usuario
+                    // AVATAR DEL USUARIO
                     Container(
                       width: 130,
                       height: 130,
@@ -136,21 +209,14 @@ class _MenuScreenState extends State<MenuScreen> {
                               imageUrl,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.person,
-                                  size: 100,
-                                  color: Colors.white70,
-                                );
+                                return const Icon(Icons.person,
+                                    size: 100, color: Colors.white70);
                               },
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
-                                return Center(
+                                return const Center(
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                            (loadingProgress.expectedTotalBytes ?? 1)
-                                        : null,
                                   ),
                                 );
                               },
@@ -162,7 +228,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                     const SizedBox(height: 16),
 
-                    // 🔹 Nombre del usuario
+                    // NOMBRE DEL USUARIO
                     Text(
                       usuario?.nombre.toUpperCase() ?? '',
                       style: const TextStyle(
@@ -173,7 +239,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       textAlign: TextAlign.center,
                     ),
 
-                    // 🔹 Cargo o área del usuario
+                    // CARGO O AREA
                     Text(
                       _obtenerDescripcionUsuario(usuario),
                       style: const TextStyle(
@@ -184,27 +250,19 @@ class _MenuScreenState extends State<MenuScreen> {
 
                     const SizedBox(height: 20),
 
-                    // 🔹 Línea divisoria
+                    // LINEA DECORATIVA
                     Container(
                       height: 4,
                       width: screenWidth * 0.9,
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.6),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                     ),
 
                     const SizedBox(height: 30),
 
-                    // 🔹 Menús principales
+                    // MENUS DE MODULOS
                     Wrap(
                       spacing: 18,
                       runSpacing: 18,
@@ -229,23 +287,22 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
 
-            // 🔔 Banner flotante de notificaciones (esquina superior derecha)
+            // NOTIFICACIONES DESDE AUTH O BACKEND
             NotificationBanner(
               load: () async {
                 final auth = context.read<AuthService>();
                 final usuario = auth.currentUser;
 
-                // Mostrar mensajes locales de sesión (login/logout)
                 if (auth.currentNotification != null) {
                   final notif = auth.currentNotification!;
                   return [
                     NotificationItem(
-                      id: 'banner_sesion',
+                      id: 'local_banner',
                       tipo: notif['type'] ?? 'info',
                       titulo: notif['type'] == 'success'
-                          ? 'Inicio de Sesión Exitoso'
+                          ? 'Inicio de Sesion Exitoso'
                           : notif['type'] == 'error'
-                              ? 'Error en Sesión'
+                              ? 'Error en Sesion'
                               : 'Aviso del Sistema',
                       detalle: notif['message'] ?? '',
                       refId: '',
@@ -254,15 +311,16 @@ class _MenuScreenState extends State<MenuScreen> {
                   ];
                 }
 
-                // Si hay usuario, traer notificaciones reales del backend
                 if (usuario != null) {
-                  final data = await NotificationService.obtenerNotificaciones(usuario.id.toString());
+                  final data = await NotificationService.obtenerNotificaciones(
+                      usuario.id.toString());
                   return data.map((n) {
                     return NotificationItem(
                       tipo: n['tipo'] ?? 'info',
-                      titulo: n['titulo'] ?? 'Notificación',
+                      titulo: n['titulo'] ?? 'Notificacion',
                       detalle: n['detalle'] ?? '',
-                      fecha: DateTime.tryParse(n['fecha'] ?? '') ?? DateTime.now(),
+                      fecha: DateTime.tryParse(n['fecha'] ?? '') ??
+                          DateTime.now(),
                     );
                   }).toList();
                 }
@@ -277,13 +335,15 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  // OBTENER DESCRIPCION LEGIBLE DEL USUARIO
   String _obtenerDescripcionUsuario(Usuario? usuario) {
     if (usuario == null) return 'Sin datos de usuario';
-    if (usuario.areaUsuario.isNotEmpty) return 'Área: ${usuario.areaUsuario}';
+    if (usuario.areaUsuario.isNotEmpty) return 'Area: ${usuario.areaUsuario}';
     if (usuario.cargo.isNotEmpty) return 'Cargo: ${usuario.cargo}';
     return 'Empleado Nutri Leche';
   }
 
+  // CONSTRUCCION DE CADA TARJETA DEL MENU PRINCIPAL
   Widget _buildMenuButton(
     BuildContext context,
     String title,

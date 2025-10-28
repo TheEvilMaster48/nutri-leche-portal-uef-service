@@ -22,7 +22,7 @@ dependencies:
 
   # Utilidades
   uuid: ^4.5.1
-  provider: ^6.1.2
+  provider: ^6.1.5+1
   shared_preferences: ^2.5.3
 
   # Localización e internacionalización
@@ -33,7 +33,7 @@ dependencies:
 
   # Archivos y multimedia
   path_provider: ^2.1.4
-  file_picker: ^8.1.2
+  file_picker: ^10.3.3
   image_picker: ^1.1.2
 
   # PDF y herramientas
@@ -43,6 +43,8 @@ dependencies:
   # Íconos del App
   flutter_launcher_icons: ^0.14.4
   http: ^1.5.0
+  open_filex: ^4.7.0
+  table_calendar: ^3.2.0
 
 dev_dependencies:
   flutter_test:

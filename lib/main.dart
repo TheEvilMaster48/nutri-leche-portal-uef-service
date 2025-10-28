@@ -1,16 +1,30 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
+import 'package:nutri_leche/screens/celebracion_screen.dart';
+import 'package:nutri_leche/screens/cumpleanios_screen.dart';
+import 'package:nutri_leche/screens/sugerencia_screen.dart';
+import 'package:nutri_leche/screens/calendario_evento_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:nutri_leche/screens/agenda_screen.dart';
+import 'package:nutri_leche/screens/beneficios_screen.dart';
+import 'package:nutri_leche/screens/reconocimientos_screen.dart';
 
-// Core y servicios principales
+// CORE Y SERVICIOS PRINCIPALES
 import 'core/locale_provider.dart';
 import 'services/auth_service.dart';
 import 'services/evento_service.dart';
 import 'services/usuario_service.dart';
 import 'services/global_notifier.dart';
 import 'services/language_service.dart';
+import 'services/agenda_service.dart';
+import 'services/reconocimiento_service.dart';
+import 'services/beneficio_service.dart';
+import 'services/celebracion_service.dart';
+import 'services/sugerencia_service.dart';
+import 'services/calendario_evento_service.dart';
+import 'services/perfil_service.dart';
 
-// Pantallas principales
+// PANTALLAS PRINCIPALES
 import 'screens/login.dart';
 import 'screens/registro.dart';
 import 'screens/menu.dart';
@@ -27,7 +41,6 @@ import 'screens/acerca_screen.dart';
 import 'screens/noticias.dart';
 import 'screens/crear_publicacion.dart';
 import 'screens/perfil.dart';
-import 'services/perfil_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,14 +54,23 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => UsuarioService()),
         ChangeNotifierProvider(create: (_) => GlobalNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageService()),
+        ChangeNotifierProvider(create: (_) => AgendaService()),
+        ChangeNotifierProvider(create: (_) => ReconocimientoService()),
+        ChangeNotifierProvider(create: (_) => BeneficioService()),
+        ChangeNotifierProvider(create: (_) => CelebracionService()),
+        ChangeNotifierProvider(create: (_) => SugerenciaService()),
+        ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
 
-        // PerfilService
+        // PERFIL SERVICE DEPENDIENTE DE AUTHSERVICE
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
           update: (context, auth, previous) => PerfilService(auth),
         ),
       ],
-      child: const MyApp(),
+      builder: (context, child) {
+        // IMPORTANTE: ASEGURA QUE TODOS LOS PROVIDERS ESTÉN DISPONIBLES ANTES DE CONSTRUIR LA APP
+        return const MyApp();
+      },
     ),
   );
 }
@@ -77,7 +99,6 @@ class MyApp extends StatelessWidget {
             colorSchemeSeed: Colors.blue,
             useMaterial3: true,
           ),
-
           initialRoute: '/',
           routes: {
             '/': (context) => const LoginScreen(),
@@ -87,13 +108,15 @@ class MyApp extends StatelessWidget {
             '/notificaciones': (context) => const NotificacionesScreen(),
             '/chat': (context) => const ChatScreen(),
             '/recursos': (context) => const RecursosScreen(),
-            '/nuevo_chat': (context) => const NuevoChatScreen(contacts: []),
             '/crear_evento': (context) => const CrearEventoScreen(),
-            '/configuracion': (context) => const ConfiguracionScreen(),
-            '/ayuda': (context) => const AyudaScreen(),
-            '/acerca': (context) => const AcercaScreen(),
-            '/noticias': (context) => const NoticiasScreen(),
-            '/crear_publicacion': (context) => const CrearPublicacionScreen(),
+            '/agenda': (context) => const AgendaScreen(),
+            '/reconocimientos': (context) => const ReconocimientosScreen(),
+            '/beneficios': (context) => const BeneficiosScreen(),
+            '/celebraciones': (context) => const CelebracionesScreen(),
+            '/agenda': (context) => const AgendaScreen(),
+            '/buzon': (context) => const SugerenciaScreen(),
+            '/cumpleanios': (context) => const CumpleaniosScreen(),
+            '/calendario_eventos': (context) => const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
           },
           onGenerateRoute: (settings) {
