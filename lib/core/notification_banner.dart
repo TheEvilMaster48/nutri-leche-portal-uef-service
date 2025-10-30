@@ -110,7 +110,7 @@ class NotificationBanner extends StatefulWidget {
   }
 }
 
-// BANNER AUTOMÁTICO PARA CARGA DE NOTIFICACIONES DEL BACKEND
+// BANNER AUTOMÁTICO PARA CARGA DE NOTIFICACIONES 
 class _NotificationBannerState extends State<NotificationBanner> {
   List<NotificationItem> _items = [];
   Timer? _timer;

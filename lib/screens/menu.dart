@@ -60,13 +60,6 @@ class _MenuScreenState extends State<MenuScreen> {
         'colores': [const Color(0xFF0048FF), const Color(0xFF64B5F6)],
       },
       {
-        'titulo': 'Noticias',
-        'subtitulo': 'Lee las últimas novedades y comunicados internos',
-        'icono': Icons.newspaper_rounded,
-        'ruta': '/noticias',
-        'colores': [const Color(0xFF00796B), const Color(0xFF4DB6AC)],
-      },
-      {
         'titulo': 'Notificaciones',
         'subtitulo': 'Ver avisos importantes del sistema',
         'icono': Icons.notifications_active_rounded,
@@ -81,11 +74,11 @@ class _MenuScreenState extends State<MenuScreen> {
         'colores': [const Color(0xFF009607), const Color(0xFF81C784)],
       },
       {
-        'titulo': 'Recursos',
-        'subtitulo': 'Documentos y archivos compartidos',
-        'icono': Icons.folder_copy_rounded,
-        'ruta': '/recursos',
-        'colores': [const Color(0xFF9D00FF), const Color(0xFF9575CD)],
+        'titulo': 'Noticias',
+        'subtitulo': 'Lee las últimas novedades y comunicados internos',
+        'icono': Icons.newspaper_rounded,
+        'ruta': '/noticias',
+        'colores': [const Color(0xFF00796B), const Color(0xFF4DB6AC)],
       },
       {
         'titulo': 'Reconocimientos',
@@ -114,6 +107,13 @@ class _MenuScreenState extends State<MenuScreen> {
         'icono': Icons.schedule_rounded,
         'ruta': '/agenda',
         'colores': [const Color(0xFF4CAF50), const Color(0xFFA5D6A7)],
+      },
+      {
+        'titulo': 'Recursos',
+        'subtitulo': 'Documentos y archivos compartidos',
+        'icono': Icons.folder_copy_rounded,
+        'ruta': '/recursos',
+        'colores': [const Color(0xFF9D00FF), const Color(0xFF9575CD)],
       },
       {
         'titulo': 'Buzón de sugerencias',
