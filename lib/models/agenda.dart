@@ -21,7 +21,7 @@ class Agenda {
     return Agenda(
       id: json['id'] is int
           ? json['id']
-          : int.tryParse(json['id'].toString()) ?? 0,
+          : int.tryParse(json['id']?.toString() ?? '') ?? 0,
       titulo: json['titulo'] ?? json['title'] ?? '',
       descripcion: json['descripcion'] ?? json['description'] ?? '',
       fecha: DateTime.tryParse(json['fecha'] ?? json['date'] ?? '') ??

@@ -11,25 +11,33 @@ class EventoService extends ChangeNotifier {
   static const String baseUrl =
       "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/eventos";
 
-  // Obtener Todos los Eventos (Backend UEF Services)
+  // OBTENER TODOS LOS EVENTOS (BACKEND UEF SERVICES)
   Future<void> obtenerEventos() async {
     try {
       final response = await http.get(Uri.parse(baseUrl));
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final lista = data is List ? data : data['data'] ?? [];
         _eventos = lista.map<Evento>((e) => Evento.fromJson(e)).toList();
         notifyListeners();
+      } else if (response.statusCode == 404) {
+        // NO ROMPER LA APP SI NO EXISTEN EVENTOS
+        debugPrint("⚠️ No se encontraron eventos (404).");
+        _eventos = [];
+        notifyListeners();
       } else {
-        throw Exception("Error al cargar eventos (${response.statusCode})");
+        debugPrint("⚠️ Error al cargar eventos (${response.statusCode}).");
+        _eventos = [];
+        notifyListeners();
       }
     } catch (e) {
-      debugPrint("❌ Error obteniendo eventos: $e");
-      rethrow;
+      debugPrint("❌ Excepción controlada al obtener eventos: $e");
+      // NO rethrow — así evitamos mostrar el stacktrace completo
     }
   }
 
-  //  Crear Evento
+  // CREAR EVENTO
   Future<void> crearEvento(Evento nuevoEvento, Usuario usuarioActual) async {
     try {
       final body = jsonEncode({
@@ -50,17 +58,17 @@ class EventoService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint("✅ Evento creado correctamente.");
         await obtenerEventos();
       } else {
-        throw Exception("Error al crear evento (${response.statusCode})");
+        debugPrint("⚠️ Error al crear evento (${response.statusCode}).");
       }
     } catch (e) {
-      debugPrint("❌ Error creando evento: $e");
-      rethrow;
+      debugPrint("❌ Excepción controlada al crear evento: $e");
     }
   }
 
-  //  Editar Evento Existente
+  // EDITAR EVENTO EXISTENTE
   Future<void> modificarEvento(
       String id, Evento eventoActualizado, Usuario usuarioActual) async {
     try {
@@ -82,29 +90,31 @@ class EventoService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
+        debugPrint("📝 Evento modificado correctamente.");
         await obtenerEventos();
       } else {
-        throw Exception("Error al actualizar evento (${response.statusCode})");
+        debugPrint("⚠️ Error al actualizar evento (${response.statusCode}).");
       }
     } catch (e) {
-      debugPrint("❌ Error modificando evento: $e");
-      rethrow;
+      debugPrint("❌ Excepción controlada al modificar evento: $e");
     }
   }
 
-  // Eliminar Evento
+  // ELIMINAR EVENTO
   Future<void> eliminarEvento(String id) async {
     try {
       final response = await http.delete(Uri.parse("$baseUrl/$id"));
       if (response.statusCode == 200) {
+        debugPrint("🗑️ Evento eliminado correctamente.");
         _eventos.removeWhere((e) => e.id == id);
         notifyListeners();
+      } else if (response.statusCode == 404) {
+        debugPrint("⚠️ Evento no encontrado al eliminar (404).");
       } else {
-        throw Exception("Error al eliminar evento (${response.statusCode})");
+        debugPrint("⚠️ Error al eliminar evento (${response.statusCode}).");
       }
     } catch (e) {
-      debugPrint("❌ Error eliminando evento: $e");
-      rethrow;
+      debugPrint("❌ Excepción controlada al eliminar evento: $e");
     }
   }
 }

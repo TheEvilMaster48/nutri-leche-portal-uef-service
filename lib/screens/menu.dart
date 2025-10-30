@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
-import '../core/notification_banner.dart';
+import '../core/notification_banner.dart'
+    show NotificationBanner, NotificationType;
 import '../models/notification_item.dart';
 import '../models/usuario.dart';
-import '../core/notification_banner.dart' show NotificationBanner, NotificationType;
-import '../models/notification_item.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -32,7 +31,7 @@ class _MenuScreenState extends State<MenuScreen> {
       );
     });
 
-    // TEMPORIZADOR DE REFRESCO AUTOMATICO
+    // TEMPORIZADOR DE REFRESCO AUTOMÁTICO
     _timer = Timer.periodic(const Duration(minutes: 2), (_) {
       setState(() {});
     });
@@ -50,14 +49,22 @@ class _MenuScreenState extends State<MenuScreen> {
     final Usuario? usuario = auth.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // LISTA DE MODULOS DEL MENU PRINCIPAL
+    // LISTA DE MÓDULOS DEL MENÚ PRINCIPAL
     final List<Map<String, dynamic>> menus = [
       {
-        'titulo': 'Eventos',
-        'subtitulo': 'Ver calendario y actividades',
+        'titulo': 'Eventos y Celebraciones Corporativas',
+        'subtitulo':
+            'Consulta y registra actividades, cumpleaños y aniversarios del equipo',
         'icono': Icons.event_available_rounded,
-        'ruta': '/eventos',
+        'ruta': '/celebraciones',
         'colores': [const Color(0xFF0048FF), const Color(0xFF64B5F6)],
+      },
+      {
+        'titulo': 'Noticias',
+        'subtitulo': 'Lee las últimas novedades y comunicados internos',
+        'icono': Icons.newspaper_rounded,
+        'ruta': '/noticias',
+        'colores': [const Color(0xFF00796B), const Color(0xFF4DB6AC)],
       },
       {
         'titulo': 'Notificaciones',
@@ -68,7 +75,7 @@ class _MenuScreenState extends State<MenuScreen> {
       },
       {
         'titulo': 'Chat',
-        'subtitulo': 'Comunicacion interna',
+        'subtitulo': 'Comunicación interna',
         'icono': Icons.chat_rounded,
         'ruta': '/chat',
         'colores': [const Color(0xFF009607), const Color(0xFF81C784)],
@@ -95,14 +102,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'colores': [const Color(0xFF00BCD4), const Color(0xFF4DD0E1)],
       },
       {
-        'titulo': 'Cumpleaños y aniversarios',
-        'subtitulo': 'Celebra junto a tus compañeros',
-        'icono': Icons.cake_rounded,
-        'ruta': '/celebraciones',
-        'colores': [const Color(0xFFE91E63), const Color(0xFFF48FB1)],
-      },
-      {
-        'titulo': 'Calendario y eventos',
+        'titulo': 'Calendario',
         'subtitulo': 'Agenda de actividades laborales',
         'icono': Icons.calendar_month_rounded,
         'ruta': '/calendario_eventos',
@@ -116,15 +116,15 @@ class _MenuScreenState extends State<MenuScreen> {
         'colores': [const Color(0xFF4CAF50), const Color(0xFFA5D6A7)],
       },
       {
-        'titulo': 'Buzon de sugerencias',
-        'subtitulo': 'Envia tus ideas y comentarios',
+        'titulo': 'Buzón de sugerencias',
+        'subtitulo': 'Envía tus ideas y comentarios',
         'icono': Icons.mail_rounded,
         'ruta': '/buzon',
         'colores': [const Color(0xFFFF5722), const Color(0xFFFFAB91)],
       },
       {
         'titulo': 'Perfil',
-        'subtitulo': 'Ver informacion personal',
+        'subtitulo': 'Ver información personal',
         'icono': Icons.person_rounded,
         'ruta': '/perfil',
         'colores': [const Color(0xFFFF9900), const Color(0xFFFFB74D)],
@@ -150,7 +150,7 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
 
-            // LOGO CENTRADO DE FONDO
+            // LOGO DE FONDO
             Align(
               alignment: Alignment.center,
               child: Image.asset(
@@ -161,14 +161,15 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
 
-            // CONTENIDO PRINCIPAL DESPLAZABLE
+            // CONTENIDO PRINCIPAL
             SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                 child: Column(
                   children: [
-                    // BOTON CERRAR SESION
+                    // BOTÓN CERRAR SESIÓN
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -180,12 +181,12 @@ class _MenuScreenState extends State<MenuScreen> {
                             }
                           },
                           icon: const Icon(Icons.logout, color: Colors.white),
-                          tooltip: 'Cerrar Sesion',
+                          tooltip: 'Cerrar sesión',
                         ),
                       ],
                     ),
 
-                    // AVATAR DEL USUARIO
+                    // AVATAR
                     Container(
                       width: 130,
                       height: 130,
@@ -210,16 +211,17 @@ class _MenuScreenState extends State<MenuScreen> {
                             return Image.network(
                               imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.person,
-                                    size: 100, color: Colors.white70);
-                              },
-                              loadingBuilder: (context, child, loadingProgress) {
+                              errorBuilder:
+                                  (context, error, stackTrace) => const Icon(
+                                      Icons.person,
+                                      size: 100,
+                                      color: Colors.white70),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return const Center(
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
+                                      color: Colors.white),
                                 );
                               },
                             );
@@ -241,7 +243,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       textAlign: TextAlign.center,
                     ),
 
-                    // CARGO O AREA
+                    // ÁREA O CARGO
                     Text(
                       _obtenerDescripcionUsuario(usuario),
                       style: const TextStyle(
@@ -252,7 +254,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                     const SizedBox(height: 20),
 
-                    // LINEA DECORATIVA
+                    // LÍNEA DIVISORIA
                     Container(
                       height: 4,
                       width: screenWidth * 0.9,
@@ -264,7 +266,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                     const SizedBox(height: 30),
 
-                    // MENUS DE MODULOS
+                    // TARJETAS DEL MENÚ
                     Wrap(
                       spacing: 18,
                       runSpacing: 18,
@@ -289,7 +291,7 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
 
-            // NOTIFICACIONES DESDE AUTH O BACKEND
+            // NOTIFICACIONES
             NotificationBanner(
               load: () async {
                 final auth = context.read<AuthService>();
@@ -302,10 +304,10 @@ class _MenuScreenState extends State<MenuScreen> {
                       id: 'local_banner',
                       tipo: notif['type'] ?? 'info',
                       titulo: notif['type'] == 'success'
-                          ? 'Inicio de Sesion Exitoso'
+                          ? 'Inicio de sesión exitoso'
                           : notif['type'] == 'error'
-                              ? 'Error en Sesion'
-                              : 'Aviso del Sistema',
+                              ? 'Error en sesión'
+                              : 'Aviso del sistema',
                       detalle: notif['message'] ?? '',
                       refId: '',
                       fecha: DateTime.now(),
@@ -319,7 +321,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   return data.map((n) {
                     return NotificationItem(
                       tipo: n['tipo'] ?? 'info',
-                      titulo: n['titulo'] ?? 'Notificacion',
+                      titulo: n['titulo'] ?? 'Notificación',
                       detalle: n['detalle'] ?? '',
                       fecha: DateTime.tryParse(n['fecha'] ?? '') ??
                           DateTime.now(),
@@ -337,15 +339,15 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  // OBTENER DESCRIPCION LEGIBLE DEL USUARIO
+  // DESCRIPCIÓN DEL USUARIO
   String _obtenerDescripcionUsuario(Usuario? usuario) {
     if (usuario == null) return 'Sin datos de usuario';
-    if (usuario.areaUsuario.isNotEmpty) return 'Area: ${usuario.areaUsuario}';
+    if (usuario.areaUsuario.isNotEmpty) return 'Área: ${usuario.areaUsuario}';
     if (usuario.cargo.isNotEmpty) return 'Cargo: ${usuario.cargo}';
     return 'Empleado Nutri Leche';
   }
 
-  // CONSTRUCCION DE CADA TARJETA DEL MENU PRINCIPAL
+  // TARJETA DEL MENÚ PRINCIPAL
   Widget _buildMenuButton(
     BuildContext context,
     String title,

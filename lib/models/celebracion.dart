@@ -1,7 +1,7 @@
 class Celebracion {
   final int id;
   final String nombreEmpleado;
-  final String tipo; // Cumpleaños o Aniversario
+  final String tipo; 
   final DateTime fecha;
   final String imagen;
 

@@ -1,6 +1,9 @@
+import 'package:nutri_leche/screens/celebracion_screen.dart';
+import 'package:nutri_leche/screens/noticias_screen.dart';
+import 'package:nutri_leche/services/cumpleanios_service.dart';
+import 'package:nutri_leche/services/noticias_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:nutri_leche/screens/celebracion_screen.dart';
 import 'package:nutri_leche/screens/cumpleanios_screen.dart';
 import 'package:nutri_leche/screens/sugerencia_screen.dart';
 import 'package:nutri_leche/screens/calendario_evento_screen.dart';
@@ -9,8 +12,10 @@ import 'package:nutri_leche/screens/agenda_screen.dart';
 import 'package:nutri_leche/screens/beneficios_screen.dart';
 import 'package:nutri_leche/screens/reconocimientos_screen.dart';
 
-// CORE Y SERVICIOS PRINCIPALES
+// CORE
 import 'core/locale_provider.dart';
+
+// SERVICIOS PRINCIPALES
 import 'services/auth_service.dart';
 import 'services/evento_service.dart';
 import 'services/usuario_service.dart';
@@ -28,11 +33,10 @@ import 'services/perfil_service.dart';
 import 'screens/login.dart';
 import 'screens/registro.dart';
 import 'screens/menu.dart';
-import 'screens/eventos.dart';
+import 'screens/eventos_screen.dart';
 import 'screens/notificaciones.dart';
 import 'screens/chat.dart';
 import 'screens/recursos.dart';
-//import 'screens/nuevo_chat.dart';
 import 'screens/chat_detalle.dart';
 import 'screens/crear_evento.dart';
 import 'screens/perfil.dart';
@@ -55,6 +59,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => CelebracionService()),
         ChangeNotifierProvider(create: (_) => SugerenciaService()),
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
+        ChangeNotifierProvider(create: (_) => CumpleaniosService()),
+        ChangeNotifierProvider(create: (_) => NoticiasService()),
 
         // PERFIL SERVICE DEPENDIENTE DE AUTHSERVICE
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
@@ -99,11 +105,11 @@ class MyApp extends StatelessWidget {
             '/reconocimientos': (context) => const ReconocimientosScreen(),
             '/beneficios': (context) => const BeneficiosScreen(),
             '/celebraciones': (context) => const CelebracionesScreen(),
-            '/agenda': (context) => const AgendaScreen(),
             '/buzon': (context) => const SugerenciaScreen(),
             '/cumpleanios': (context) => const CumpleaniosScreen(),
             '/calendario_eventos': (context) => const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
+            '/noticias': (context) => const NoticiasScreen(),
           },
           onGenerateRoute: (settings) {
             if (settings.name?.startsWith('/chat_detalle/') ?? false) {

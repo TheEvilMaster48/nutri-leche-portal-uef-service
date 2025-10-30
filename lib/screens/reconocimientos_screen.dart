@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../models/reconocimiento.dart';
 import '../models/usuario.dart';
@@ -56,7 +57,7 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
     }
   }
 
-  // ADJUNTAR ARCHIVOS
+  // ADJUNTAR ARCHIVOS CON CONVERSIÓN BASE64
   Future<void> _adjuntarArchivo() async {
     final resultado = await FilePicker.platform.pickFiles(
       allowMultiple: true,
@@ -67,14 +68,20 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
     if (resultado != null && resultado.files.isNotEmpty) {
       for (final f in resultado.files) {
         if (kIsWeb && f.bytes != null) {
+          // WEB: LOS BYTES YA ESTÁN DISPONIBLES
           _archivosAdjuntos.add({
             'nombre': f.name,
             'base64': base64Encode(f.bytes!),
           });
         } else if (!kIsWeb && f.path != null) {
+          // MOBILE/DESKTOP: LEER ARCHIVO Y CONVERTIRLO A BASE64
+          final file = File(f.path!);
+          final bytes = await file.readAsBytes();
+          final base64Data = base64Encode(bytes);
           _archivosAdjuntos.add({
             'nombre': f.name,
             'path': f.path,
+            'base64': base64Data,
           });
         }
       }
@@ -105,7 +112,7 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
     }
   }
 
-  // ABRIR ARCHIVO
+  // ABRIR ARCHIVO DESDE BASE64 O PATH
   Future<void> _abrirArchivo(Map<String, dynamic> archivo) async {
     try {
       if (kIsWeb) {
@@ -120,7 +127,19 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
           throw "Archivo no disponible en memoria.";
         }
       } else {
-        final ruta = archivo['path'];
+        // MÓVIL O DESKTOP
+        String? ruta = archivo['path'];
+        if (ruta == null || !await File(ruta).exists()) {
+          // RECONSTRUIR DESDE BASE64 SI NO EXISTE EN DISCO
+          if (archivo['base64'] != null) {
+            final tempDir = await getTemporaryDirectory();
+            final tempPath = "${tempDir.path}/${archivo['nombre']}";
+            final bytes = base64Decode(archivo['base64']);
+            final tempFile = await File(tempPath).writeAsBytes(bytes);
+            ruta = tempFile.path;
+          }
+        }
+
         if (ruta != null && await File(ruta).exists()) {
           await OpenFilex.open(ruta);
         } else {
@@ -136,25 +155,11 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
     }
   }
 
-  // GUARDAR NUEVO RECONOCIMIENTO
+  // GUARDAR NUEVO RECONOCIMIENTO (BASE64 INCLUIDO)
   Future<void> _guardarReconocimiento() async {
     final auth = context.read<AuthService>();
     final usuario = auth.currentUser;
     if (usuario == null) return;
-
-    /*
-    // ❌ Eliminada validación usuario.modulos y pantalla de solo lectura.
-    // Ya no se limita por módulo ni permisos, cualquier usuario puede guardar.
-    final modulos = usuario.modulos.toLowerCase();
-    if (!modulos.contains("reconocimientos")) {
-      NotificationBanner.show(
-        context,
-        "⛔ No tienes acceso a este módulo.",
-        NotificationType.error,
-      );
-      return;
-    }
-    */
 
     if (_tituloController.text.isEmpty ||
         _descripcionController.text.isEmpty ||
@@ -227,13 +232,6 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    /*
-    // ❌ Eliminada validación por módulos de usuario (ya no se usa).
-    final auth = context.watch<AuthService>();
-    final usuario = auth.currentUser;
-    final tienePermiso = usuario?.modulos.toLowerCase().contains("reconocimientos") ?? false;
-    */
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -252,18 +250,7 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
                     children: [
                       _buildHeader(),
                       const SizedBox(height: 18),
-
-                      /*
-                      // ❌ Eliminada la pantalla de solo lectura.
-                      if (tienePermiso)
-                        _buildFormulario()
-                      else
-                        _buildSoloLectura(),
-                      */
-                      
-                      // ✅ Ahora todos los usuarios pueden crear/editar.
                       _buildFormulario(),
-                      
                       const SizedBox(height: 12),
                       Expanded(
                         child: _reconocimientos.isEmpty
@@ -333,25 +320,6 @@ class _ReconocimientosScreenState extends State<ReconocimientosScreen> {
           ],
         ),
       );
-
-  /*
-  // ❌ Eliminado: vista de solo lectura.
-  Widget _buildSoloLectura() => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.teal.withOpacity(0.5)),
-        ),
-        child: const Text(
-          "🔒 Solo lectura: Los empleados pueden visualizar los reconocimientos registrados.",
-          style: TextStyle(color: Colors.black87, fontSize: 14),
-          textAlign: TextAlign.center,
-        ),
-      );
-  */
 
   Widget _buildFormulario() => Container(
         padding: const EdgeInsets.all(16),

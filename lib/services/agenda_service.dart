@@ -8,32 +8,35 @@ class AgendaService extends ChangeNotifier {
   List<Agenda> _citas = [];
   List<Agenda> get citas => _citas;
 
-  // 🔗 Endpoint base del backend
+  // 🔗 URL base del backend
   static const String baseUrl =
       "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/agenda";
 
-  // OBTENER TODAS LAS CITAS
+  // OBTENER CITAS DESDE EL BACKEND
   Future<void> obtenerCitas() async {
     try {
       final response = await http.get(Uri.parse(baseUrl));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final lista = data is List ? data : data['data'] ?? [];
+
+        final lista = data is List
+            ? data
+            : (data['data'] is List ? data['data'] : []);
 
         _citas = lista.map<Agenda>((e) => Agenda.fromJson(e)).toList();
         notifyListeners();
       } else {
-        throw Exception("Error al cargar citas (${response.statusCode})");
+        throw Exception("ERROR AL CARGAR CITAS (${response.statusCode})");
       }
-    } catch (e) {
-      debugPrint("❌ Error obteniendo citas: $e");
+    } catch (e, s) {
+      debugPrint("❌ ERROR OBTENIENDO CITAS: $e");
+      debugPrint(s.toString());
       rethrow;
     }
   }
 
-  
-  // CREAR UNA NUEVA CITA
+  // CREAR NUEVA CITA
   Future<void> crearCita(Agenda nuevaCita, Usuario usuarioActual) async {
     try {
       final body = jsonEncode({
@@ -56,14 +59,15 @@ class AgendaService extends ChangeNotifier {
       if (response.statusCode == 200 || response.statusCode == 201) {
         await obtenerCitas();
       } else {
+        debugPrint("❌ ERROR HTTP ${response.statusCode}: ${response.body}");
         throw Exception("Error al crear cita (${response.statusCode})");
       }
-    } catch (e) {
-      debugPrint("❌ Error creando cita: $e");
+    } catch (e, s) {
+      debugPrint("❌ ERROR CREANDO CITA: $e");
+      debugPrint(s.toString());
       rethrow;
     }
   }
-
 
   // MODIFICAR CITA EXISTENTE
   Future<void> modificarCita(
@@ -89,28 +93,31 @@ class AgendaService extends ChangeNotifier {
       if (response.statusCode == 200) {
         await obtenerCitas();
       } else {
+        debugPrint("❌ ERROR HTTP ${response.statusCode}: ${response.body}");
         throw Exception("Error al actualizar cita (${response.statusCode})");
       }
-    } catch (e) {
-      debugPrint("❌ Error modificando cita: $e");
+    } catch (e, s) {
+      debugPrint("❌ ERROR MODIFICANDO CITA: $e");
+      debugPrint(s.toString());
       rethrow;
     }
   }
-
 
   // ELIMINAR CITA POR ID
   Future<void> eliminarCita(String id) async {
     try {
       final response = await http.delete(Uri.parse("$baseUrl/$id"));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
         _citas.removeWhere((a) => a.id.toString() == id);
         notifyListeners();
       } else {
+        debugPrint("❌ ERROR HTTP ${response.statusCode}: ${response.body}");
         throw Exception("Error al eliminar cita (${response.statusCode})");
       }
-    } catch (e) {
-      debugPrint("❌ Error eliminando cita: $e");
+    } catch (e, s) {
+      debugPrint("❌ ERROR ELIMINANDO CITA: $e");
+      debugPrint(s.toString());
       rethrow;
     }
   }

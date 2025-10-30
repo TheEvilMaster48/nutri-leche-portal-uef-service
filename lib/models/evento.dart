@@ -23,7 +23,7 @@ class Evento {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'planta': id,
+        'planta': planta,
         'titulo': titulo,
         'descripcion': descripcion,
         'fecha': fecha,

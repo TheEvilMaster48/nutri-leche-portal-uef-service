@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_leche/screens/calendario_evento_screen.dart';
+import 'package:nutri_leche/screens/cumpleanios_screen.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/celebracion_service.dart';
 import '../core/notification_banner.dart';
 import '../models/celebracion.dart';
-import 'cumpleanios_screen.dart';
 
 class CelebracionesScreen extends StatefulWidget {
   const CelebracionesScreen({super.key});
@@ -21,7 +20,6 @@ class _CelebracionesScreenState extends State<CelebracionesScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // CARGA SEGURA DE DATOS DESDE EL BACKEND
     if (_cargando) {
       final service = Provider.of<CelebracionService>(context, listen: false);
       _cargarCelebraciones(service);
@@ -53,20 +51,6 @@ class _CelebracionesScreenState extends State<CelebracionesScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final usuario = auth.currentUser;
-
-    /* 
-    // BLOQUE DE ROLES DESHABILITADO, AHORA TODOS TIENEN ACCESO
-    final rolesAccesoTotal = [
-      'admin',
-      'recursos',
-      'bodega',
-      'produccion',
-      'ventas'
-    ];
-
-    final bool tieneAccesoTotal =
-        rolesAccesoTotal.contains(usuario?.rol.toLowerCase() ?? '');
-    */
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -106,38 +90,29 @@ class _CelebracionesScreenState extends State<CelebracionesScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  // REGISTRAR CUMPLEAÑOS (VISIBLE PARA TODOS)
+                  // REGISTRAR CUMPLEAÑOS
                   _buildMenuButton(
                     context,
                     icon: Icons.cake,
                     color: Colors.pinkAccent,
                     title: 'Registrar Cumpleaños',
-                    subtitle: 'Agrega empleados para celebrar su día especial.',
+                    subtitle:
+                        'Agrega Empleados para Celebrar su Día Especial.',
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CumpleaniosScreen(),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/cumpleanios');
                     },
                   ),
 
-                  // VER CALENDARIO DE EVENTOS
+                  // REGISTRAR EVENTOS
                   _buildMenuButton(
                     context,
                     icon: Icons.event_note,
                     color: Colors.blue.shade600,
-                    title: 'Ver Calendario de Eventos',
+                    title: 'Registrar Eventos',
                     subtitle:
-                        'Consulta los cumpleaños y actividades programadas en tu planta.',
+                        'Agrega Actividades Programadas Corporativas.',
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CalendarioEventosScreen(),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/eventos');
                     },
                   ),
 
@@ -151,7 +126,6 @@ class _CelebracionesScreenState extends State<CelebracionesScreen> {
     );
   }
 
-  // BOTÓN DE MENÚ
   Widget _buildMenuButton(
     BuildContext context, {
     required IconData icon,
@@ -198,7 +172,6 @@ class _CelebracionesScreenState extends State<CelebracionesScreen> {
     );
   }
 
-  // LEYENDA ICONOS
   Widget _buildMiniLeyenda() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

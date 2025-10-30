@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -5,7 +6,6 @@ import '../services/evento_service.dart';
 import '../services/auth_service.dart';
 import '../models/evento.dart';
 import '../models/usuario.dart';
-import '../services/realtime_service.dart'; // 🔹 Agregado para conexión en tiempo real
 
 class EventosScreen extends StatefulWidget {
   const EventosScreen({super.key});
@@ -19,32 +19,10 @@ class _EventosScreenState extends State<EventosScreen> {
   bool mostrarEventosPasados = false;
   List<Evento> _eventosTotales = [];
 
-  final RealtimeService _realtime = RealtimeService(); // 🔹 Servicio WebSocket
-
   @override
   void initState() {
     super.initState();
     _cargarEventosIniciales();
-
-    // 🔔 Conectar al WebSocket para recibir mensajes en vivo
-    _realtime.connect((mensaje) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(mensaje),
-            backgroundColor: Colors.blueAccent,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        _cargarEventosIniciales(); // Refresca lista automáticamente
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _realtime.disconnect(); // Cerrar conexión al salir
-    super.dispose();
   }
 
   Future<void> _cargarEventosIniciales() async {
@@ -72,7 +50,6 @@ class _EventosScreenState extends State<EventosScreen> {
       );
     }
 
-    // Categorías visuales (sin validación de roles)
     final categorias = [
       'Planta Administrativa',
       'Planta de Recursos Humanos',
@@ -81,12 +58,11 @@ class _EventosScreenState extends State<EventosScreen> {
       'Planta Ventas',
     ];
 
-    // Fecha y Hora Actual
     final ahora = DateTime.now();
     List<Evento> eventosActivos = [];
     List<Evento> eventosPasados = [];
 
-    // Clasificar Eventos Recientes / Pasados
+    // CLASIFICAR EVENTOS RECIENTES / PASADOS
     for (var e in _eventosTotales) {
       try {
         final partes = e.fecha.split(' - ');
@@ -106,7 +82,7 @@ class _EventosScreenState extends State<EventosScreen> {
       }
     }
 
-    // Agrupar Eventos por Planta
+    // AGRUPAR EVENTOS POR PLANTA
     Map<String, List<Evento>> agruparPorPlanta(List<Evento> lista) {
       Map<String, List<Evento>> agrupado = {
         for (var c in categorias) c: [],
@@ -125,8 +101,6 @@ class _EventosScreenState extends State<EventosScreen> {
           categoria = 'Planta Producción';
         } else if (creador.contains('ventas')) {
           categoria = 'Planta Ventas';
-        } else if (creador.contains('administrativa')) {
-          categoria = 'Planta Administrativa';
         }
 
         agrupado[categoria]?.add(e);
@@ -138,8 +112,7 @@ class _EventosScreenState extends State<EventosScreen> {
     final activosPorCategoria = agruparPorPlanta(eventosActivos);
     final pasadosPorCategoria = agruparPorPlanta(eventosPasados);
 
-    // Mostrar todos los eventos directamente
-    Map<String, List<Evento>> mostrarMapa =
+    final mostrarMapa =
         mostrarEventosPasados ? pasadosPorCategoria : activosPorCategoria;
 
     final tituloSeccion =
@@ -259,7 +232,7 @@ class _EventosScreenState extends State<EventosScreen> {
     );
   }
 
-  // Tarjeta de evento con botones Editar y Eliminar
+  // TARJETA DE EVENTO CON IMAGEN Y BOTONES
   Widget _buildEventoCard(
       Evento evento, EventoService eventoService, Usuario usuarioActual) {
     final bool eventoPasado = _esEventoPasado(evento);
@@ -311,6 +284,21 @@ class _EventosScreenState extends State<EventosScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(evento.descripcion),
+                
+                // BASE64
+                if (evento.imagenPath != null && evento.imagenPath!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        base64Decode(evento.imagenPath!.split(',').last),
+                        fit: BoxFit.cover,
+                        height: 160,
+                        width: double.infinity,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -420,6 +408,7 @@ class _EventosScreenState extends State<EventosScreen> {
     }
   }
 
+ // COLOR POR PLANTA (CATEGORIA)
   Color _colorPorCategoria(String categoria) {
     switch (categoria) {
       case 'Planta Administrativa':
