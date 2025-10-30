@@ -31,10 +31,10 @@ class Chat {
 
   factory Chat.fromMap(Map<String, dynamic> map) {
     return Chat(
-      id: map['id'],
-      userId: map['userId'],
-      userName: map['userName'],
-      userRole: map['userRole'],
+      id: map['id'] ?? '',
+      userId: map['userId'] ?? '',
+      userName: map['userName'] ?? '',
+      userRole: map['userRole'] ?? '',
       lastMessage: map['lastMessage'],
       lastMessageTime: map['lastMessageTime'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['lastMessageTime'])

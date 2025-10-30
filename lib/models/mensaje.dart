@@ -1,43 +1,39 @@
 class Mensaje {
   final String id;
   final String chatId;
-  final String senderId;
-  final String senderName;
-  final String content;
-  final DateTime timestamp;
-  final bool isRead;
+  final String remitenteId;
+  final String remitenteNombre;
+  final String texto;
+  final DateTime fecha;
 
   Mensaje({
     required this.id,
     required this.chatId,
-    required this.senderId,
-    required this.senderName,
-    required this.content,
-    required this.timestamp,
-    this.isRead = false,
+    required this.remitenteId,
+    required this.remitenteNombre,
+    required this.texto,
+    required this.fecha,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'chatId': chatId,
-      'senderId': senderId,
-      'senderName': senderName,
-      'content': content,
-      'timestamp': timestamp.millisecondsSinceEpoch,
-      'isRead': isRead,
+      'remitenteId': remitenteId,
+      'remitenteNombre': remitenteNombre,
+      'texto': texto,
+      'fecha': fecha.millisecondsSinceEpoch,
     };
   }
 
   factory Mensaje.fromMap(Map<String, dynamic> map) {
     return Mensaje(
-      id: map['id'],
-      chatId: map['chatId'],
-      senderId: map['senderId'],
-      senderName: map['senderName'],
-      content: map['content'],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
-      isRead: map['isRead'] ?? false,
+      id: map['id'] ?? '',
+      chatId: map['chatId'] ?? '',
+      remitenteId: map['remitenteId'] ?? '',
+      remitenteNombre: map['remitenteNombre'] ?? '',
+      texto: map['texto'] ?? '',
+      fecha: DateTime.fromMillisecondsSinceEpoch(map['fecha'] ?? 0),
     );
   }
 }

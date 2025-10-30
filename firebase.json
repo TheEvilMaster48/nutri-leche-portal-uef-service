@@ -1,16 +1,1 @@
-{
-  "hosting": {
-    "public": "build/web",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  }
-}
+{"flutter":{"platforms":{"android":{"default":{"projectId":"nutri-leche-chat","appId":"1:330528185869:android:35ec6248e309f2cb923f44","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"nutri-leche-chat","configurations":{"android":"1:330528185869:android:35ec6248e309f2cb923f44","ios":"1:330528185869:ios:ed91c47d9b6a8f67923f44","macos":"1:330528185869:ios:ed91c47d9b6a8f67923f44","web":"1:330528185869:web:2d86a5324d564018923f44","windows":"1:330528185869:web:a32ca1b79ae08f45923f44"}}}}}}

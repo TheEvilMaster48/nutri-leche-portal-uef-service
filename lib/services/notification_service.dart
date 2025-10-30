@@ -7,13 +7,13 @@ class NotificationService {
         'Content-Type': 'application/json',
       };
 
-  /// 🔹 Obtiene notificaciones combinadas de eventos y chat
+      // OBTENER NOTIFICACIONES
   static Future<List<Map<String, dynamic>>> obtenerNotificaciones(String usuarioId) async {
     const base = AuthService.baseUrl;
     final List<Map<String, dynamic>> resultados = [];
 
     try {
-      // --- Eventos ---
+      // Eventos
       final eventosUri = Uri.parse('$base/eventos/notificaciones?usuarioId=$usuarioId');
       final eventosResp = await http.get(eventosUri, headers: _headers());
 

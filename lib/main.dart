@@ -1,16 +1,10 @@
-import 'package:nutri_leche/screens/celebracion_screen.dart';
-import 'package:nutri_leche/screens/noticias_screen.dart';
-import 'package:nutri_leche/services/cumpleanios_service.dart';
-import 'package:nutri_leche/services/noticias_service.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:nutri_leche/screens/cumpleanios_screen.dart';
-import 'package:nutri_leche/screens/sugerencia_screen.dart';
-import 'package:nutri_leche/screens/calendario_evento_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:nutri_leche/screens/agenda_screen.dart';
-import 'package:nutri_leche/screens/beneficios_screen.dart';
-import 'package:nutri_leche/screens/reconocimientos_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+// FLUTTERFIRE
+import 'firebase_options.dart';
 
 // CORE
 import 'core/locale_provider.dart';
@@ -28,21 +22,37 @@ import 'services/celebracion_service.dart';
 import 'services/sugerencia_service.dart';
 import 'services/calendario_evento_service.dart';
 import 'services/perfil_service.dart';
+import 'services/cumpleanios_service.dart';
+import 'services/noticias_service.dart';
+import 'services/boton_notificacion_service.dart';
 
 // PANTALLAS PRINCIPALES
 import 'screens/login.dart';
 import 'screens/registro.dart';
 import 'screens/menu.dart';
 import 'screens/eventos_screen.dart';
-import 'screens/notificaciones.dart';
 import 'screens/chat.dart';
-import 'screens/recursos.dart';
 import 'screens/chat_detalle.dart';
+import 'screens/recursos.dart';
 import 'screens/crear_evento.dart';
+import 'screens/agenda_screen.dart';
+import 'screens/reconocimientos_screen.dart';
+import 'screens/beneficios_screen.dart';
+import 'screens/celebracion_screen.dart';
+import 'screens/cumpleanios_screen.dart';
+import 'screens/sugerencia_screen.dart';
+import 'screens/calendario_evento_screen.dart';
 import 'screens/perfil.dart';
+import 'screens/noticias_screen.dart';
+import 'screens/boton_notificacion_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // FIREBASE
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(
     MultiProvider(
@@ -61,17 +71,13 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
         ChangeNotifierProvider(create: (_) => CumpleaniosService()),
         ChangeNotifierProvider(create: (_) => NoticiasService()),
-
-        // PERFIL SERVICE DEPENDIENTE DE AUTHSERVICE
+        ChangeNotifierProvider(create: (_) => BotonNotificacionService()),
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
           update: (context, auth, previous) => PerfilService(auth),
         ),
       ],
-      builder: (context, child) {
-        // IMPORTANTE: ASEGURA QUE TODOS LOS PROVIDERS ESTÉN DISPONIBLES ANTES DE CONSTRUIR LA APP
-        return const MyApp();
-      },
+      child: const MyApp(),
     ),
   );
 }
@@ -91,13 +97,16 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          supportedLocales: const [
+            Locale('es', 'ES'),
+            Locale('en', 'US'),
+          ],
           initialRoute: '/',
           routes: {
             '/': (context) => const LoginScreen(),
             '/registro': (context) => const RegistroScreen(),
             '/menu': (context) => const MenuScreen(),
             '/eventos': (context) => const EventosScreen(),
-            '/notificaciones': (context) => const NotificacionesScreen(),
             '/chat': (context) => const ChatScreen(),
             '/recursos': (context) => const RecursosScreen(),
             '/crear_evento': (context) => const CrearEventoScreen(),
@@ -110,6 +119,7 @@ class MyApp extends StatelessWidget {
             '/calendario_eventos': (context) => const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
             '/noticias': (context) => const NoticiasScreen(),
+            '/boton_notificaciones': (context) => const BotonNotificacionScreen(),
           },
           onGenerateRoute: (settings) {
             if (settings.name?.startsWith('/chat_detalle/') ?? false) {

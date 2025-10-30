@@ -70,7 +70,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'titulo': 'Notificaciones',
         'subtitulo': 'Ver avisos importantes del sistema',
         'icono': Icons.notifications_active_rounded,
-        'ruta': '/notificaciones',
+        'ruta': '/boton_notificaciones',
         'colores': [const Color(0xFFFA0000), const Color(0xFF00ACC1)],
       },
       {
