@@ -25,8 +25,22 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
   final TextEditingController _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // CONECTAR WEBSOCKET PARA ESTE CHAT
+    _chatService.conectarChat(widget.chatId, (msg) {
+      setState(() {}); // ACTUALIZA LA INTERFAZ CUANDO LLEGAN NUEVOS MENSAJES
+    });
+  }
+
+  @override
+  void dispose() {
+    _chatService.desconectar();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // OBTENER EL USUARIO ACTUAL DESDE AUTHSERVICE
     final authService = Provider.of<AuthService>(context);
     final Usuario? usuarioActual = authService.currentUser;
 
@@ -37,15 +51,11 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
       ),
       body: Column(
         children: [
-          // LISTADO DE MENSAJES EN TIEMPO REAL
+          // MENSAJES EN TIEMPO REAL
           Expanded(
             child: StreamBuilder<List<Mensaje>>(
               stream: _chatService.getMensajesStream(widget.chatId),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
                 final mensajes = snapshot.data ?? [];
 
                 if (mensajes.isEmpty) {
@@ -62,23 +72,19 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
                   itemCount: mensajes.length,
                   itemBuilder: (context, index) {
                     final msg = mensajes[index];
-
-                    // VERIFICAR SI EL MENSAJE ES DEL USUARIO ACTUAL
                     final esMio = usuarioActual != null &&
                         msg.remitenteId == usuarioActual.id.toString();
 
                     return Align(
-                      alignment: esMio
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
+                      alignment:
+                          esMio ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: esMio
-                              ? const Color(0xFFDCF8C6)
-                              : Colors.white,
+                          color:
+                              esMio ? const Color(0xFFDCF8C6) : Colors.white,
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
@@ -107,7 +113,7 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
                             Align(
                               alignment: Alignment.bottomRight,
                               child: Text(
-                                "${msg.fecha.hour.toString().padLeft(2, '0')}:${msg.fecha.minute.toString().padLeft(2, '0')}",
+                                "${msg.fecha.hour.toString().padLeft(2, '0')}:${msg.fecha.minute.toString().padLeft(2, '0')}", 
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -124,7 +130,7 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
             ),
           ),
 
-          // CAMPO DE TEXTO Y BOTÓN DE ENVIAR
+          // CAMPO DE TEXTO
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -145,7 +151,6 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
                     final texto = _controller.text.trim();
                     if (texto.isEmpty || usuarioActual == null) return;
 
-                    // CREAR Y ENVIAR MENSAJE A FIRESTORE
                     final mensaje = Mensaje(
                       id: const Uuid().v4(),
                       chatId: widget.chatId,
@@ -155,7 +160,7 @@ class _ChatDetalleScreenState extends State<ChatDetalleScreen> {
                       fecha: DateTime.now(),
                     );
 
-                    await _chatService.sendMensaje(mensaje);
+                    _chatService.enviarMensaje(mensaje);
                     _controller.clear();
                   },
                 ),

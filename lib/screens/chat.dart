@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/chat.dart';
 import '../services/chat_service.dart';
 import 'chat_detalle.dart';
@@ -78,10 +77,7 @@ class ChatScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF4ADE80),
         child: const Icon(Icons.chat_outlined),
         onPressed: () async {
-          final contactos = await FirebaseFirestore.instance
-              .collection('usuarios')
-              .get(); // OPCIONAL
-          // ignore: use_build_context_synchronously
+          // SIN FIREBASE — usa contactos simulados o de tu BD
           Navigator.push(
             context,
             MaterialPageRoute(

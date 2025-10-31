@@ -33,7 +33,9 @@ class Mensaje {
       remitenteId: map['remitenteId'] ?? '',
       remitenteNombre: map['remitenteNombre'] ?? '',
       texto: map['texto'] ?? '',
-      fecha: DateTime.fromMillisecondsSinceEpoch(map['fecha'] ?? 0),
+      fecha: map['fecha'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(map['fecha'])
+          : DateTime.tryParse(map['fecha'].toString()) ?? DateTime.now(),
     );
   }
 }

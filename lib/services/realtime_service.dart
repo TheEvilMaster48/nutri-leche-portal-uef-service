@@ -1,41 +1,63 @@
-import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/status.dart' as status;
 
 class RealtimeService {
-  StompClient? _client;
+  WebSocketChannel? _channel;
 
+  // CONECTAR AL SERVIDOR WEBSOCKET (SPRING BOOT)
   void connect(Function(String) onMessageReceived) {
-    _client = StompClient(
-      config: StompConfig(
-        url: 'ws://10.170.4.15:8080/ws/websocket',
-        onConnect: (frame) {
-          print('✅ Conectado al servidor WebSocket (Spring Boot)');
+    try {
+      print('⌛ CONECTANDO AL SERVIDOR WEBSOCKET...');
+      _channel = WebSocketChannel.connect(
+        Uri.parse('ws://10.0.2.2:8080/ws/websocket'),
+      );
+      print('✅ CONEXIÓN ESTABLECIDA CON EL BACKEND');
 
-          //Eventos
-          _client?.subscribe(
-            destination: '/topic/eventos',
-            callback: (frame) {
-              if (frame.body != null) {
-                print('📩 Mensaje recibido: ${frame.body}');
-                onMessageReceived(frame.body!);
-              }
-            },
-          );
+      _channel?.stream.listen(
+        (message) {
+          print('📩 MENSAJE RECIBIDO: $message');
+          onMessageReceived(message);
         },
-        beforeConnect: () async {
-          print('⌛ Conectando al servidor WebSocket...');
-          await Future.delayed(const Duration(milliseconds: 500));
+        onError: (error) {
+          print('❌ ERROR WS: $error');
         },
-        onWebSocketError: (error) => print('❌ Error WS: $error'),
-        onDisconnect: (frame) => print('🔌 Desconectado del WebSocket'),
-        heartbeatIncoming: const Duration(seconds: 5),
-        heartbeatOutgoing: const Duration(seconds: 5),
-      ),
-    );
-
-    _client?.activate();
+        onDone: () {
+          print('🔌 CONEXIÓN FINALIZADA');
+        },
+      );
+    } catch (e) {
+      print('⚠️ ERROR AL CONECTAR: $e');
+    }
   }
 
+  // NUEVO MÉTODO COMPATIBLE CON TU CÓDIGO
+  void send(String destination, String payload) {
+    if (_channel != null) {
+      // AGREGAMOS DESTINO EN EL MENSAJE PARA COMPATIBILIDAD
+      final data = jsonEncode({
+        'destination': destination,
+        'body': payload,
+      });
+
+      _channel!.sink.add(data);
+      print('📤 MENSAJE ENVIADO A $destination: $payload');
+    } else {
+      print('⚠️ NO HAY CONEXIÓN WEBSOCKET ACTIVA');
+    }
+  }
+
+  // OPCIONAL: MÉTODO DIRECTO SIN DESTINO (SI QUIERES ENVIAR SOLO TEXTO)
+  void sendMessage(String message) {
+    if (_channel != null) {
+      _channel!.sink.add(message);
+      print('📤 MENSAJE ENVIADO: $message');
+    }
+  }
+
+  // DESCONECTAR
   void disconnect() {
-    _client?.deactivate();
+    _channel?.sink.close(status.goingAway);
+    print('🔻 CONEXIÓN WEBSOCKET CERRADA');
   }
 }

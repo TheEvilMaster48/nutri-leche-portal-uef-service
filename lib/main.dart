@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
+//import 'package:firebase_core/firebase_core.dart';
 
 // FLUTTERFIRE
 import 'firebase_options.dart';
@@ -49,11 +49,11 @@ import 'screens/boton_notificacion_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // FIREBASE
+  /* FIREBASE
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+*/
   runApp(
     MultiProvider(
       providers: [

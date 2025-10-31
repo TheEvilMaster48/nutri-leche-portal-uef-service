@@ -1,61 +1,48 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/chat.dart';
+import 'dart:convert';
 import '../models/mensaje.dart';
+import '../models/chat.dart';
+import 'realtime_service.dart';
 
 class ChatService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final RealtimeService _realtime = RealtimeService();
+  final List<Mensaje> _mensajes = [];
+  final List<Chat> _chats = [];
 
-  // CREAR CHAT
+  void conectarChat(String chatId, Function(Mensaje) onMensajeRecibido) {
+    _realtime.connect((String body) {
+      try {
+        final data = jsonDecode(body);
+        if (data['chatId'] == chatId) {
+          final msg = Mensaje.fromMap(data);
+          _mensajes.insert(0, msg);
+          onMensajeRecibido(msg);
+        }
+      } catch (e) {
+        print('⚠️ Error al procesar mensaje: $e');
+      }
+    });
+  }
+
+  Future<void> enviarMensaje(Mensaje mensaje) async {
+    final payload = jsonEncode(mensaje.toMap());
+    _realtime.send('/app/chat', payload);
+    print('📤 Enviado a /app/chat: $payload');
+  }
+
+  void desconectar() {
+    _realtime.disconnect();
+  }
+
+  Stream<List<Mensaje>> getMensajesStream(String chatId) async* {
+    yield _mensajes.where((m) => m.chatId == chatId).toList();
+  }
+
   Future<void> createChat(Chat chat) async {
-    await _firestore.collection('chats').doc(chat.id).set(chat.toMap());
+    _chats.add(chat);
+    print('✅ Chat creado: ${chat.userName}');
   }
 
-  // OBTENER LISTA DE CHATS EN TIEMPO REAL
-  Stream<List<Chat>> getChatsStream() {
-    return _firestore.collection('chats').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Chat.fromMap(doc.data())).toList();
-    });
-  }
-
-  // ENVIAR MENSAJE
-  Future<void> sendMensaje(Mensaje mensaje) async {
-    await _firestore
-        .collection('chats')
-        .doc(mensaje.chatId)
-        .collection('mensajes')
-        .doc(mensaje.id)
-        .set(mensaje.toMap());
-
-    await _firestore.collection('chats').doc(mensaje.chatId).update({
-      'lastMessage': mensaje.texto,
-      'lastMessageTime': DateTime.now().millisecondsSinceEpoch,
-    });
-  }
-
-  // ESCUCHAR MENSAJES EN TIEMPO REAL
-  Stream<List<Mensaje>> getMensajesStream(String chatId) {
-    return _firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('mensajes')
-        .orderBy('fecha', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Mensaje.fromMap(doc.data())).toList());
-  }
-
-  // ELIMINAR CHAT COMPLETO
-  Future<void> deleteChat(String chatId) async {
-    final mensajes = await _firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('mensajes')
-        .get();
-
-    for (var doc in mensajes.docs) {
-      await doc.reference.delete();
-    }
-
-    await _firestore.collection('chats').doc(chatId).delete();
+  Stream<List<Chat>> getChatsStream() async* {
+    yield _chats;
   }
 }
