@@ -99,6 +99,16 @@ Future<void> main() async {
     print('Body: ${message.notification?.body}');
     print('Data: ${message.data}');
 
+    // 🔴 NUEVO: ENVIAR A MENU PARA MOSTRAR BURBUJA
+    try {
+      // Tipo puede venir en message.data['tipo'] (ej: 'evento' o 'cumpleanios')
+      FirebaseNotificationBus.add({
+        'tipo': message.data['tipo'] ?? 'evento',
+      });
+    } catch (e) {
+      print('Error al emitir notificación al menú: $e');
+    }
+
     final notification = message.notification;
     if (notification != null) {
       // MOSTRAR NOTIFICACIÓN LOCAL MIENTRAS LA APP ESTÁ ABIERTA

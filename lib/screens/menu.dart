@@ -6,6 +6,13 @@ import '../core/notification_banner.dart' show NotificationBanner, NotificationT
 import '../models/notification_item.dart';
 import '../models/usuario.dart';
 
+// NUEVO: ESCUCHA GLOBAL DE NOTIFICACIONES
+class FirebaseNotificationBus {
+  static final _controller = StreamController<Map<String, dynamic>>.broadcast();
+  static Stream<Map<String, dynamic>> get stream => _controller.stream;
+  static void add(Map<String, dynamic> data) => _controller.add(data);
+}
+
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
 
@@ -16,15 +23,27 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   Timer? _timer;
 
+  // NUEVO: CONTADORES DE NOTIFICACIONES
+  final Map<String, int> _notificaciones = {
+    'eventos': 0,
+    'cumpleanios': 0,
+  };
+
   @override
   void initState() {
     super.initState();
 
-    // CONECTAR WEBSOCKET PARA NOTIFICACIONES EN TIEMPO REAL
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final ws = context.read<NotificacionWsService>();
-    //   ws.conectar(context);
-    // });
+    // ESCUCHAR NOTIFICACIONES LLEGADAS DESDE MAIN
+    FirebaseNotificationBus.stream.listen((data) {
+      setState(() {
+        final tipo = data['tipo'] ?? '';
+        if (tipo == 'evento') {
+          _notificaciones['eventos'] = (_notificaciones['eventos'] ?? 0) + 1;
+        } else if (tipo == 'cumpleanios') {
+          _notificaciones['cumpleanios'] = (_notificaciones['cumpleanios'] ?? 0) + 1;
+        }
+      });
+    });
 
     // MOSTRAR MENSAJE DE BIENVENIDA
     Future.delayed(const Duration(seconds: 1), () {
@@ -58,6 +77,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'subtitulo': 'Crea y organiza actividades corporativas',
         'icono': Icons.event_available_rounded,
         'ruta': '/eventos_page',
+        'tipo': 'eventos', // NUEVO
         'colores': [const Color(0xFF0048FF), const Color(0xFF64B5F6)],
       },
       {
@@ -65,6 +85,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'subtitulo': 'Administra cumpleaños del personal',
         'icono': Icons.cake_rounded,
         'ruta': '/cumpleanios',
+        'tipo': 'cumpleanios', // NUEVO
         'colores': [const Color(0xFFFF4081), const Color(0xFFF8BBD0)],
       },
       /*{
@@ -115,14 +136,14 @@ class _MenuScreenState extends State<MenuScreen> {
         'icono': Icons.schedule_rounded,
         'ruta': '/agenda',
         'colores': [const Color(0xFF4CAF50), const Color(0xFFA5D6A7)],
-      },*/
+      },
       {
         'titulo': 'Recursos',
         'subtitulo': 'Documentos y archivos compartidos',
         'icono': Icons.folder_copy_rounded,
         'ruta': '/recursos',
         'colores': [const Color(0xFF9D00FF), const Color(0xFF9575CD)],
-      },
+      },*/
       {
         'titulo': 'Buzón de sugerencias',
         'subtitulo': 'Envía tus ideas y comentarios',
@@ -261,21 +282,48 @@ class _MenuScreenState extends State<MenuScreen> {
 
                     const SizedBox(height: 30),
 
-                    // BOTONES DEL MENÚ
+                    // BOTONES DEL MENÚ CON BURBUJA ROJA
                     Wrap(
                       spacing: 18,
                       runSpacing: 18,
                       alignment: WrapAlignment.center,
                       children: menus.map((menu) {
-                        return _buildMenuButton(
-                          context,
-                          menu['titulo'],
-                          menu['subtitulo'],
-                          menu['icono'],
-                          menu['colores'][0],
-                          menu['colores'][1],
-                          menu['ruta'],
-                          screenWidth,
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            _buildMenuButton(
+                              context,
+                              menu['titulo'],
+                              menu['subtitulo'],
+                              menu['icono'],
+                              menu['colores'][0],
+                              menu['colores'][1],
+                              menu['ruta'],
+                              screenWidth,
+                              tipo: menu['tipo'],
+                            ),
+                            if (menu.containsKey('tipo') &&
+                                (_notificaciones[menu['tipo']] ?? 0) > 0)
+                              Positioned(
+                                top: -6,
+                                right: -6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '${_notificaciones[menu['tipo']]}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         );
                       }).toList(),
                     ),
@@ -285,48 +333,6 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
               ),
             ),
-
-            // BANNER DE NOTIFICACIONES
-            // NotificationBanner(
-            //   load: () async {
-            //     final auth = context.read<AuthService>();
-            //     final usuario = auth.currentUser;
-            //
-            //     if (auth.currentNotification != null) {
-            //       final notif = auth.currentNotification!;
-            //       return [
-            //         NotificationItem(
-            //           id: 'local_banner',
-            //           tipo: notif['type'] ?? 'info',
-            //           titulo: notif['type'] == 'success'
-            //               ? 'Inicio de sesión exitoso'
-            //               : notif['type'] == 'error'
-            //                   ? 'Error en sesión'
-            //                   : 'Aviso del sistema',
-            //           detalle: notif['message'] ?? '',
-            //           refId: '',
-            //           fecha: DateTime.now(),
-            //         ),
-            //       ];
-            //     }
-            //
-            //     if (usuario != null) {
-            //       final data =
-            //           await NotificationService.obtenerNotificaciones(usuario.id.toString());
-            //       return data.map((n) {
-            //         return NotificationItem(
-            //           tipo: n['tipo'] ?? 'info',
-            //           titulo: n['titulo'] ?? 'Notificación',
-            //           detalle: n['detalle'] ?? '',
-            //           fecha: DateTime.tryParse(n['fecha'] ?? '') ?? DateTime.now(),
-            //         );
-            //       }).toList();
-            //     }
-            //
-            //     return [];
-            //   },
-            //   onClose: () => context.read<AuthService>().clearNotification(),
-            // ),
           ],
         ),
       ),
@@ -348,10 +354,19 @@ class _MenuScreenState extends State<MenuScreen> {
     Color color1,
     Color color2,
     String route,
-    double screenWidth,
-  ) {
+    double screenWidth, {
+    String? tipo,
+  }) {
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, route),
+      onTap: () {
+        Navigator.pushNamed(context, route).then((_) {
+          if (tipo != null) {
+            setState(() {
+              _notificaciones[tipo] = 0; // LIMPIA AL ENTRAR
+            });
+          }
+        });
+      },
       borderRadius: BorderRadius.circular(20),
       child: Container(
         width: screenWidth * 0.42,
