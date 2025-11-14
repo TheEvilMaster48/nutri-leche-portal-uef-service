@@ -1,0 +1,57 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android {
+    namespace "com.nutrileche.portal"
+    compileSdkVersion 36
+
+    defaultConfig {
+        // IDENTIFICADOR DE LA APLICACIÓN
+        applicationId "com.nutrileche.portal"
+//        minSdkVersion flutter.minSdkVersion
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion 36
+        versionCode 1
+        versionName "1.0"
+
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            // DESACTIVAR MINIFY PARA EVITAR PROBLEMAS DE FIRMA
+            minifyEnabled false
+            shrinkResources false
+
+            // CONFIGURACIÓN DE FIRMA PARA RELEASE (SE USA LA MISMA QUE DEBUG POR AHORA)
+            signingConfig signingConfigs.debug
+        }
+        debug {
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    // CONFIGURACIÓN DE COMPATIBILIDAD DE JAVA Y KOTLIN
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
+    implementation "androidx.multidex:multidex:2.0.1"
+}

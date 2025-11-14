@@ -1,0 +1,253 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io' show Platform;
+import 'package:universal_html/js.dart' as js;
+import '../core/notification_banner.dart';
+import '../models/usuario.dart';
+
+class AuthService extends ChangeNotifier {
+  Usuario? _currentUser;
+  Map<String, dynamic>? _currentNotification;
+
+  Usuario? get currentUser => _currentUser;
+  Map<String, dynamic>? get currentNotification => _currentNotification;
+
+  // URL BASE GENERAL PARA OTROS SERVICIOS
+  static const String baseUrl =
+      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1";
+
+  // URL EXACTA DEL LOGIN
+  static const String loginUrl =
+      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1/loginAPPOficial";
+
+  // 🔐 LOGIN
+  Future<bool> login(String usuario, String password) async {
+    final token = await FirebaseMessaging.instance.getToken();
+    print('FCM TOKEN Login = $token');
+    final uri = Uri.parse(loginUrl);
+    developer.log("🌐 Intentando iniciar sesión en: $uri");
+    developer.log("🧾 Credenciales: usuario=$usuario, clave=$password");
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "usuario": usuario,
+          "clave": password,
+          "produccion": "",
+        }),
+      );
+
+      developer.log("📩 Respuesta Login (${response.statusCode}): ${response.body}");
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          showNotification("El servidor devolvió respuesta vacía", "error");
+          return false;
+        }
+
+        final map = json.decode(response.body);
+        developer.log("🧠 BODY DEVUELTO POR EL SERVIDOR: ${response.body}");
+
+        // VALIDAR ESTRUCTURA Y DECODIFICAR CORRECTAMENTE
+        if (map['correcto'] == true && map['data'] != null) {
+          dynamic data;
+
+          // 🔍 CORRECCIÓN: DECODIFICACIÓN DOBLE SEGURA
+          try {
+            if (map['data'] is String) {
+              final decodedOnce = json.decode(map['data']);
+              if (decodedOnce is String) {
+                data = json.decode(decodedOnce);
+              } else {
+                data = decodedOnce;
+              }
+            } else {
+              data = map['data'];
+            }
+          } catch (e) {
+            developer.log("⚠️ No se pudo decodificar 'data': $e");
+            showNotification("Error al procesar datos del servidor", "error");
+            return false;
+          }
+
+          developer.log("✅ Datos decodificados correctamente: $data");
+
+          try {
+            final user = Usuario.fromJson(data);
+            _currentUser = user;
+
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('currentUser', json.encode(user.toJson()));
+
+            showNotification("Bienvenido ${user.nombre}", "success");
+            notifyListeners();
+            EnviarToken(token!, user.id);
+            return true;
+          } catch (e) {
+            developer.log("⚠️ Error al construir Usuario.fromJson: $e");
+            showNotification("Error al leer datos del usuario", "error");
+            return false;
+          }
+        } else {
+          final mensaje = map['mensaje'] ?? "Usuario o contraseña incorrectos";
+          showNotification(mensaje, "error");
+          developer.log("❌ Login incorrecto: $mensaje");
+          return false;
+        }
+      } else {
+        showNotification("Error HTTP (${response.statusCode})", "error");
+        developer.log("❌ Error HTTP: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      developer.log("🚨 Excepción en login(): $e");
+      showNotification("Error de conexión: ${e.toString()}", "error");
+      return false;
+    }
+  }
+
+  Future<void> EnviarToken(String token, int idUsuario) async {
+    var map = <String, dynamic>{
+      'token': token,
+      'idUsuario': idUsuario,
+    };
+
+    try {
+      // 🌐 SI ES WEB
+      if (kIsWeb) {
+        js.context.callMethod('console.log', ['🌍 Enviando token en Web: $token']);
+        final response = await http.post(
+          Uri.parse("http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(map),
+        );
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          js.context.callMethod('console.log', ['✅ Token actualizado correctamente en Web']);
+        } else {
+          js.context.callMethod('console.error', ['⚠️ Error al actualizar token en Web: ${response.statusCode}']);
+        }
+      }
+
+      // 📱 SI ES ANDROID O IOS
+      else if (Platform.isAndroid || Platform.isIOS) {
+        final response = await http.post(
+          Uri.parse("http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(map),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          debugPrint('✅ Token actualizado correctamente en el servidor (Android/iOS).');
+        } else {
+          debugPrint('⚠️ Error al actualizar token: ${response.statusCode}');
+        }
+      }
+
+      // 🚫 OTROS ENTORNOS
+      else {
+        debugPrint('❌ Plataforma no soportada para envío de token.');
+      }
+    } catch (e) {
+      debugPrint('❌ Error al enviar token: $e');
+    }
+  }
+
+  // REGISTRO
+  Future<bool> register(Usuario usuario) async {
+    final uri = Uri.parse("$baseUrl/registro");
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(usuario.toJson()),
+      );
+
+      developer.log("📩 Respuesta Registro (${response.statusCode}): ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final map = json.decode(response.body);
+
+        if (map['correcto'] == true && map['data'] != null) {
+          final data = json.decode(map['data']);
+          _currentUser = Usuario.fromJson(data);
+
+          showNotification(
+              "Registro exitoso. Bienvenido ${_currentUser!.nombre}",
+              "success");
+          notifyListeners();
+          return true;
+        } else {
+          showNotification(map['mensaje'] ?? "No se pudo registrar", "error");
+          return false;
+        }
+      } else {
+        showNotification("Error al registrar (${response.statusCode})", "error");
+        return false;
+      }
+    } catch (e) {
+      showNotification("Error de conexión: ${e.toString()}", "error");
+      return false;
+    }
+  }
+
+  // CERRAR SESIÓN
+  Future<void> logout() async {
+    _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('currentUser');
+    showNotification("Sesión cerrada correctamente", "success");
+    notifyListeners();
+  }
+
+  // NOTIFICACIONES
+  void showNotification(String message, String type) {
+    _currentNotification = {"message": message, "type": type};
+    notifyListeners();
+    Future.delayed(const Duration(seconds: 3), clearNotification);
+  }
+
+  void clearNotification() {
+    _currentNotification = null;
+    notifyListeners();
+  }
+
+  // ACTUALIZAR PERFIL LOCAL
+  Future<void> actualizarUsuario(Usuario nuevoUsuario) async {
+    _currentUser = nuevoUsuario;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('currentUser', json.encode(nuevoUsuario.toJson()));
+    } catch (e) {
+      if (kDebugMode) {
+        print("⚠️ Error al guardar usuario actualizado: $e");
+      }
+    }
+  }
+
+  // AUTOLOGIN
+  Future<void> cargarUsuarioGuardado() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('currentUser');
+      if (userData != null) {
+        final decoded = json.decode(userData);
+        _currentUser = Usuario.fromJson(decoded);
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("⚠️ No se pudo restaurar la sesión: $e");
+      }
+    }
+  }
+}
