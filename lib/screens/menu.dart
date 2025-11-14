@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/evento_service.dart';
 import '../core/notification_banner.dart' show NotificationBanner, NotificationType;
 import '../models/notification_item.dart';
 import '../models/usuario.dart';
@@ -23,7 +24,6 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   Timer? _timer;
 
-  // NUEVO: CONTADORES DE NOTIFICACIONES
   final Map<String, int> _notificaciones = {
     'eventos': 0,
     'cumpleanios': 0,
@@ -33,7 +33,6 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
 
-    // ESCUCHAR NOTIFICACIONES LLEGADAS DESDE MAIN
     FirebaseNotificationBus.stream.listen((data) {
       setState(() {
         final tipo = data['tipo'] ?? '';
@@ -45,7 +44,8 @@ class _MenuScreenState extends State<MenuScreen> {
       });
     });
 
-    // MOSTRAR MENSAJE DE BIENVENIDA
+    _actualizarContadoresPendientes();
+
     Future.delayed(const Duration(seconds: 1), () {
       final auth = context.read<AuthService>();
       auth.showNotification(
@@ -55,8 +55,27 @@ class _MenuScreenState extends State<MenuScreen> {
     });
 
     _timer = Timer.periodic(const Duration(minutes: 2), (_) {
-      setState(() {});
+      _actualizarContadoresPendientes();
     });
+  }
+
+  Future<void> _actualizarContadoresPendientes() async {
+    try {
+      final eventoService = context.read<EventoService>();
+      final auth = context.read<AuthService>();
+      final usuario = auth.currentUser;
+      if (usuario == null) return;
+
+      await eventoService.obtenerEventos(idUsuario: usuario.id);
+      final eventos = eventoService.eventos;
+      final pendientesEventos = eventos.where((e) => e.estado == 0).length;
+
+      setState(() {
+        _notificaciones['eventos'] = pendientesEventos;
+      });
+    } catch (e) {
+      debugPrint('Error al actualizar contadores: $e');
+    }
   }
 
   @override
@@ -164,7 +183,6 @@ class _MenuScreenState extends State<MenuScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // FONDO
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -178,8 +196,6 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
               ),
             ),
-
-            // LOGO DE FONDO
             Align(
               alignment: Alignment.center,
               child: Image.asset(
@@ -189,8 +205,6 @@ class _MenuScreenState extends State<MenuScreen> {
                 fit: BoxFit.contain,
               ),
             ),
-
-            // CONTENIDO PRINCIPAL
             SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
@@ -212,8 +226,6 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                       ],
                     ),
-
-                    // FOTO DE PERFIL
                     Container(
                       width: 130,
                       height: 130,
@@ -231,15 +243,21 @@ class _MenuScreenState extends State<MenuScreen> {
                         child: Builder(
                           builder: (context) {
                             final cedula = usuario?.cedula?.trim() ?? '';
-                            final imageUrl = cedula.isNotEmpty
-                                ? 'https://servicioslsa.nutri.com.ec/alimentacion/$cedula.jpeg'
-                                : 'https://servicioslsa.nutri.com.ec/alimentacion/default.jpeg';
+                            final imageUrlHttp = 'http://servicioslsa.nutri.com.ec/alimentacion/${cedula.isNotEmpty ? cedula : 'default'}.jpeg';
+                            final imageUrlHttps = 'https://servicioslsa.nutri.com.ec/alimentacion/${cedula.isNotEmpty ? cedula : 'default'}.jpeg';
 
                             return Image.network(
-                              imageUrl,
+                              imageUrlHttps,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.person, size: 100, color: Colors.white70),
+                              errorBuilder: (context, error, stackTrace) {
+                                // INTENTA HTTP SI HTTPS FALLA
+                                return Image.network(
+                                  imageUrlHttp,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.person, size: 100, color: Colors.white70),
+                                );
+                              },
                               loadingBuilder: (context, child, progress) {
                                 if (progress == null) return child;
                                 return const Center(
@@ -251,9 +269,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     Text(
                       usuario?.nombre.toUpperCase() ?? '',
                       style: const TextStyle(
@@ -263,14 +279,11 @@ class _MenuScreenState extends State<MenuScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-
                     Text(
                       _obtenerDescripcionUsuario(usuario),
                       style: const TextStyle(fontSize: 17, color: Colors.white70),
                     ),
-
                     const SizedBox(height: 20),
-
                     Container(
                       height: 4,
                       width: screenWidth * 0.9,
@@ -279,10 +292,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-
                     const SizedBox(height: 30),
-
-                    // BOTONES DEL MENÚ CON BURBUJA ROJA
                     Wrap(
                       spacing: 18,
                       runSpacing: 18,
@@ -327,7 +337,6 @@ class _MenuScreenState extends State<MenuScreen> {
                         );
                       }).toList(),
                     ),
-
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -359,10 +368,12 @@ class _MenuScreenState extends State<MenuScreen> {
   }) {
     return InkWell(
       onTap: () {
-        Navigator.pushNamed(context, route).then((_) {
-          if (tipo != null) {
+        Navigator.pushNamed(context, route).then((_) async {
+          if (tipo == 'eventos') {
+            await _actualizarContadoresPendientes();
+          } else if (tipo != null) {
             setState(() {
-              _notificaciones[tipo] = 0; // LIMPIA AL ENTRAR
+              _notificaciones[tipo] = 0;
             });
           }
         });

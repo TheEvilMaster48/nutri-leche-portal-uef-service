@@ -40,8 +40,10 @@ class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // PERMITE CONEXIONES HTTP/HTTPS A ESTOS HOSTS
+        return host.contains("servicioslsa.nutri.com.ec") || host.contains("10.170.4.15");
+      };
   }
 }
 
@@ -99,9 +101,8 @@ Future<void> main() async {
     print('Body: ${message.notification?.body}');
     print('Data: ${message.data}');
 
-    // 🔴 NUEVO: ENVIAR A MENU PARA MOSTRAR BURBUJA
+    // ENVIAR A MENU PARA MOSTRAR BURBUJA
     try {
-      // Tipo puede venir en message.data['tipo'] (ej: 'evento' o 'cumpleanios')
       FirebaseNotificationBus.add({
         'tipo': message.data['tipo'] ?? 'evento',
       });
@@ -111,7 +112,6 @@ Future<void> main() async {
 
     final notification = message.notification;
     if (notification != null) {
-      // MOSTRAR NOTIFICACIÓN LOCAL MIENTRAS LA APP ESTÁ ABIERTA
       await _local.show(
         notification.hashCode,
         notification.title,
@@ -130,6 +130,9 @@ Future<void> main() async {
       );
     }
   });
+
+  //  DESHABILITAR SSL/CORS PARA ANDROID
+  HttpOverrides.global = MyHttpOverrides();
 
   runApp(const NutriLechePortalApp());
 }

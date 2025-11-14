@@ -11,7 +11,7 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
 
-    <!-- 📷 CÁMARA, AUDIO, CONTACTOS -->
+    <!-- CÁMARA, AUDIO, CONTACTOS -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -25,7 +25,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- 📱 CONFIGURACIÓN DE LA APLICACIÓN -->
+    <!-- CONFIGURACIÓN DE LA APLICACIÓN -->
     <application
         android:name="${applicationName}"
         android:label="Nutri Portal"
@@ -35,7 +35,7 @@
         android:allowBackup="true"
         android:supportsRtl="true">
 
-        <!-- 🚀 ACTIVIDAD PRINCIPAL -->
+        <!-- ACTIVIDAD PRINCIPAL -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -45,7 +45,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- INICIO -->
+            <!-- TEMA DE LANZAMIENTO -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -57,7 +57,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 🔥 CONFIGURACIÓN DE FIREBASE -->
+        <!-- FIREBASE: ICONO Y COLOR DE NOTIFICACIÓN -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
@@ -69,6 +69,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-
     </application>
+
 </manifest>
