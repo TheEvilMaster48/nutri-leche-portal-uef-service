@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/evento_service.dart';
+import '../services/cumpleanios_service.dart';
 import '../core/notification_banner.dart' show NotificationBanner, NotificationType;
 import '../models/notification_item.dart';
 import '../models/usuario.dart';
@@ -62,16 +63,24 @@ class _MenuScreenState extends State<MenuScreen> {
   Future<void> _actualizarContadoresPendientes() async {
     try {
       final eventoService = context.read<EventoService>();
+      final cumpleService = context.read<CumpleaniosService>();
       final auth = context.read<AuthService>();
       final usuario = auth.currentUser;
       if (usuario == null) return;
 
+      // EVENTOS
       await eventoService.obtenerEventos(idUsuario: usuario.id);
       final eventos = eventoService.eventos;
       final pendientesEventos = eventos.where((e) => e.estado == 0).length;
 
+      // CUMPLEAÑOS
+      await cumpleService.obtenerCumpleanios(idUsuario: usuario.id);
+      final cumpleanios = cumpleService.cumpleanios;
+      final pendientesCumples = cumpleanios.where((c) => c.estado == 0).length;
+
       setState(() {
         _notificaciones['eventos'] = pendientesEventos;
+        _notificaciones['cumpleanios'] = pendientesCumples;
       });
     } catch (e) {
       debugPrint('Error al actualizar contadores: $e');
@@ -369,7 +378,7 @@ class _MenuScreenState extends State<MenuScreen> {
     return InkWell(
       onTap: () {
         Navigator.pushNamed(context, route).then((_) async {
-          if (tipo == 'eventos') {
+          if (tipo == 'eventos' || tipo == 'cumpleanios') {
             await _actualizarContadoresPendientes();
           } else if (tipo != null) {
             setState(() {
