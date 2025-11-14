@@ -142,7 +142,7 @@ class AuthService extends ChangeNotifier {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
-
+        
         if (response.statusCode == 200 || response.statusCode == 201) {
           debugPrint('✅ Token actualizado correctamente en el servidor (Android/iOS).');
         } else {
