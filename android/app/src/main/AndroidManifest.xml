@@ -10,6 +10,7 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
+
     <!-- 📷 CÁMARA, AUDIO, CONTACTOS -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -24,8 +25,15 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- 📱 COMPATIBILIDAD HTTP SIN SSL -->
-    <application>
+    <!-- 📱 CONFIGURACIÓN DE LA APLICACIÓN -->
+    <application
+        android:name="${applicationName}"
+        android:label="Nutri Portal"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:allowBackup="true"
+        android:supportsRtl="true">
 
         <!-- 🚀 ACTIVIDAD PRINCIPAL -->
         <activity
@@ -49,9 +57,18 @@
             </intent-filter>
         </activity>
 
+        <!-- 🔥 CONFIGURACIÓN DE FIREBASE -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/white" />
+
         <!-- FLUTTER EMBEDDING V2 -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
     </application>
 </manifest>

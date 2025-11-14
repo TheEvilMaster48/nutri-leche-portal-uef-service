@@ -51,7 +51,7 @@ final FlutterLocalNotificationsPlugin _local =
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print('🟡 NOTIFICACIÓN en BACKGROUND');
+  print('NOTIFICACIÓN en BACKGROUND');
   print('Título: ${message.notification?.title}');
   print('Body: ${message.notification?.body}');
   print('Data: ${message.data}');
@@ -91,6 +91,35 @@ Future<void> main() async {
 
   final token = await FirebaseMessaging.instance.getToken();
   print('FCM TOKEN = $token');
+
+  // ESCUCHAR NOTIFICACIONES EN PRIMER PLANO
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    print('NOTIFICACIÓN EN FOREGROUND');
+    print('Título: ${message.notification?.title}');
+    print('Body: ${message.notification?.body}');
+    print('Data: ${message.data}');
+
+    final notification = message.notification;
+    if (notification != null) {
+      // MOSTRAR NOTIFICACIÓN LOCAL MIENTRAS LA APP ESTÁ ABIERTA
+      await _local.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'Notificaciones importantes',
+            channelDescription: 'Canal para notificaciones importantes',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            icon: '@mipmap/ic_launcher',
+          ),
+        ),
+      );
+    }
+  });
 
   runApp(const NutriLechePortalApp());
 }

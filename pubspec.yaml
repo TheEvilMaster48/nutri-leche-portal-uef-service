@@ -50,14 +50,10 @@ dependencies:
   mime: ^2.0.0
 
   # FIREBASE
-#  firebase_core: ^3.8.0
-#  firebase_messaging: ^15.2.10
-#  flutter_local_notifications: ^19.5.0
-  #  cloud_firestore: ^5.5.0
-  #  firebase_storage: ^12.3.0
   flutter_local_notifications: ^19.3.0
   firebase_core: ^3.14.0
   firebase_messaging: ^15.2.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,18 +67,24 @@ flutter:
     - assets/icono/nutrileche.png
 
 # CONFIGURACIÓN DE ÍCONO DE APP
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  web: true
   image_path: "assets/icono/nutrileche.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icono/nutrileche.png"
 
-# CONFIGURACIÓN DE PANTALLA DE CARGA
+  web:
+    generate: true
+    image_path: "assets/icono/nutrileche.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+
+# CONFIGURACIÓN DE PANTALLA DE CARGA (SPLASH)
 flutter_native_splash:
   color: "#FFFFFF"
   image: assets/icono/nutrileche.png
   android: true
   ios: true
   web: true
+  android_gravity: fill
