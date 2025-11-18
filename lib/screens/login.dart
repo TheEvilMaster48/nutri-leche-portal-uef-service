@@ -17,8 +17,42 @@ class _LoginScreenState extends State<LoginScreen> {
   String _mensajeError = '';
   Timer? _timer;
 
+  bool _checkingSession = true; 
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Apenas entra a la pantalla, revisamos si ya hay usuario guardado
+    Future.microtask(() async {
+      final auth = context.read<AuthService>();
+
+      await auth.cargarUsuarioGuardado();
+
+      if (!mounted) return;
+
+      if (auth.currentUser != null) {
+        // EXISTE SESION GUARDADA → IR AL MENÚ
+        Navigator.pushReplacementNamed(context, '/menu');
+      } else {
+        // No hay sesión → mostrar formulario
+        setState(() {
+          _checkingSession = false;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Mientras revisamos si hay sesión guardada, mostramos un loader simple
+    if (_checkingSession) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),

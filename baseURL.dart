@@ -1,4 +1,4 @@
-class Base {
+/*class Base {
     // final String BASE_URL = "http://10.170.4.15:8080/nutrisoft/rest/";
   final String BASE_URL = "https://servicioslsa.nutri.com.ec/nutrisoft/rest/";
   //final String BASE_URL="http://190.95.184.58/nutrisoft/rest/";
@@ -24,3 +24,4 @@ class Base {
         "http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1/evento_id";
     */  
 }
+*/

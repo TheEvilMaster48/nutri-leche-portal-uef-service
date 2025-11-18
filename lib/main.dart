@@ -168,6 +168,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    Future.microtask(() {
+      context.read<AuthService>().cargarUsuarioGuardado();
+    });
+
     return Consumer<LocaleProvider>(
       builder: (context, localeProvider, child) {
         return MaterialApp(
