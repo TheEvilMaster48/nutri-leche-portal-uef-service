@@ -250,4 +250,24 @@ class AuthService extends ChangeNotifier {
       }
     }
   }
+
+  // NUEVO: VERIFICAR SI EXISTE SESIÓN ACTIVA
+  bool get isLoggedIn => _currentUser != null;
+
+  // NUEVO: VERIFICAR SESIÓN GUARDADA AUTOMÁTICAMENTE
+  Future<bool> verificarSesionGuardada() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('currentUser');
+      if (userData != null) {
+        final decoded = json.decode(userData);
+        _currentUser = Usuario.fromJson(decoded);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint("⚠️ No se pudo verificar sesión guardada: $e");
+    }
+    return false;
+  }
 }

@@ -41,7 +41,6 @@ class MyHttpOverrides extends HttpOverrides {
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        // PERMITE CONEXIONES HTTP/HTTPS A ESTOS HOSTS
         return host.contains("servicioslsa.nutri.com.ec") || host.contains("10.170.4.15");
       };
   }
@@ -94,14 +93,12 @@ Future<void> main() async {
   final token = await FirebaseMessaging.instance.getToken();
   print('FCM TOKEN = $token');
 
-  // ESCUCHAR NOTIFICACIONES EN PRIMER PLANO
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     print('NOTIFICACIÓN EN FOREGROUND');
     print('Título: ${message.notification?.title}');
     print('Body: ${message.notification?.body}');
     print('Data: ${message.data}');
 
-    // ENVIAR A MENU PARA MOSTRAR BURBUJA
     try {
       FirebaseNotificationBus.add({
         'tipo': message.data['tipo'] ?? 'evento',
@@ -131,7 +128,6 @@ Future<void> main() async {
     }
   });
 
-  //  DESHABILITAR SSL/CORS PARA ANDROID
   HttpOverrides.global = MyHttpOverrides();
 
   runApp(const NutriLechePortalApp());
@@ -168,9 +164,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    Future.microtask(() {
-      context.read<AuthService>().cargarUsuarioGuardado();
+    Future.microtask(() async {
+      final auth = context.read<AuthService>();
+      final sesionActiva = await auth.verificarSesionGuardada();
+      if (sesionActiva && auth.isLoggedIn) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacementNamed(context, '/menu');
+        });
+      }
     });
 
     return Consumer<LocaleProvider>(

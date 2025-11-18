@@ -15,16 +15,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberPassword = false; // NUEVO: RECORDAR CONTRASEÑA
+  bool _rememberPassword = false; // NUEVO RECORDAR CONTRASEÑA
   String _mensajeError = '';
   Timer? _timer;
-  bool _checkingSession = true;
+
+  bool _checkingSession = true; 
 
   @override
   void initState() {
     super.initState();
 
-    // Al entrar, verificamos si hay sesión o credenciales guardadas
+    // Apenas entra a la pantalla, revisamos si ya hay usuario guardado
     Future.microtask(() async {
       final auth = context.read<AuthService>();
       final prefs = await SharedPreferences.getInstance();
@@ -34,8 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // Si ya hay sesión activa → ir directo al menú
       if (auth.currentUser != null) {
+        // EXISTE SESION GUARDADA → IR AL MENÚ
         Navigator.pushReplacementNamed(context, '/menu');
         return;
       }
@@ -51,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _rememberPassword = true;
       }
 
+      // No hay sesión → mostrar formulario
       setState(() {
         _checkingSession = false;
       });
@@ -59,13 +61,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Mostrar loader mientras se revisa sesión guardada
+    // Mientras revisamos si hay sesión guardada, mostramos un loader simple
     if (_checkingSession) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
       );
     }
-
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -83,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // LOGO
+                  // Logo
                   Container(
                     width: 120,
                     height: 120,
@@ -188,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // 🔹 CHECKBOX RECORDAR CONTRASEÑA
+                        // RECORDAR CONTRASEÑA
                         Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
@@ -228,7 +231,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               final authService = context.read<AuthService>();
 
-                              // Mostrar loading
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text("🔄 Iniciando sesión..."),
@@ -245,7 +247,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (!mounted) return;
 
                               if (success) {
-                                // Guardar credenciales si marcó recordar
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 if (_rememberPassword) {
@@ -274,7 +275,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   debugPrint('👤 Usuario: ${user.nombre}');
                                 }
 
-                                // Redirigir al menú
                                 Navigator.pushReplacementNamed(
                                     context, '/menu');
                                 debugPrint('➡️ Navegando a /menu');
@@ -303,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 12),
 
-                        // Mensaje de error
+                        // MENSAJE DE ERROR
                         AnimatedOpacity(
                           opacity: _mensajeError.isNotEmpty ? 1.0 : 0.0,
                           duration: const Duration(milliseconds: 400),
@@ -324,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 8),
 
-                        // 🔹 OPCIÓN RECORDAR CONTRASEÑA SOLAMENTE (NO REGISTRO)
+                        // OPCIÓN OLVIDÉ CONTRASEÑA
                         TextButton(
                           onPressed: () {
                             _mostrarMensaje(
