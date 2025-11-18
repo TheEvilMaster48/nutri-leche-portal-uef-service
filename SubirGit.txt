@@ -1,0 +1,2 @@
+git init; git remote remove origin 2>$null; git remote add origin https://github.com/TheEvilMaster48/nutri-leche-portal-uef-service.git; 
+git add .; git commit -m "Actualización del proyecto Nutri Leche Portal UEF Service"; git branch -M main; git push origin main --force
