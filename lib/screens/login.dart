@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,45 +15,57 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberPassword = false; // NUEVO: RECORDAR CONTRASEÑA
   String _mensajeError = '';
   Timer? _timer;
-
-  bool _checkingSession = true; 
+  bool _checkingSession = true;
 
   @override
   void initState() {
     super.initState();
 
-    // Apenas entra a la pantalla, revisamos si ya hay usuario guardado
+    // Al entrar, verificamos si hay sesión o credenciales guardadas
     Future.microtask(() async {
       final auth = context.read<AuthService>();
+      final prefs = await SharedPreferences.getInstance();
 
+      // Cargar usuario guardado (sesión activa)
       await auth.cargarUsuarioGuardado();
 
       if (!mounted) return;
 
+      // Si ya hay sesión activa → ir directo al menú
       if (auth.currentUser != null) {
-        // EXISTE SESION GUARDADA → IR AL MENÚ
         Navigator.pushReplacementNamed(context, '/menu');
-      } else {
-        // No hay sesión → mostrar formulario
-        setState(() {
-          _checkingSession = false;
-        });
+        return;
       }
+
+      // Si no hay sesión activa, verificamos si guardó credenciales
+      final savedUser = prefs.getString('saved_username');
+      final savedPass = prefs.getString('saved_password');
+      final remember = prefs.getBool('remember_password') ?? false;
+
+      if (savedUser != null && remember) {
+        _usernameController.text = savedUser;
+        _passwordController.text = savedPass ?? '';
+        _rememberPassword = true;
+      }
+
+      setState(() {
+        _checkingSession = false;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Mientras revisamos si hay sesión guardada, mostramos un loader simple
+    // Mostrar loader mientras se revisa sesión guardada
     if (_checkingSession) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
+
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -70,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
+                  // LOGO
                   Container(
                     width: 120,
                     height: 120,
@@ -173,7 +186,27 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 10),
+
+                        // 🔹 CHECKBOX RECORDAR CONTRASEÑA
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Checkbox(
+                              value: _rememberPassword,
+                              onChanged: (value) {
+                                setState(() {
+                                  _rememberPassword = value ?? false;
+                                });
+                              },
+                            ),
+                            const Text(
+                              'Recordar contraseña',
+                              style: TextStyle(color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
 
                         // 🔹 BOTÓN INICIAR SESIÓN
                         SizedBox(
@@ -212,6 +245,22 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (!mounted) return;
 
                               if (success) {
+                                // Guardar credenciales si marcó recordar
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                if (_rememberPassword) {
+                                  await prefs.setString(
+                                      'saved_username', username);
+                                  await prefs.setString(
+                                      'saved_password', password);
+                                  await prefs.setBool(
+                                      'remember_password', true);
+                                } else {
+                                  await prefs.remove('saved_username');
+                                  await prefs.remove('saved_password');
+                                  await prefs.remove('remember_password');
+                                }
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text("✅ Sesión iniciada"),
@@ -275,23 +324,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 8),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('¿No tienes cuenta? '),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/registro');
-                              },
-                              child: const Text(
-                                'Regístrate',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF3B82F6),
-                                ),
-                              ),
+                        // 🔹 OPCIÓN RECORDAR CONTRASEÑA SOLAMENTE (NO REGISTRO)
+                        TextButton(
+                          onPressed: () {
+                            _mostrarMensaje(
+                                "Por favor, contacte al administrador para recuperar su contraseña.");
+                          },
+                          child: const Text(
+                            '¿Olvidó su contraseña?',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF3B82F6),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -315,11 +360,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _ocultarMensajeInmediato() {
-    _timer?.cancel();
-    setState(() => _mensajeError = '');
-  }
-
   @override
   void dispose() {
     _usernameController.dispose();
@@ -328,3 +368,4 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 }
+
