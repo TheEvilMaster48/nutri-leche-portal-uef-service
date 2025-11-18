@@ -116,13 +116,14 @@ class _MenuScreenState extends State<MenuScreen> {
         'tipo': 'cumpleanios', // NUEVO
         'colores': [const Color(0xFFFF4081), const Color(0xFFF8BBD0)],
       },
-      /*{
-        'titulo': 'Notificaciones',
-        'subtitulo': 'Ver avisos importantes del sistema',
-        'icono': Icons.notifications_active_rounded,
-        'ruta': '/boton_notificaciones',
+      {
+        'titulo': 'Sorteo',
+        'subtitulo': 'Ver Sorteos y Resultados',
+        'icono': Icons.card_giftcard_rounded,
+        'ruta': '/sorteos',
         'colores': [const Color(0xFFFA0000), const Color(0xFF00ACC1)],
       },
+      /*
       {
         'titulo': 'Chat',
         'subtitulo': 'Comunicación interna',

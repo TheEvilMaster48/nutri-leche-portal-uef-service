@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
+import 'package:nutri/screens/sorteo_screen.dart';
+import 'package:nutri/services/sorteo_service.dart';
 import 'package:provider/provider.dart';
 
 // CORE
@@ -149,6 +151,7 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CumpleaniosService()),
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
         ChangeNotifierProvider(create: (_) => SugerenciaService()),
+        ChangeNotifierProvider(create: (_) => SorteoService()),
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
           update: (context, auth, previous) => PerfilService(auth),
@@ -198,6 +201,7 @@ class MyApp extends StatelessWidget {
             '/cumpleanios': (context) => const CumpleaniosScreen(),
             '/calendario_eventos': (context) => const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
+            '/sorteos': (context) => const SorteoScreen(),
           },
         );
       },
