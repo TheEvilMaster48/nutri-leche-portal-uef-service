@@ -1,8 +1,13 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/sorteo.dart';
 import '../services/sorteo_service.dart';
+import '../core/notification_banner.dart';
+import '../services/auth_service.dart';
+import 'detalle_sorteo_screen.dart';
+import 'menu.dart';
 
 class SorteoScreen extends StatefulWidget {
   const SorteoScreen({super.key});
@@ -11,146 +16,224 @@ class SorteoScreen extends StatefulWidget {
   State<SorteoScreen> createState() => _SorteoScreenState();
 }
 
-class _SorteoScreenState extends State<SorteoScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  int? _numeroGanador;
-  bool _girando = false;
+class _SorteoScreenState extends State<SorteoScreen> {
+  bool _cargando = true;
+  int idUsuario = 0;
 
   @override
   void initState() {
     super.initState();
-    final service = context.read<SorteoService>();
-    service.crearNuevoSorteo();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    );
-
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCirc);
+    _cargarSorteos();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  Future<void> _cargarSorteos() async {
+    final sorteoService = context.read<SorteoService>();
 
-  void _iniciarSorteo() async {
-    if (_girando) return;
+    try {
+      final authService = context.read<AuthService>();
+      final usuarioActual = authService.currentUser;
+      idUsuario = usuarioActual?.id ?? 0;
 
-    setState(() => _girando = true);
-    _controller.reset();
-    _controller.forward();
+      if (idUsuario == 0) {
+        final prefs = await SharedPreferences.getInstance();
+        idUsuario = prefs.getInt('idUsuario') ?? 0;
+      }
+    } catch (_) {}
 
-    await Future.delayed(const Duration(seconds: 3));
-
-    final ganador = context.read<SorteoService>().girarRuleta();
-
-    setState(() {
-      _numeroGanador = ganador;
-      _girando = false;
-    });
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Número ganador: $ganador"),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
+    if (idUsuario == 0) {
+      NotificationBanner.show(
+        context,
+        "No se encontró un usuario válido para cargar los sorteos.",
+        NotificationType.error,
       );
+      setState(() => _cargando = false);
+      return;
     }
+
+    await sorteoService.obtenerSorteos(idUsuario: idUsuario);
+    setState(() => _cargando = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final service = context.watch<SorteoService>();
-    final sorteo = service.sorteoActual;
+    final sorteos = context.watch<SorteoService>().sorteos;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Sorteo - Ruleta"),
-        backgroundColor: const Color(0xFF01579B),
-      ),
       body: Container(
-        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0288D1), Color(0xFF03A9F4)],
+            colors: [
+              Color(0xFF8B0000),
+              Color(0xFFB71C1C),
+              Color(0xFFEF5350),
+              Color(0xFFFFCDD2),
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ScaleTransition(
-              scale: _animation,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+        child: SafeArea(
+          child: Column(
+            children: [
+              // ENCABEZADO
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFC62828), Color(0xFFEF5350)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
+                child: Row(
                   children: [
-                    for (int i = 0; i < 100; i++)
-                      Transform.rotate(
-                        angle: (i * (2 * pi / 100)),
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: Container(
-                            width: 3,
-                            height: 15,
-                            color: i % 5 == 0 ? Colors.blueAccent : Colors.grey.shade400,
-                          ),
-                        ),
-                      ),
-                    Text(
-                      _numeroGanador != null ? '$_numeroGanador' : '?',
-                      style: const TextStyle(
-                        fontSize: 70,
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white),
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MenuScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Sorteos Corporativos',
+                      style: TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        fontSize: 22,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 50),
-            ElevatedButton.icon(
-              onPressed: _iniciarSorteo,
-              icon: const Icon(Icons.casino_rounded),
-              label: Text(_girando ? "Girando..." : "Girar Ruleta"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0048FF),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+
+              // LISTA DE SORTEOS
+              Expanded(
+                child: _cargando
+                    ? const Center(child: CircularProgressIndicator())
+                    : Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: sorteos.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No hay sorteos disponibles actualmente.',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: () async {
+                                  await context
+                                      .read<SorteoService>()
+                                      .obtenerSorteos(idUsuario: idUsuario);
+                                },
+                                child: ListView.builder(
+                                  itemCount: sorteos.length,
+                                  itemBuilder: (context, i) {
+                                    final sorteo = sorteos[i];
+                                    return _SorteoItem(
+                                      sorteo: sorteo,
+                                      idUsuario: idUsuario,
+                                    );
+                                  },
+                                ),
+                              ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SorteoItem extends StatelessWidget {
+  final Sorteo sorteo;
+  final int idUsuario;
+
+  const _SorteoItem({
+    required this.sorteo,
+    required this.idUsuario,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textoEstado = sorteo.estado == 0 ? 'Pendiente' : 'Leído';
+    final colorEstado = sorteo.estado == 0 ? Colors.orange : Colors.green;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      elevation: 3,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        leading: const Icon(Icons.casino_rounded, color: Color(0xFFC62828)),
+
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                sorteo.titulo,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFC62828),
                 ),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(height: 20),
-            if (_numeroGanador != null)
-              Text(
-                "Número ganador: $_numeroGanador",
-                style: const TextStyle(fontSize: 22, color: Colors.white),
+            Text(
+              textoEstado,
+              style: TextStyle(
+                color: colorEstado,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
               ),
+            ),
           ],
         ),
+
+        // SOLO DESCRIPCIÓN (YA NO FECHA NI HORA)
+        subtitle: Text(
+          sorteo.descripcion,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.black87),
+        ),
+
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DetalleSorteoScreen(sorteo: sorteo),
+            ),
+          );
+
+          if (sorteo.estado == 0) {
+            sorteo.estado = 1;
+            Future.microtask(() {
+              context.read<SorteoService>().marcarSorteoComoRegistro(
+                    idUsuario: idUsuario,
+                    idSorteo: sorteo.id,
+                  );
+            });
+          }
+        },
       ),
     );
   }
