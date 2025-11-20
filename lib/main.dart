@@ -54,6 +54,15 @@ final FlutterLocalNotificationsPlugin _local =
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final auth = GlobalNotifier.auth;
+  final loggedIn = auth?.isLoggedIn ?? false;
+
+  if (!loggedIn) {
+    print("NOTIFICACION BLOQUEADA (BACKGROUND - USUARIO NO LOGUEADO)");
+    return;
+  }
+
   print('NOTIFICACIÓN en BACKGROUND');
   print('Título: ${message.notification?.title}');
   print('Body: ${message.notification?.body}');
@@ -92,44 +101,6 @@ Future<void> main() async {
     sound: true,
   );
 
-  final token = await FirebaseMessaging.instance.getToken();
-  print('FCM TOKEN = $token');
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-    print('NOTIFICACIÓN EN FOREGROUND');
-    print('Título: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-
-    try {
-      FirebaseNotificationBus.add({
-        'tipo': message.data['tipo'] ?? 'evento',
-      });
-    } catch (e) {
-      print('Error al emitir notificación al menú: $e');
-    }
-
-    final notification = message.notification;
-    if (notification != null) {
-      await _local.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'Notificaciones importantes',
-            channelDescription: 'Canal para notificaciones importantes',
-            importance: Importance.max,
-            priority: Priority.high,
-            playSound: true,
-            icon: '@mipmap/ic_launcher',
-          ),
-        ),
-      );
-    }
-  });
-
   HttpOverrides.global = MyHttpOverrides();
 
   runApp(const NutriLechePortalApp());
@@ -143,7 +114,13 @@ class NutriLechePortalApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthService()),
+
+        ChangeNotifierProvider(create: (_) {
+          final auth = AuthService();
+          GlobalNotifier.auth = auth;
+          return auth;
+        }),
+
         ChangeNotifierProvider(create: (_) => GlobalNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageService()),
         ChangeNotifierProvider(create: (_) => UsuarioService()),
@@ -152,6 +129,7 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
         ChangeNotifierProvider(create: (_) => SugerenciaService()),
         ChangeNotifierProvider(create: (_) => SorteoService()),
+
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
           update: (context, auth, previous) => PerfilService(auth),
@@ -162,8 +140,61 @@ class NutriLechePortalApp extends StatelessWidget {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      final auth = GlobalNotifier.auth;
+      final loggedIn = auth?.isLoggedIn ?? false;
+
+      if (!loggedIn) {
+        print("NOTIFICACION IGNORADA (FOREGROUND - NO LOGUEADO)");
+        return;
+      }
+
+      print('NOTIFICACIÓN EN FOREGROUND');
+      print('Título: ${message.notification?.title}');
+      print('Body: ${message.notification?.body}');
+      print('Data: ${message.data}');
+
+      try {
+        FirebaseNotificationBus.add({
+          'tipo': message.data['tipo'] ?? 'evento',
+        });
+      } catch (e) {
+        print('Error al emitir notificación al menú: $e');
+      }
+
+      final notification = message.notification;
+      if (notification != null) {
+        await _local.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'high_importance_channel',
+              'Notificaciones importantes',
+              channelDescription: 'Canal para notificaciones importantes',
+              importance: Importance.max,
+              priority: Priority.high,
+              playSound: true,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
