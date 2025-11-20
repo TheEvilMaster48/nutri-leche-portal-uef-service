@@ -36,6 +36,8 @@ import 'screens/sugerencia_screen.dart';
 import 'screens/calendario_evento_screen.dart';
 import 'screens/perfil.dart';
 import 'firebase_options.dart';
+import 'services/push_service.dart';
+
 
 // IGNORAR CERTIFICADOS SSL (SOLO PARA PRUEBAS)
 class MyHttpOverrides extends HttpOverrides {
@@ -48,60 +50,14 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-final FlutterLocalNotificationsPlugin _local =
-    FlutterLocalNotificationsPlugin();
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  final auth = GlobalNotifier.auth;
-  final loggedIn = auth?.isLoggedIn ?? false;
-
-  if (!loggedIn) {
-    print("NOTIFICACION BLOQUEADA (BACKGROUND - USUARIO NO LOGUEADO)");
-    return;
-  }
-
-  print('NOTIFICACIÓN en BACKGROUND');
-  print('Título: ${message.notification?.title}');
-  print('Body: ${message.notification?.body}');
-  print('Data: ${message.data}');
-}
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  const AndroidInitializationSettings initSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const InitializationSettings initSettings =
-      InitializationSettings(android: initSettingsAndroid);
-
-  await _local.initialize(initSettings);
-
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'high_importance_channel',
-    'Notificaciones importantes',
-    description: 'Canal para notificaciones importantes',
-    importance: Importance.max,
-  );
-
-  await _local
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
-
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
 
   HttpOverrides.global = MyHttpOverrides();
+// 👇 MUY IMPORTANTE: aquí inicializamos Firebase SIEMPRE
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const NutriLechePortalApp());
 }
@@ -114,13 +70,7 @@ class NutriLechePortalApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-
-        ChangeNotifierProvider(create: (_) {
-          final auth = AuthService();
-          GlobalNotifier.auth = auth;
-          return auth;
-        }),
-
+        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => GlobalNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageService()),
         ChangeNotifierProvider(create: (_) => UsuarioService()),
@@ -129,7 +79,6 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
         ChangeNotifierProvider(create: (_) => SugerenciaService()),
         ChangeNotifierProvider(create: (_) => SorteoService()),
-
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
           update: (context, auth, previous) => PerfilService(auth),
@@ -140,61 +89,8 @@ class NutriLechePortalApp extends StatelessWidget {
   }
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      final auth = GlobalNotifier.auth;
-      final loggedIn = auth?.isLoggedIn ?? false;
-
-      if (!loggedIn) {
-        print("NOTIFICACION IGNORADA (FOREGROUND - NO LOGUEADO)");
-        return;
-      }
-
-      print('NOTIFICACIÓN EN FOREGROUND');
-      print('Título: ${message.notification?.title}');
-      print('Body: ${message.notification?.body}');
-      print('Data: ${message.data}');
-
-      try {
-        FirebaseNotificationBus.add({
-          'tipo': message.data['tipo'] ?? 'evento',
-        });
-      } catch (e) {
-        print('Error al emitir notificación al menú: $e');
-      }
-
-      final notification = message.notification;
-      if (notification != null) {
-        await _local.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'high_importance_channel',
-              'Notificaciones importantes',
-              channelDescription: 'Canal para notificaciones importantes',
-              importance: Importance.max,
-              priority: Priority.high,
-              playSound: true,
-              icon: '@mipmap/ic_launcher',
-            ),
-          ),
-        );
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +98,7 @@ class _MyAppState extends State<MyApp> {
       final auth = context.read<AuthService>();
       final sesionActiva = await auth.verificarSesionGuardada();
       if (sesionActiva && auth.isLoggedIn) {
+        await PushService.instance.init();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/menu');
         });

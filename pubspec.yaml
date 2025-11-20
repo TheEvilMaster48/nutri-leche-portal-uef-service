@@ -65,6 +65,7 @@ flutter:
   # IMÁGENES Y LOGOS
   assets:
     - assets/icono/nutrileche.png
+    - assets/icono/nutri.gif
 
 # CONFIGURACIÓN DE ÍCONO DE APP
 flutter_launcher_icons:
