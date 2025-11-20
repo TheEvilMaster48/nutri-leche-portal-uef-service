@@ -127,7 +127,7 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
     try {
       // 🔸 Petición HTTP al webservice
       final response = await http.post(
-        Uri.parse("http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1/insertar_sugerencia"),
+        Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/insertar_sugerencia"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(map),
       );

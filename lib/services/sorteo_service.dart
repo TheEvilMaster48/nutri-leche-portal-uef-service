@@ -8,7 +8,7 @@ class SorteoService extends ChangeNotifier {
   List<Sorteo> get sorteos => List.unmodifiable(_sorteos);
 
   static const String baseUrl =
-      "http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1";
+      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
 
   Future<void> obtenerSorteos({required int idUsuario}) async {
     final url = Uri.parse("$baseUrl/ObtenerSorteo");

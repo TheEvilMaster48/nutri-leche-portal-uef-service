@@ -8,7 +8,6 @@ import '../core/notification_banner.dart' show NotificationBanner, NotificationT
 import '../models/notification_item.dart';
 import '../models/usuario.dart';
 
-// NUEVO: ESCUCHA GLOBAL DE NOTIFICACIONES
 class FirebaseNotificationBus {
   static final _controller = StreamController<Map<String, dynamic>>.broadcast();
   static Stream<Map<String, dynamic>> get stream => _controller.stream;
@@ -29,6 +28,35 @@ class _MenuScreenState extends State<MenuScreen> {
     'eventos': 0,
     'cumpleanios': 0,
   };
+
+  bool useLocalGif = true;
+  String url = "https://tuservidor.com/tu_gif.gif";
+
+  Widget _buildGifImage() {
+    if (useLocalGif) {
+      return Image.asset(
+        'assets/gifs/nutri.gif',
+        width: 200,
+      );
+    } else {
+      return Image.network(
+        url,
+        width: 200,
+        loadingBuilder: (BuildContext context, Widget child,
+            ImageChunkEvent? loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -68,12 +96,10 @@ class _MenuScreenState extends State<MenuScreen> {
       final usuario = auth.currentUser;
       if (usuario == null) return;
 
-      // EVENTOS
       await eventoService.obtenerEventos(idUsuario: usuario.id);
       final eventos = eventoService.eventos;
       final pendientesEventos = eventos.where((e) => e.estado == 0).length;
 
-      // CUMPLEAÑOS
       await cumpleService.obtenerCumpleanios(idUsuario: usuario.id);
       final cumpleanios = cumpleService.cumpleanios;
       final pendientesCumples = cumpleanios.where((c) => c.estado == 0).length;
@@ -99,7 +125,7 @@ class _MenuScreenState extends State<MenuScreen> {
     final Usuario? usuario = auth.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final List<Map<String, dynamic>> menus = [
+final List<Map<String, dynamic>> menus = [
       {
         'titulo': 'Gestión de Eventos',
         'subtitulo': 'Crea y organiza actividades corporativas',
@@ -236,50 +262,10 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                       ],
                     ),
-                    Container(
-                      width: 130,
-                      height: 130,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 12,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Builder(
-                          builder: (context) {
-                            final cedula = usuario?.cedula?.trim() ?? '';
-                            final imageUrlHttp = 'http://servicioslsa.nutri.com.ec/alimentacion/${cedula.isNotEmpty ? cedula : 'default'}.jpeg';
-                            final imageUrlHttps = 'https://servicioslsa.nutri.com.ec/alimentacion/${cedula.isNotEmpty ? cedula : 'default'}.jpeg';
 
-                            return Image.network(
-                              imageUrlHttps,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // INTENTA HTTP SI HTTPS FALLA
-                                return Image.network(
-                                  imageUrlHttp,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(Icons.person, size: 100, color: Colors.white70),
-                                );
-                              },
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return const Center(
-                                  child: CircularProgressIndicator(color: Colors.white),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    //SECCION DEL USUARIO
+                    const SizedBox(height: 10),
+
                     Text(
                       usuario?.nombre.toUpperCase() ?? '',
                       style: const TextStyle(
@@ -289,11 +275,19 @@ class _MenuScreenState extends State<MenuScreen> {
                       ),
                       textAlign: TextAlign.center,
                     ),
+
                     Text(
                       _obtenerDescripcionUsuario(usuario),
-                      style: const TextStyle(fontSize: 17, color: Colors.white70),
+                      style: const TextStyle(color: Colors.white70, fontSize: 17),
+                      textAlign: TextAlign.center,
                     ),
+
                     const SizedBox(height: 20),
+
+                    _buildGifImage(),
+
+                    const SizedBox(height: 30),
+
                     Container(
                       height: 4,
                       width: screenWidth * 0.9,
@@ -302,7 +296,9 @@ class _MenuScreenState extends State<MenuScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+
                     const SizedBox(height: 30),
+
                     Wrap(
                       spacing: 18,
                       runSpacing: 18,
@@ -347,6 +343,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         );
                       }).toList(),
                     ),
+
                     const SizedBox(height: 40),
                   ],
                 ),

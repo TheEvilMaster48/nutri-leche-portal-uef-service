@@ -19,11 +19,11 @@ class AuthService extends ChangeNotifier {
 
   // URL BASE GENERAL PARA OTROS SERVICIOS
   static const String baseUrl =
-      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1";
+      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1";
 
   // URL EXACTA DEL LOGIN
   static const String loginUrl =
-      "http://10.170.4.15:8080/nutrisoft/rest/app/api/v1/loginAPPOficial";
+      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
 
   // 🔐 LOGIN
   Future<bool> login(String usuario, String password) async {
@@ -124,7 +124,7 @@ class AuthService extends ChangeNotifier {
       if (kIsWeb) {
         js.context.callMethod('console.log', ['🌍 Enviando token en Web: $token']);
         final response = await http.post(
-          Uri.parse("http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
@@ -138,7 +138,7 @@ class AuthService extends ChangeNotifier {
       // 📱 SI ES ANDROID O IOS
       else if (Platform.isAndroid || Platform.isIOS) {
         final response = await http.post(
-          Uri.parse("http://10.170.4.15:8080/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
