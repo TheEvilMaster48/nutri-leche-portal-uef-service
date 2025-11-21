@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/evento_service.dart';
 import '../services/cumpleanios_service.dart';
 import '../models/usuario.dart';
+import '../services/push_service.dart';
 
 class FirebaseNotificationBus {
   static final _controller = StreamController<Map<String, dynamic>>.broadcast();
@@ -60,6 +61,11 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
+
+    // INICIALIZAR LAS NOTIFICACIONES
+    Future.microtask(() async {
+      await PushService.instance.init();
+    });
 
     FirebaseNotificationBus.stream.listen((data) {
       setState(() {

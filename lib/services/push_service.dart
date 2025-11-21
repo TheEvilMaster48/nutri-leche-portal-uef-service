@@ -53,7 +53,6 @@ class PushService {
   }
 
   Future<void> init() async {
-    // EVITAR LISTENERS DUPLICADOS
     if (_listener != null) {
       await _listener!.cancel();
       _listener = null;

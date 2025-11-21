@@ -90,12 +90,8 @@ class MyApp extends StatelessWidget {
     Future.microtask(() async {
       final auth = context.read<AuthService>();
       final sesionActiva = await auth.verificarSesionGuardada();
+
       if (sesionActiva && auth.isLoggedIn) {
-
-        // ❌ NO SE INICIALIZA PUSH AQUÍ
-        // await PushService.instance.init();
-        // AHORA SOLO SE INICIALIZA EN EL MENUSCREEN
-
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/menu');
         });
@@ -124,7 +120,8 @@ class MyApp extends StatelessWidget {
             '/recursos': (context) => const RecursosScreen(),
             '/buzon': (context) => const SugerenciaScreen(),
             '/cumpleanios': (context) => const CumpleaniosScreen(),
-            '/calendario_eventos': (context) => const CalendarioEventosScreen(),
+            '/calendario_eventos': (context) =>
+                const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
             '/sorteos': (context) => const SorteoScreen(),
           },

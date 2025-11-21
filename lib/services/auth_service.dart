@@ -27,6 +27,7 @@ class AuthService extends ChangeNotifier {
   Future<bool> login(String usuario, String password) async {
     final token = await FirebaseMessaging.instance.getToken();
     print('FCM TOKEN Login = $token');
+
     final uri = Uri.parse(loginUrl);
     developer.log("🌐 Intentando iniciar sesión en: $uri");
     developer.log("🧾 Credenciales: usuario=$usuario, clave=$password");
@@ -84,7 +85,11 @@ class AuthService extends ChangeNotifier {
 
             showNotification("Bienvenido ${user.nombre}", "success");
             notifyListeners();
-            EnviarToken(token!, user.id);
+
+            if (token != null) {
+              EnviarToken(token, user.id);
+            }
+
             return true;
           } catch (e) {
             developer.log("⚠️ Error al construir Usuario.fromJson: $e");
@@ -123,6 +128,7 @@ class AuthService extends ChangeNotifier {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
+
         if (response.statusCode == 200 || response.statusCode == 201) {
           js.context.callMethod('console.log', ['✅ Token actualizado correctamente en Web']);
         } else {
@@ -163,8 +169,10 @@ class AuthService extends ChangeNotifier {
     await PushService.instance.stopCompletely();
 
     _currentUser = null;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('currentUser');
+
     showNotification("Sesión cerrada correctamente", "success");
     notifyListeners();
   }
@@ -172,6 +180,7 @@ class AuthService extends ChangeNotifier {
   void showNotification(String message, String type) {
     _currentNotification = {"message": message, "type": type};
     notifyListeners();
+
     Future.delayed(const Duration(seconds: 3), clearNotification);
   }
 
@@ -198,6 +207,7 @@ class AuthService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userData = prefs.getString('currentUser');
+
       if (userData != null) {
         final decoded = json.decode(userData);
         _currentUser = Usuario.fromJson(decoded);
@@ -216,6 +226,7 @@ class AuthService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userData = prefs.getString('currentUser');
+
       if (userData != null) {
         final decoded = json.decode(userData);
         _currentUser = Usuario.fromJson(decoded);
