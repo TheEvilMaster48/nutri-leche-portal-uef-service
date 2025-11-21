@@ -85,9 +85,7 @@ class PushService {
       iOS: initSettingsIOS,
     );
 
-    await localNotifications.initialize(
-      initSettings,
-    );
+    await localNotifications.initialize(initSettings);
 
     if (Platform.isAndroid) {
       await localNotifications

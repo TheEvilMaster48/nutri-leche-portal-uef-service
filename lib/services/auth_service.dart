@@ -153,8 +153,13 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && _currentUser != null) {
+        await EnviarToken("", _currentUser!.id);
+      }
+    } catch (_) {}
 
-    // 🔥 ESTA ES LA CORRECCIÓN IMPORTANTE:
     await PushService.instance.stopCompletely();
 
     _currentUser = null;

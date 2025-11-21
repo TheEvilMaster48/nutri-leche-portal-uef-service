@@ -194,12 +194,12 @@ class _MenuScreenState extends State<MenuScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFE3F2FD),
       body: SafeArea(
         child: Stack(
           children: [
             Container(
-              color: Colors.white,
+              color: const Color(0xFFE3F2FD),
             ),
 
             SingleChildScrollView(

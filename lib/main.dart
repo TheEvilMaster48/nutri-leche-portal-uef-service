@@ -31,7 +31,6 @@ import 'screens/perfil.dart';
 import 'firebase_options.dart';
 import 'services/push_service.dart';
 
-
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -93,8 +92,9 @@ class MyApp extends StatelessWidget {
       final sesionActiva = await auth.verificarSesionGuardada();
       if (sesionActiva && auth.isLoggedIn) {
 
-        // SOLO SE INICIA UNA VEZ AQUÍ — YA NO EN EL LOGIN
-        await PushService.instance.init();
+        // ❌ NO SE INICIALIZA PUSH AQUÍ
+        // await PushService.instance.init();
+        // AHORA SOLO SE INICIALIZA EN EL MENUSCREEN
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/menu');

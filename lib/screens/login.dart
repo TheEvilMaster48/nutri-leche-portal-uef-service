@@ -81,48 +81,45 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+
+                  SizedBox(height: 50),
+
                   Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                      image: const DecorationImage(
+                    width: 150,
+                    height: 150,
+                    decoration: const BoxDecoration(
+                      color: Colors.transparent,
+                      shape: BoxShape.rectangle,
+                      boxShadow: [],
+                      image: DecorationImage(
                         image: AssetImage('assets/icono/nutri.gif'),
                         fit: BoxFit.contain,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
 
-                  const Text(
+                  Text(
                     'Nutri',
                     style: TextStyle(
-                      fontSize: 48,
+                      fontSize: 44,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'Ecuador - Portal de Empleados',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 17,
                       color: Colors.black54,
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  SizedBox(height: 48),
 
                   Container(
-                    constraints: const BoxConstraints(maxWidth: 500),
-                    padding: const EdgeInsets.all(32),
+                    constraints: BoxConstraints(maxWidth: 500),
+                    padding: EdgeInsets.all(32),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -130,40 +127,40 @@ class _LoginScreenState extends State<LoginScreen> {
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 30,
-                          offset: const Offset(0, 15),
+                          offset: Offset(0, 15),
                         ),
                       ],
                     ),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Iniciar Sesión',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 27,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E3A8A),
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: 32),
 
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
                             labelText: 'Usuario',
-                            prefixIcon: const Icon(Icons.person),
+                            prefixIcon: Icon(Icons.person),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
 
                         TextField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            prefixIcon: const Icon(Icons.lock),
+                            prefixIcon: Icon(Icons.lock),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
@@ -181,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -194,13 +191,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 });
                               },
                             ),
-                            const Text(
+                            Text(
                               'Recordar contraseña',
                               style: TextStyle(color: Colors.black87),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
 
                         SizedBox(
                           width: double.infinity,
@@ -220,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               final authService = context.read<AuthService>();
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text("🔄 Iniciando sesión..."),
                                   backgroundColor: Colors.blueAccent,
                                   duration: Duration(seconds: 2),
@@ -249,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 }
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text("✅ Sesión iniciada"),
                                     backgroundColor: Colors.green,
                                     duration: Duration(seconds: 2),
@@ -291,12 +288,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3B82F6),
+                              backgroundColor: Color(0xFF3B82F6),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Iniciar Sesión',
                               style: TextStyle(
                                 fontSize: 18,
@@ -307,17 +304,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
 
                         AnimatedOpacity(
                           opacity: _mensajeError.isNotEmpty ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 400),
+                          duration: Duration(milliseconds: 400),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            padding: EdgeInsets.symmetric(vertical: 6),
                             child: Text(
                               _mensajeError,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.redAccent,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -327,14 +324,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
 
                         TextButton(
                           onPressed: () {
                             _mostrarMensaje(
                                 "Por favor, contacte al administrador para recuperar su contraseña.");
                           },
-                          child: const Text(
+                          child: Text(
                             '¿Olvidó su contraseña?',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -359,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _mensajeError = mensaje;
     });
     _timer?.cancel();
-    _timer = Timer(const Duration(seconds: 8), () {
+    _timer = Timer(Duration(seconds: 8), () {
       if (mounted) setState(() => _mensajeError = '');
     });
   }
