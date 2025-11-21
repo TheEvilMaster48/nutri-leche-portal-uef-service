@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../firebase_options.dart';
 import '../services/auth_service.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import '../services/push_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -69,11 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-            ),
+            color: Colors.white,
           ),
           child: Center(
             child: SingleChildScrollView(
@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                       image: const DecorationImage(
-                        image: AssetImage('assets/icono/nutrileche.png'),
+                        image: AssetImage('assets/icono/nutri.gif'),
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Ecuador - Portal de Empleados',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.white70,
+                      color: Colors.black54,
                     ),
                   ),
                   const SizedBox(height: 48),
@@ -256,11 +256,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 );
 
-                                Navigator.pushReplacementNamed(
-                                    context, '/menu');
+                                String? fcmToken;
+
+                                try {
+                                  final messaging = FirebaseMessaging.instance;
+
+                                  if (defaultTargetPlatform == TargetPlatform.iOS) {
+                                    final apnsToken = await messaging.getAPNSToken();
+                                    debugPrint('🍏 APNS TOKEN = $apnsToken');
+
+                                    if (apnsToken == null) {
+                                      debugPrint('⏳ APNs token no listo.');
+                                    } else {
+                                      fcmToken = await messaging.getToken();
+                                      debugPrint('📲 FCM TOKEN (iOS) = $fcmToken');
+                                    }
+                                  } else {
+                                    fcmToken = await messaging.getToken();
+                                    debugPrint('📲 FCM TOKEN = $fcmToken');
+                                  }
+                                } catch (e) {
+                                  debugPrint('⚠️ Error obteniendo FCM token: $e');
+                                }
+
+                                if (fcmToken != null &&
+                                    authService.currentUser != null) {
+                                  await authService.EnviarToken(
+                                      fcmToken, authService.currentUser!.id);
+                                }
+
+                                Navigator.pushReplacementNamed(context, '/menu');
                               } else {
-                                _mostrarMensaje(
-                                    'Usuario o contraseña incorrectos.');
+                                _mostrarMensaje('Usuario o contraseña incorrectos.');
                               }
                             },
                             style: ElevatedButton.styleFrom(

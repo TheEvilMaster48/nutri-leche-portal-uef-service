@@ -9,6 +9,7 @@ import 'dart:io' show Platform;
 import 'package:universal_html/js.dart' as js;
 import '../core/notification_banner.dart';
 import '../models/usuario.dart';
+import 'push_service.dart';
 
 class AuthService extends ChangeNotifier {
   Usuario? _currentUser;
@@ -17,15 +18,12 @@ class AuthService extends ChangeNotifier {
   Usuario? get currentUser => _currentUser;
   Map<String, dynamic>? get currentNotification => _currentNotification;
 
-  // URL BASE GENERAL PARA OTROS SERVICIOS
   static const String baseUrl =
       "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1";
 
-  // URL EXACTA DEL LOGIN
   static const String loginUrl =
       "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
 
-  // 🔐 LOGIN
   Future<bool> login(String usuario, String password) async {
     final token = await FirebaseMessaging.instance.getToken();
     print('FCM TOKEN Login = $token');
@@ -55,11 +53,9 @@ class AuthService extends ChangeNotifier {
         final map = json.decode(response.body);
         developer.log("🧠 BODY DEVUELTO POR EL SERVIDOR: ${response.body}");
 
-        // VALIDAR ESTRUCTURA Y DECODIFICAR CORRECTAMENTE
         if (map['correcto'] == true && map['data'] != null) {
           dynamic data;
 
-          // 🔍 CORRECCIÓN: DECODIFICACIÓN DOBLE SEGURA
           try {
             if (map['data'] is String) {
               final decodedOnce = json.decode(map['data']);
@@ -120,7 +116,6 @@ class AuthService extends ChangeNotifier {
     };
 
     try {
-      // 🌐 SI ES WEB
       if (kIsWeb) {
         js.context.callMethod('console.log', ['🌍 Enviando token en Web: $token']);
         final response = await http.post(
@@ -135,7 +130,6 @@ class AuthService extends ChangeNotifier {
         }
       }
 
-      // 📱 SI ES ANDROID O IOS
       else if (Platform.isAndroid || Platform.isIOS) {
         final response = await http.post(
           Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
@@ -150,7 +144,6 @@ class AuthService extends ChangeNotifier {
         }
       }
 
-      // 🚫 OTROS ENTORNOS
       else {
         debugPrint('❌ Plataforma no soportada para envío de token.');
       }
@@ -159,47 +152,11 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // REGISTRO
-  Future<bool> register(Usuario usuario) async {
-    final uri = Uri.parse("$baseUrl/registro");
-
-    try {
-      final response = await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(usuario.toJson()),
-      );
-
-      developer.log("📩 Respuesta Registro (${response.statusCode}): ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final map = json.decode(response.body);
-
-        if (map['correcto'] == true && map['data'] != null) {
-          final data = json.decode(map['data']);
-          _currentUser = Usuario.fromJson(data);
-
-          showNotification(
-              "Registro exitoso. Bienvenido ${_currentUser!.nombre}",
-              "success");
-          notifyListeners();
-          return true;
-        } else {
-          showNotification(map['mensaje'] ?? "No se pudo registrar", "error");
-          return false;
-        }
-      } else {
-        showNotification("Error al registrar (${response.statusCode})", "error");
-        return false;
-      }
-    } catch (e) {
-      showNotification("Error de conexión: ${e.toString()}", "error");
-      return false;
-    }
-  }
-
-  // CERRAR SESIÓN
   Future<void> logout() async {
+
+    // 🔥 ESTA ES LA CORRECCIÓN IMPORTANTE:
+    await PushService.instance.stopCompletely();
+
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('currentUser');
@@ -207,7 +164,6 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // NOTIFICACIONES
   void showNotification(String message, String type) {
     _currentNotification = {"message": message, "type": type};
     notifyListeners();
@@ -219,7 +175,6 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ACTUALIZAR PERFIL LOCAL
   Future<void> actualizarUsuario(Usuario nuevoUsuario) async {
     _currentUser = nuevoUsuario;
     notifyListeners();
@@ -234,7 +189,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // AUTOLOGIN
   Future<void> cargarUsuarioGuardado() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -251,10 +205,8 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // NUEVO: VERIFICAR SI EXISTE SESIÓN ACTIVA
   bool get isLoggedIn => _currentUser != null;
 
-  // NUEVO: VERIFICAR SESIÓN GUARDADA AUTOMÁTICAMENTE
   Future<bool> verificarSesionGuardada() async {
     try {
       final prefs = await SharedPreferences.getInstance();

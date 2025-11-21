@@ -29,6 +29,8 @@ import 'screens/sugerencia_screen.dart';
 import 'screens/calendario_evento_screen.dart';
 import 'screens/perfil.dart';
 import 'firebase_options.dart';
+import 'services/push_service.dart';
+
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -90,7 +92,10 @@ class MyApp extends StatelessWidget {
       final auth = context.read<AuthService>();
       final sesionActiva = await auth.verificarSesionGuardada();
       if (sesionActiva && auth.isLoggedIn) {
+
+        // SOLO SE INICIA UNA VEZ AQUÍ — YA NO EN EL LOGIN
         await PushService.instance.init();
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/menu');
         });
@@ -128,4 +133,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-  

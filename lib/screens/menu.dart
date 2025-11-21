@@ -31,10 +31,10 @@ class _MenuScreenState extends State<MenuScreen> {
   String url =
       "https://servicioslsa.nutri.com.ec/resources/output-onlinegiftools.gif";
 
-  Widget _buildGifImage() {
+  Widget _ImagenNutri() {
     if (useLocalGif) {
       return Image.asset(
-        'assets/icono/nutri.gif',
+        'assets/icono/nutrileche.png',
         width: 200,
       );
     } else {
@@ -209,6 +209,30 @@ class _MenuScreenState extends State<MenuScreen> {
                     vertical: 20, horizontal: 16),
                 child: Column(
                   children: [
+
+                    const SizedBox(height: 10),
+                    _ImagenNutri(),
+                    const SizedBox(height: 20),
+
+                    Text(
+                      usuario?.nombre.toUpperCase() ?? '',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    Text(
+                      _obtenerDescripcionUsuario(usuario),
+                      style: const TextStyle(
+                          color: Colors.black54, fontSize: 17),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 30),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -229,28 +253,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       ],
                     ),
 
-                    Text(
-                      usuario?.nombre.toUpperCase() ?? '',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    Text(
-                      _obtenerDescripcionUsuario(usuario),
-                      style: const TextStyle(
-                          color: Colors.black54, fontSize: 17),
-                      textAlign: TextAlign.center,
-                    ),
-
                     const SizedBox(height: 20),
-
-                    _buildGifImage(),
-
-                    const SizedBox(height: 30),
 
                     Container(
                       height: 4,

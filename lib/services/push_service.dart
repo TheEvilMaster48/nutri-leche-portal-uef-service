@@ -39,13 +39,26 @@ class PushService {
   static final PushService instance = PushService._();
 
   bool _initialized = false;
-  StreamSubscription<RemoteMessage>? _listener; //SECCION DEL LISTENER
+  StreamSubscription<RemoteMessage>? _listener;
 
   Future<void> dispose() async {
     await _listener?.cancel();
   }
 
+  Future<void> stopCompletely() async {
+    await _listener?.cancel();
+    _listener = null;
+    _initialized = false;
+    print("🔴 PushService Detenido COMPLETAMENTE");
+  }
+
   Future<void> init() async {
+    // EVITAR LISTENERS DUPLICADOS
+    if (_listener != null) {
+      await _listener!.cancel();
+      _listener = null;
+    }
+
     if (_initialized) return;
     _initialized = true;
 
@@ -138,7 +151,6 @@ class PushService {
     });
   }
 
-  //CIERRA LAS NOTIFICACIONES
   Future<void> stop() async {
     await _listener?.cancel();
     _listener = null;
