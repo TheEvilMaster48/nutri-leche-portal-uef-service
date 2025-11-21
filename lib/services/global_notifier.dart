@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:nutri/services/auth_service.dart';
 
 class GlobalNotifier extends ChangeNotifier {
-  
   static AuthService? auth;
 
   String _mensajeActual = '';

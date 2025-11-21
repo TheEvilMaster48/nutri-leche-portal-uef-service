@@ -2,31 +2,24 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:http/http.dart' as http;
 import 'package:nutri/screens/sorteo_screen.dart';
-import 'package:nutri/services/sorteo_service.dart';
 import 'package:provider/provider.dart';
 
-// CORE
 import 'core/locale_provider.dart';
-import 'core/notification_banner.dart';
-
-// SERVICIOS PRINCIPALES
 import 'services/auth_service.dart';
 import 'services/evento_service.dart';
 import 'services/usuario_service.dart';
 import 'services/global_notifier.dart';
 import 'services/language_service.dart';
 import 'services/sugerencia_service.dart';
+import 'services/cumpleanios_service.dart';
 import 'services/calendario_evento_service.dart';
 import 'services/perfil_service.dart';
-import 'services/cumpleanios_service.dart';
+import 'services/sorteo_service.dart';
+import 'services/push_service.dart';
 
-// PANTALLAS PRINCIPALES
 import 'screens/login.dart';
 import 'screens/menu.dart';
 import 'screens/eventos_page.dart';
@@ -36,16 +29,15 @@ import 'screens/sugerencia_screen.dart';
 import 'screens/calendario_evento_screen.dart';
 import 'screens/perfil.dart';
 import 'firebase_options.dart';
-import 'services/push_service.dart';
 
-
-// IGNORAR CERTIFICADOS SSL (SOLO PARA PRUEBAS)
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        return host.contains("servicioslsa.nutri.com.ec") || host.contains("10.170.4.15");
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) {
+        return host.contains("servicioslsa.nutri.com.ec") ||
+            host.contains("10.170.4.15");
       };
   }
 }
@@ -54,7 +46,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   HttpOverrides.global = MyHttpOverrides();
-// 👇 MUY IMPORTANTE: aquí inicializamos Firebase SIEMPRE
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -136,3 +128,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+  

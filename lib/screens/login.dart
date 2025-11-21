@@ -15,33 +15,29 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberPassword = false; // NUEVO RECORDAR CONTRASEÑA
+  bool _rememberPassword = false;
   String _mensajeError = '';
   Timer? _timer;
 
-  bool _checkingSession = true; 
+  bool _checkingSession = true;
 
   @override
   void initState() {
     super.initState();
 
-    // Apenas entra a la pantalla, revisamos si ya hay usuario guardado
     Future.microtask(() async {
       final auth = context.read<AuthService>();
       final prefs = await SharedPreferences.getInstance();
 
-      // Cargar usuario guardado (sesión activa)
       await auth.cargarUsuarioGuardado();
 
       if (!mounted) return;
 
       if (auth.currentUser != null) {
-        // EXISTE SESION GUARDADA → IR AL MENÚ
         Navigator.pushReplacementNamed(context, '/menu');
         return;
       }
 
-      // Si no hay sesión activa, verificamos si guardó credenciales
       final savedUser = prefs.getString('saved_username');
       final savedPass = prefs.getString('saved_password');
       final remember = prefs.getBool('remember_password') ?? false;
@@ -52,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
         _rememberPassword = true;
       }
 
-      // No hay sesión → mostrar formulario
       setState(() {
         _checkingSession = false;
       });
@@ -61,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Mientras revisamos si hay sesión guardada, mostramos un loader simple
     if (_checkingSession) {
       return const Scaffold(
         body: Center(
@@ -69,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     }
+
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -86,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
                   Container(
                     width: 120,
                     height: 120,
@@ -152,7 +146,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // Campo Usuario
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
@@ -165,7 +158,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Campo Contraseña
                         TextField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
@@ -191,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // RECORDAR CONTRASEÑA
                         Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
@@ -211,14 +202,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // 🔹 BOTÓN INICIAR SESIÓN
                         SizedBox(
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton(
                             onPressed: () async {
-                              debugPrint("🟢 BOTÓN PRESIONADO");
-
                               final username = _usernameController.text.trim();
                               final password = _passwordController.text.trim();
 
@@ -241,8 +229,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               final success =
                                   await authService.login(username, password);
-
-                              debugPrint("📡 Resultado login: $success");
 
                               if (!mounted) return;
 
@@ -270,18 +256,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 );
 
-                                final user = authService.currentUser;
-                                if (user != null) {
-                                  debugPrint('👤 Usuario: ${user.nombre}');
-                                }
-
                                 Navigator.pushReplacementNamed(
                                     context, '/menu');
-                                debugPrint('➡️ Navegando a /menu');
                               } else {
                                 _mostrarMensaje(
                                     'Usuario o contraseña incorrectos.');
-                                debugPrint('❌ Falló el login');
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -303,7 +282,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 12),
 
-                        // MENSAJE DE ERROR
                         AnimatedOpacity(
                           opacity: _mensajeError.isNotEmpty ? 1.0 : 0.0,
                           duration: const Duration(milliseconds: 400),
@@ -324,7 +302,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 8),
 
-                        // OPCIÓN OLVIDÉ CONTRASEÑA
                         TextButton(
                           onPressed: () {
                             _mostrarMensaje(
