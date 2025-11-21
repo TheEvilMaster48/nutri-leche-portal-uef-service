@@ -158,11 +158,34 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // ELIMINAR TOKEN
+  Future<void> EliminarToken(int idUsuario) async {
+    var map = <String, dynamic>{
+      'idUsuario': idUsuario,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/EliminarToken"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(map),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('🧹 Token eliminado correctamente en el servidor.');
+      } else {
+        debugPrint('⚠️ Error al eliminar token: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error al enviar EliminarToken: $e');
+    }
+  }
+
   Future<void> logout() async {
     try {
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null && _currentUser != null) {
-        await EnviarToken("", _currentUser!.id);
+      // AHORA NO SE ACTUALIZA, SE ELIMINA
+      if (_currentUser != null) {
+        await EliminarToken(_currentUser!.id);
       }
     } catch (_) {}
 
