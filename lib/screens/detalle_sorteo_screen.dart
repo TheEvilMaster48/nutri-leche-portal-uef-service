@@ -5,22 +5,50 @@ import 'package:provider/provider.dart';
 import '../models/sorteo.dart';
 import '../services/sorteo_service.dart';
 import '../services/auth_service.dart';
+import '../screens/menu.dart';
 
-class DetalleSorteoScreen extends StatelessWidget {
+class DetalleSorteoScreen extends StatefulWidget {
   final Sorteo sorteo;
 
   const DetalleSorteoScreen({super.key, required this.sorteo});
 
   @override
-  Widget build(BuildContext context) {
-    final titulo = sorteo.titulo;
-    final descripcion = sorteo.descripcion;
+  State<DetalleSorteoScreen> createState() => _DetalleSorteoScreenState();
+}
 
-    // PROCESAR IMAGEN
+class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
+  bool registrado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    verificar();
+  }
+
+  Future<void> verificar() async {
+    final auth = context.read<AuthService>();
+    final usuario = auth.currentUser;
+    final idUsuario = usuario?.id ?? 0;
+
+    if (idUsuario != 0) {
+      final r = await context
+          .read<SorteoService>()
+          .verificarRegistroLocal(idUsuario, widget.sorteo.id);
+
+      setState(() => registrado = r);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titulo = widget.sorteo.titulo;
+    final descripcion = widget.sorteo.descripcion;
+
     Widget imagenWidget;
-    if (sorteo.imagenBase64 != null && sorteo.imagenBase64!.isNotEmpty) {
+    if (widget.sorteo.imagenBase64 != null &&
+        widget.sorteo.imagenBase64!.isNotEmpty) {
       try {
-        final bytes = base64Decode(sorteo.imagenBase64!);
+        final bytes = base64Decode(widget.sorteo.imagenBase64!);
         imagenWidget = Image.memory(
           Uint8List.fromList(bytes),
           width: 260,
@@ -28,18 +56,12 @@ class DetalleSorteoScreen extends StatelessWidget {
           fit: BoxFit.cover,
         );
       } catch (_) {
-        imagenWidget = const Icon(
-          Icons.broken_image,
-          size: 130,
-          color: Colors.grey,
-        );
+        imagenWidget =
+            const Icon(Icons.broken_image, size: 130, color: Colors.grey);
       }
     } else {
-      imagenWidget = const Icon(
-        Icons.image,
-        size: 130,
-        color: Colors.grey,
-      );
+      imagenWidget =
+          const Icon(Icons.image, size: 130, color: Colors.grey);
     }
 
     return Scaffold(
@@ -53,15 +75,11 @@ class DetalleSorteoScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: const Color(0xFFFFEBEE),
-
-      // CONTENIDO
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-
-            // TÍTULO
             Column(
               children: [
                 Text(
@@ -76,8 +94,6 @@ class DetalleSorteoScreen extends StatelessWidget {
                 const SizedBox(height: 20),
               ],
             ),
-
-            // DESCRIPCIÓN
             Column(
               children: [
                 Text(
@@ -91,61 +107,87 @@ class DetalleSorteoScreen extends StatelessWidget {
                 const SizedBox(height: 20),
               ],
             ),
-
-            // IMAGEN
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: imagenWidget,
             ),
-
             const SizedBox(height: 25),
 
-            // BOTÓN REGISTRARSE
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC62828),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () async {
-                  // OBTENER ID USUARIO
-                  final auth = context.read<AuthService>();
-                  final usuario = auth.currentUser;
-                  final idUsuario = usuario?.id ?? 0;
-
-                  if (idUsuario == 0) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Usuario no válido.")),
-                    );
-                    return;
-                  }
-
-                  // LLAMAR AL SERVICIO
-                  await context.read<SorteoService>().marcarSorteoComoRegistro(
-                        idUsuario: idUsuario,
-                        idSorteo: sorteo.id,
-                      );
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Registrado correctamente en el sorteo."),
+            if (!registrado)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC62828),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-                },
-                child: const Text(
-                  "Registrarse",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  ),
+                  onPressed: () async {
+                    final auth = context.read<AuthService>();
+                    final usuario = auth.currentUser;
+                    final idUsuario = usuario?.id ?? 0;
+
+                    if (idUsuario == 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Usuario no válido.")),
+                      );
+                      return;
+                    }
+
+                    final resp = await context
+                        .read<SorteoService>()
+                        .marcarSorteoComoRegistro(
+                          idUsuario: idUsuario,
+                          idSorteo: widget.sorteo.id,
+                        );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Registrándose al Sorteo"),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+
+                    await Future.delayed(const Duration(seconds: 2));
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MenuScreen(),
+                      ),
+                    );
+
+                    await Future.delayed(const Duration(milliseconds: 400));
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("✅ Registrado al Sorteo Correctamente"),
+                        duration: Duration(seconds: 4),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "Registrarse",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
+
+            if (registrado)
+              const Text(
+                "Ya estás registrado en este sorteo...",
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
 
             const SizedBox(height: 10),
           ],

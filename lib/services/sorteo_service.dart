@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/sorteo.dart';
 
 class SorteoService extends ChangeNotifier {
@@ -33,12 +34,20 @@ class SorteoService extends ChangeNotifier {
           notifyListeners();
         }
       }
-    } catch (e) {
-      debugPrint("ERROR AL CARGAR SORTEOS: $e");
-    }
+    } catch (e) {}
   }
 
-  Future<void> marcarSorteoComoRegistro({
+  Future<void> guardarRegistroLocal(int idUsuario, int idSorteo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("sorteo_${idUsuario}_${idSorteo}", true);
+  }
+
+  Future<bool> verificarRegistroLocal(int idUsuario, int idSorteo) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("sorteo_${idUsuario}_${idSorteo}") ?? false;
+  }
+
+  Future<Map<String, dynamic>> marcarSorteoComoRegistro({
     required int idUsuario,
     required int idSorteo,
   }) async {
@@ -55,18 +64,26 @@ class SorteoService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final index = _sorteos.indexWhere((s) => s.id == idSorteo);
-        if (index != -1) {
-          notifyListeners();
-        }
+        final jsonResp = json.decode(response.body);
+        await guardarRegistroLocal(idUsuario, idSorteo);
+        return jsonResp;
       }
     } catch (e) {}
+
+    return {"correcto": false};
   }
 
   void agregarDesdeWs(Map<String, dynamic> data) {
     try {
       final nuevo = Sorteo.fromJson(data);
-      if (_sorteos.any((s) => s.id == nuevo.id)) return;
+
+      // SI EL SORTEO YA EXISTE IGUAL NOTIFICA
+      if (_sorteos.any((s) => s.id == nuevo.id)) {
+        notifyListeners();
+        return;
+      }
+
+      //Notifica NUEVOS SORTEOS
       _sorteos.insert(0, nuevo);
       notifyListeners();
     } catch (e) {}

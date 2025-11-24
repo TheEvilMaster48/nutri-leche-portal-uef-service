@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import '../screens/menu.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -89,7 +90,7 @@ class PushService {
     if (Platform.isAndroid) {
       await localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(highImportanceChannel);
     }
 
@@ -116,39 +117,47 @@ class PushService {
       print('TOKEN REFRESH = $newToken');
     });
 
-    _listener = FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      print('NOTIFICACIÓN EN FOREGROUND');
-      print('Título: ${message.notification?.title}');
-      print('Body: ${message.notification?.body}');
-      print('Data: ${message.data}');
+    _listener =
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+          print('NOTIFICACIÓN EN FOREGROUND - 1 SOLO LISTENER');
 
-      FirebaseNotificationBus.add({
-        'tipo': message.data['tipo'] ?? 'evento',
-      });
-
-      final notification = message.notification;
-      if (notification != null) {
-        await localNotifications.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'high_importance_channel',
-              'Notificaciones importantes',
-              channelDescription: 'Canal para notificaciones importantes',
-              importance: Importance.max,
-              priority: Priority.high,
-              playSound: true,
-              icon: '@mipmap/ic_launcher',
-            ),
-          ),
-        );
-      }
-    });
+          final notification = message.notification;
+          if (notification != null && Platform.isAndroid) {
+            await localNotifications.show(
+              notification.hashCode,
+              notification.title,
+              notification.body,
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  'high_importance_channel',
+                  'Notificaciones importantes',
+                  channelDescription: 'Canal para notificaciones importantes',
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  playSound: true,
+                  icon: '@mipmap/ic_launcher',
+                ),
+              ),
+            );
+          } else if (notification != null && Platform.isIOS) {
+            await localNotifications.show(
+              notification.hashCode,
+              notification.title,
+              notification.body,
+              const NotificationDetails(
+                iOS: DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                ),
+              ),
+            );
+          }
+        });
   }
 
-  Future<void> stop() async {
+
+    Future<void> stop() async {
     await _listener?.cancel();
     _listener = null;
   }

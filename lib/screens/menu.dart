@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:nutri/services/sorteo_service.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/evento_service.dart';
@@ -26,6 +27,8 @@ class _MenuScreenState extends State<MenuScreen> {
   final Map<String, int> _notificaciones = {
     'eventos': 0,
     'cumpleanios': 0,
+    'sorteos': 0,
+    'calendario': 0,
   };
 
   bool useLocalGif = true;
@@ -62,7 +65,6 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
 
-    // INICIALIZAR LAS NOTIFICACIONES
     Future.microtask(() async {
       await PushService.instance.init();
     });
@@ -76,6 +78,12 @@ class _MenuScreenState extends State<MenuScreen> {
         } else if (tipo == 'cumpleanios') {
           _notificaciones['cumpleanios'] =
               (_notificaciones['cumpleanios'] ?? 0) + 1;
+        } else if (tipo == 'sorteo') {
+          _notificaciones['sorteos'] =
+              (_notificaciones['sorteos'] ?? 0) + 1;
+        } else if (tipo == 'calendario') {
+          _notificaciones['calendario'] =
+              (_notificaciones['calendario'] ?? 0) + 1;
         }
       });
     });
@@ -99,6 +107,7 @@ class _MenuScreenState extends State<MenuScreen> {
     try {
       final eventoService = context.read<EventoService>();
       final cumpleService = context.read<CumpleaniosService>();
+      final sorteoService = context.read<SorteoService>();
       final auth = context.read<AuthService>();
       final usuario = auth.currentUser;
       if (usuario == null) return;
@@ -113,9 +122,15 @@ class _MenuScreenState extends State<MenuScreen> {
       final pendientesCumples =
           cumpleanios.where((c) => c.estado == 0).length;
 
+      await sorteoService.obtenerSorteos(idUsuario: usuario.id);
+      final sorteos = sorteoService.sorteos;
+      final pendientesSorteos =
+          sorteos.where((c) => c.estado == 0).length;
+
       setState(() {
         _notificaciones['eventos'] = pendientesEventos;
         _notificaciones['cumpleanios'] = pendientesCumples;
+        _notificaciones['sorteos'] = pendientesSorteos;
       });
     } catch (e) {
       debugPrint('Error al actualizar contadores: $e');
@@ -162,6 +177,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'subtitulo': 'Ver Sorteos y Resultados',
         'icono': Icons.card_giftcard_rounded,
         'ruta': '/sorteos',
+        'tipo': 'sorteos',
         'colores': [
           const Color(0xFFFA0000),
           const Color(0xFF00ACC1)
@@ -172,6 +188,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'subtitulo': 'Agenda de actividades laborales',
         'icono': Icons.calendar_month_rounded,
         'ruta': '/calendario_eventos',
+        'tipo': 'calendario',
         'colores': [
           const Color(0xFF3F51B5),
           const Color(0xFF7986CB)
