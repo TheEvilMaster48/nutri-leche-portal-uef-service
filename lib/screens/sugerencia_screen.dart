@@ -115,7 +115,6 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
         }));
       }
 
-    // 🔸 Armar el cuerpo JSON (sin id)
     var map = new Map<String, dynamic>();
     map['categoria'] = _categoria;
     map['titulo'] = _tituloCtrl.text;
@@ -125,7 +124,7 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
     map["imagenes_base64"] = imagenesBase64;
 
     try {
-      // 🔸 Petición HTTP al webservice
+      // HTTP al Webservice
       final response = await http.post(
         Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/insertar_sugerencia"),
         headers: {'Content-Type': 'application/json'},

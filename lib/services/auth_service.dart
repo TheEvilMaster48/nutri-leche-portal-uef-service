@@ -25,7 +25,27 @@ class AuthService extends ChangeNotifier {
       "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
 
   Future<bool> login(String usuario, String password) async {
-    final token = await FirebaseMessaging.instance.getToken();
+    String? token;
+
+    // Obtener Token FCM solo donde es seguro
+    try {
+      if (kIsWeb) {
+        // Web
+        token = await FirebaseMessaging.instance.getToken();
+      } else if (Platform.isAndroid) {
+        // Android
+        token = await FirebaseMessaging.instance.getToken();
+      } else if (Platform.isIOS) {
+        // iOS: NO pedimos FCM token aquí para evitar apns-token-not-set
+        debugPrint(
+            'iOS: no se solicita FCM token en login; se gestionará en PushService.init()');
+      } else {
+        debugPrint('Plataforma no soportada para FCM en login');
+      }
+    } catch (e) {
+      debugPrint('Error obteniendo FCM token en login: $e');
+    }
+
     print('FCM TOKEN Login = $token');
 
     final uri = Uri.parse(loginUrl);

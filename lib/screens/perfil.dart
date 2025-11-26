@@ -58,8 +58,8 @@ class PerfilScreen extends StatelessWidget {
 
                     // URL dinámica basada en la cédula del usuario
                     final imageUrl = (cedula.isNotEmpty)
-                        ? 'https://servicioslsaq.nutri.com.ec/alimentacion/$cedula.jpeg'
-                        : 'https://servicioslsaq.nutri.com.ec/alimentacion/default.jpeg';
+                        ? 'https://servicioslsa.nutri.com.ec/alimentacion/$cedula.jpeg'
+                        : 'https://servicioslsa.nutri.com.ec/alimentacion/default.jpeg';
 
                     return Image.network(
                       imageUrl,

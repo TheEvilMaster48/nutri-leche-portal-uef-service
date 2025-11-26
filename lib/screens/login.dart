@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       shape: BoxShape.rectangle,
                       boxShadow: [],
                       image: DecorationImage(
-                        image: AssetImage('assets/icono/nutri.gif'),
+                        image: AssetImage('assets/icono/nutri.png'),
                         fit: BoxFit.contain,
                       ),
                     ),

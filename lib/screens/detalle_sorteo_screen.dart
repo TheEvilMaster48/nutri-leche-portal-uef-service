@@ -18,14 +18,20 @@ class DetalleSorteoScreen extends StatefulWidget {
 
 class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
   bool registrado = false;
+  bool cargado = false;
 
   @override
-  void initState() {
-    super.initState();
-    verificar();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!cargado) {
+      verificar();
+      cargado = true;
+    }
   }
 
   Future<void> verificar() async {
+    setState(() => registrado = false);
+
     final auth = context.read<AuthService>();
     final usuario = auth.currentUser;
     final idUsuario = usuario?.id ?? 0;
@@ -60,8 +66,7 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
             const Icon(Icons.broken_image, size: 130, color: Colors.grey);
       }
     } else {
-      imagenWidget =
-          const Icon(Icons.image, size: 130, color: Colors.grey);
+      imagenWidget = const Icon(Icons.image, size: 130, color: Colors.grey);
     }
 
     return Scaffold(
@@ -136,13 +141,6 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
                       return;
                     }
 
-                    final resp = await context
-                        .read<SorteoService>()
-                        .marcarSorteoComoRegistro(
-                          idUsuario: idUsuario,
-                          idSorteo: widget.sorteo.id,
-                        );
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text("Registrándose al Sorteo"),
@@ -150,21 +148,27 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
                       ),
                     );
 
+                    await context.read<SorteoService>().marcarSorteoComoRegistro(
+                          idUsuario: idUsuario,
+                          idSorteo: widget.sorteo.id,
+                        );
+
                     await Future.delayed(const Duration(seconds: 2));
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text("✅ Registrado al Sorteo Correctamente"),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+
+                    await Future.delayed(const Duration(seconds: 3));
 
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const MenuScreen(),
-                      ),
-                    );
-
-                    await Future.delayed(const Duration(milliseconds: 400));
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("✅ Registrado al Sorteo Correctamente"),
-                        duration: Duration(seconds: 4),
                       ),
                     );
                   },

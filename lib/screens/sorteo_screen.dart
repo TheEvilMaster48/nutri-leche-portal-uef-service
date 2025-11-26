@@ -75,7 +75,6 @@ class _SorteoScreenState extends State<SorteoScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // ENCABEZADO
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -115,7 +114,6 @@ class _SorteoScreenState extends State<SorteoScreen> {
                 ),
               ),
 
-              // LISTA DE SORTEOS
               Expanded(
                 child: _cargando
                     ? const Center(child: CircularProgressIndicator())
@@ -169,9 +167,6 @@ class _SorteoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textoEstado = sorteo.estado == 0 ? 'Pendiente' : 'Leído';
-    final colorEstado = sorteo.estado == 0 ? Colors.orange : Colors.green;
-
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       elevation: 3,
@@ -183,32 +178,16 @@ class _SorteoItem extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         leading: const Icon(Icons.casino_rounded, color: Color(0xFFC62828)),
 
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                sorteo.titulo,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFC62828),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Text(
-              textoEstado,
-              style: TextStyle(
-                color: colorEstado,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ],
+        title: Text(
+          sorteo.titulo,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFC62828),
+          ),
+          overflow: TextOverflow.ellipsis,
         ),
 
-        // SOLO DESCRIPCIÓN (YA NO FECHA NI HORA)
         subtitle: Text(
           sorteo.descripcion,
           maxLines: 2,
@@ -223,16 +202,6 @@ class _SorteoItem extends StatelessWidget {
               builder: (_) => DetalleSorteoScreen(sorteo: sorteo),
             ),
           );
-
-          if (sorteo.estado == 0) {
-            sorteo.estado = 1;
-            Future.microtask(() {
-              context.read<SorteoService>().marcarSorteoComoRegistro(
-                    idUsuario: idUsuario,
-                    idSorteo: sorteo.id,
-                  );
-            });
-          }
         },
       ),
     );

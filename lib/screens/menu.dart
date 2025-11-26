@@ -38,7 +38,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _ImagenNutri() {
     if (useLocalGif) {
       return Image.asset(
-        'assets/icono/nutrileche.png',
+        'assets/icono/nutri.png',
         width: 200,
       );
     } else {

@@ -75,16 +75,6 @@ class SorteoService extends ChangeNotifier {
 
   void agregarDesdeWs(Map<String, dynamic> data) {
     try {
-      final nuevo = Sorteo.fromJson(data);
-
-      // SI EL SORTEO YA EXISTE IGUAL NOTIFICA
-      if (_sorteos.any((s) => s.id == nuevo.id)) {
-        notifyListeners();
-        return;
-      }
-
-      //Notifica NUEVOS SORTEOS
-      _sorteos.insert(0, nuevo);
       notifyListeners();
     } catch (e) {}
   }

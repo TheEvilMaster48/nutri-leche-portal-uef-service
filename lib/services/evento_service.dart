@@ -92,4 +92,3 @@ class EventoService extends ChangeNotifier {
     notifyListeners();
   }
 }
- 
