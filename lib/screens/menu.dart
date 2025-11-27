@@ -193,7 +193,7 @@ class _MenuScreenState extends State<MenuScreen> {
           const Color(0xFF3F51B5),
           const Color(0xFF7986CB)
         ],
-      },
+      },/*
       {
         'titulo': 'Buzón de sugerencias',
         'subtitulo': 'Envía tus ideas y comentarios',
@@ -203,7 +203,7 @@ class _MenuScreenState extends State<MenuScreen> {
           const Color(0xFFFF5722),
           const Color(0xFFFFAB91)
         ],
-      },
+      },*/
       {
         'titulo': 'Perfil',
         'subtitulo': 'Ver información personal',

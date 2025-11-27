@@ -1,5 +1,3 @@
-/*import 'dart:convert';
-
 class Sugerencia {
   final String categoria;
   final String titulo;
@@ -32,4 +30,3 @@ class Sugerencia {
         fecha: DateTime.parse(json['fecha']),
       );
 }
-*/

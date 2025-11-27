@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
 import 'package:universal_html/js.dart' as js;
-import '../core/notification_banner.dart';
 import '../models/usuario.dart';
 import 'push_service.dart';
 

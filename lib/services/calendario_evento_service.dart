@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/calendario_evento.dart';
 import '../models/cumpleanios.dart';
-import '../core/notification_banner.dart';
 
 class CalendarioEventoService extends ChangeNotifier {
   final List<CalendarioEvento> _eventos = [];
