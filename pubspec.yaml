@@ -18,8 +18,8 @@ dependencies:
 
   # UTILIDADES Y ESTADO
   uuid: ^4.5.1
-  provider: ^6.1.2
-  shared_preferences: ^2.3.3
+  provider: ^6.1.5
+  shared_preferences: ^2.5.3
 
   # INFORMACIÓN DEL DISPOSITIVO
   device_info_plus: ^12.2.0
@@ -28,31 +28,35 @@ dependencies:
   file_picker: ^10.3.6
 
   # LOCALIZACIÓN E INTERNACIONALIZACIÓN
-  flutter_native_splash: ^2.4.1
+  flutter_native_splash: ^2.4.7
   intl: ^0.20.2
   flutter_localizations:
     sdk: flutter
 
   # ARCHIVOS Y MULTIMEDIA
-  path_provider: ^2.1.4
-  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+  image_picker: ^1.2.1
+  open_filex: ^4.7.0
 
   # PDF Y HERRAMIENTAS
-  pdf: ^3.11.0
-  printing: ^5.12.0
+  pdf: ^3.11.3
+  printing: ^5.14.2
 
   # ÍCONOS Y ESTILO
   flutter_launcher_icons: ^0.14.4
-  http: ^1.5.0
-  open_filex: ^4.7.0
+  http: ^1.6.0
   table_calendar: ^3.2.0
-  universal_html: ^2.2.4
+  universal_html: ^2.3.0
   mime: ^2.0.0
 
   # FIREBASE
-  flutter_local_notifications: ^19.3.0
-  firebase_core: ^3.14.0
-  firebase_messaging: ^15.2.7
+  flutter_local_notifications: ^19.5.0
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.10
+
+  # OVERRIDE — FORZAR LA NUEVA VERSIÓN DEL PLUGIN
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.33
 
 dev_dependencies:
   flutter_test:
@@ -62,13 +66,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # IMÁGENES Y LOGOS
   assets:
     - assets/icono/nutrileche.png
     - assets/icono/nutri.png
     - assets/icono/nutri.gif
 
-# CONFIGURACIÓN DE ÍCONO DE APP
 flutter_launcher_icons:
   android: true
   ios: true
@@ -82,7 +84,6 @@ flutter_launcher_icons:
     background_color: "#FFFFFF"
     theme_color: "#FFFFFF"
 
-# CONFIGURACIÓN DE PANTALLA DE CARGA (SPLASH)
 flutter_native_splash:
   color: "#FFFFFF"
   image: assets/icono/nutrileche.png
@@ -90,3 +91,4 @@ flutter_native_splash:
   ios: true
   web: true
   android_gravity: fill
+

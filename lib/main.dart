@@ -70,7 +70,7 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EventoService()),
         ChangeNotifierProvider(create: (_) => CumpleaniosService()),
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
-        ChangeNotifierProvider(create: (_) => SugerenciaService()),
+        //ChangeNotifierProvider(create: (_) => SugerenciaService()),
         ChangeNotifierProvider(create: (_) => SorteoService()),
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
@@ -118,7 +118,7 @@ class MyApp extends StatelessWidget {
             '/menu': (context) => const MenuScreen(),
             '/eventos_page': (context) => const EventosPage(),
             '/recursos': (context) => const RecursosScreen(),
-            '/buzon': (context) => const SugerenciaScreen(),
+            //'/buzon': (context) => const SugerenciaScreen(),
             '/cumpleanios': (context) => const CumpleaniosScreen(),
             '/calendario_eventos': (context) =>
                 const CalendarioEventosScreen(),

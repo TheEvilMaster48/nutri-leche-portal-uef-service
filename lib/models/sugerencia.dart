@@ -1,4 +1,4 @@
-import 'dart:convert';
+/*import 'dart:convert';
 
 class Sugerencia {
   final String categoria;
@@ -32,3 +32,4 @@ class Sugerencia {
         fecha: DateTime.parse(json['fecha']),
       );
 }
+*/
