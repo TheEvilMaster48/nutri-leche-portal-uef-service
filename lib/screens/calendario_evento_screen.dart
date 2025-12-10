@@ -17,24 +17,17 @@ class CalendarioEventosScreen extends StatefulWidget {
       _CalendarioEventosScreenState();
 }
 
-class _CalendarioEventosScreenState extends State<CalendarioEventosScreen>
-    with SingleTickerProviderStateMixin {
+class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
   final Map<DateTime, List<dynamic>> _eventosPorFecha = {};
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  bool _panelVisible = false;
   bool _cargando = true;
 
-  late final AnimationController _controller;
   CalendarioEventoService? _servicioGuardado;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _servicioGuardado = context.read<CalendarioEventoService>();
@@ -118,18 +111,26 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen>
     return _eventosPorFecha[normalizado] ?? [];
   }
 
-  void _togglePanel() {
-    if (!mounted) return;
-    setState(() {
-      _panelVisible = !_panelVisible;
-      _panelVisible ? _controller.forward() : _controller.reverse();
+  List<dynamic> _obtenerProximosEventos() {
+    final hoy = DateTime.now();
+    final hoyNormalizado = DateTime(hoy.year, hoy.month, hoy.day);
+    
+    List<MapEntry<DateTime, List<dynamic>>> proximosList = [];
+    
+    _eventosPorFecha.forEach((fecha, items) {
+      if (fecha.isAfter(hoyNormalizado) || fecha.isAtSameMomentAs(hoyNormalizado)) {
+        proximosList.add(MapEntry(fecha, items));
+      }
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    
+    proximosList.sort((a, b) => a.key.compareTo(b.key));
+    
+    List<dynamic> resultado = [];
+    for (var entry in proximosList.take(5)) {
+      resultado.addAll(entry.value);
+    }
+    
+    return resultado;
   }
 
   @override
@@ -137,121 +138,156 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen>
     final servicio = context.watch<CalendarioEventoService>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 3,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Calendario Corporativo',
-          style: TextStyle(
-            color: Colors.teal,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.teal),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.teal),
-            onPressed: () async {
-              setState(() => _cargando = true);
-              await _servicioGuardado?.cargarTodo(context);
-              if (mounted) _refrescarCalendario();
-              setState(() => _cargando = false);
-            },
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0052A3)))
           : Stack(
               children: [
-                Column(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          const Text(
-                            "Visualiza Eventos Programados y Cumpleaños Corporativos",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildLeyendaProfesional(),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      flex: 7,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: _buildCalendario(),
-                      ),
-                    ),
-                    const SizedBox(height: 90),
-                  ],
-                ),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 400),
-                  bottom: _panelVisible ? 0 : -260,
-                  left: 0,
-                  right: 0,
-                  height: 300,
+                // Fondo azul superior con curva
+                ClipPath(
+                  clipper: CalendarioWaveClipper(),
                   child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(22)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 16,
-                          offset: const Offset(0, -4),
-                        ),
-                      ],
+                    height: 120,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF0052A3),
                     ),
-                    child: Column(
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          height: 5,
-                          width: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.teal.shade100,
-                            borderRadius: BorderRadius.circular(50),
+                  ),
+                ),
+                
+                SafeArea(
+                  child: Column(
+                    children: [
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'CALENDARIO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, color: Colors.white, size: 26),
+                              onPressed: () async {
+                                setState(() => _cargando = true);
+                                await _servicioGuardado?.cargarTodo(context);
+                                if (mounted) _refrescarCalendario();
+                                setState(() => _cargando = false);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              // Card del Calendario
+                              Container(
+                                margin: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    // Título y leyendas
+                                    Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Column(
+                                        children: [
+                                          const Text(
+                                            'Visualiza Eventos Programados\ny Cumpleaños Corporativos',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF666666),
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              _buildLeyendaChip(
+                                                icon: Icons.event_note,
+                                                label: 'Eventos',
+                                                color: const Color(0xFF0052A3),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              _buildLeyendaChip(
+                                                icon: Icons.cake,
+                                                label: 'Cumpleaños',
+                                                color: const Color(0xFF0052A3),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    
+                                    const Divider(height: 1),
+                                    
+                                    // Calendario
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: _buildCalendario(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              // Próximos Eventos
+                              Container(
+                                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F4F8),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'PRÓXIMOS EVENTOS',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF0052A3),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildProximosEventos(),
+                                  ],
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 20),
+                            ],
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            _panelVisible
-                                ? Icons.keyboard_arrow_down
-                                : Icons.keyboard_arrow_up,
-                            color: Colors.teal.shade700,
-                            size: 30,
-                          ),
-                          onPressed: _togglePanel,
-                        ),
-                        Expanded(child: _buildEventosDelDia(servicio)),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -259,36 +295,29 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen>
     );
   }
 
-  Widget _buildLeyendaProfesional() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 20,
-      runSpacing: 10,
-      children: [
-        _leyendaItem(Icons.cake, Colors.pinkAccent, 'Cumpleaños'),
-        _leyendaItem(Icons.event, Colors.blue, 'Evento'),
-      ],
-    );
-  }
-
-  Widget _leyendaItem(IconData icon, Color color, String texto) {
+  Widget _buildLeyendaChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.6)),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        border: Border.all(color: color, width: 1.5),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 6),
           Text(
-            texto,
-            style: const TextStyle(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: Colors.black87,
             ),
           ),
         ],
@@ -310,112 +339,209 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen>
         setState(() {
           _selectedDay = selected;
           _focusedDay = focused;
-          _panelVisible = true;
-          _controller.forward();
         });
       },
       calendarStyle: CalendarStyle(
-        outsideDaysVisible: false,
-        todayDecoration:
-            BoxDecoration(color: Colors.teal.shade200, shape: BoxShape.circle),
-        selectedDecoration:
-            BoxDecoration(color: Colors.teal, shape: BoxShape.circle),
+        outsideDaysVisible: true,
+        outsideTextStyle: const TextStyle(color: Color(0xFFCCCCCC)),
+        weekendTextStyle: const TextStyle(color: Colors.black87),
+        todayDecoration: BoxDecoration(
+          color: const Color(0xFF0052A3).withOpacity(0.3),
+          shape: BoxShape.circle,
+        ),
+        todayTextStyle: const TextStyle(
+          color: Colors.black87,
+          fontWeight: FontWeight.bold,
+        ),
+        selectedDecoration: const BoxDecoration(
+          color: Color(0xFF0052A3),
+          shape: BoxShape.circle,
+        ),
+        selectedTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        markerDecoration: const BoxDecoration(
+          color: Color(0xFF0052A3),
+          shape: BoxShape.circle,
+        ),
+        markersMaxCount: 1,
+        defaultTextStyle: const TextStyle(color: Colors.black87),
       ),
       headerStyle: HeaderStyle(
         titleTextStyle: const TextStyle(
           fontWeight: FontWeight.bold,
-          fontSize: 18,
-          color: Colors.teal,
+          fontSize: 16,
+          color: Color(0xFF0052A3),
         ),
         titleCentered: true,
         formatButtonVisible: false,
-        leftChevronIcon:
-            Icon(Icons.chevron_left, color: Colors.teal.shade700),
-        rightChevronIcon:
-            Icon(Icons.chevron_right, color: Colors.teal.shade700),
+        leftChevronIcon: const Icon(Icons.chevron_left, color: Color(0xFF0052A3)),
+        rightChevronIcon: const Icon(Icons.chevron_right, color: Color(0xFF0052A3)),
+        headerPadding: const EdgeInsets.symmetric(vertical: 8),
+      ),
+      daysOfWeekStyle: const DaysOfWeekStyle(
+        weekdayStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          color: Colors.black54,
+        ),
+        weekendStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          color: Colors.black54,
+        ),
       ),
     );
   }
 
-  Widget _buildEventosDelDia(CalendarioEventoService servicio) {
-    final eventos = _obtenerEventos(_selectedDay ?? DateTime.now());
-    if (eventos.isEmpty) {
-      return const Center(
-        child: Text(
-          'No hay actividades registradas para esta fecha.',
-          style: TextStyle(color: Colors.grey, fontSize: 16),
+  Widget _buildProximosEventos() {
+    final proximos = _obtenerProximosEventos();
+    
+    if (proximos.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        child: const Center(
+          child: Text(
+            'No hay eventos próximos programados',
+            style: TextStyle(
+              color: Color(0xFF666666),
+              fontSize: 14,
+            ),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: eventos.length,
-      itemBuilder: (context, index) {
-        final item = eventos[index];
-        late final Color color;
-        late final IconData icono;
-        late final String titulo;
-        late final String detalle;
-
-        if (item is Cumpleanios) {
-          color = Colors.pinkAccent;
-          icono = Icons.cake;
-          titulo = item.titulo;
-          detalle = item.descripcion;
-        } else if (item is CalendarioEvento) {
-          color = Colors.blue;
-          icono = Icons.event;
-          titulo = item.titulo;
-          detalle = item.descripcion;
-        } else {
-          color = Colors.grey;
-          icono = Icons.info_outline;
-          titulo = 'Evento desconocido';
-          detalle = '';
-        }
-
-        return GestureDetector(
-          onTap: () {
-            if (item is Cumpleanios) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DetalleCumpleaniosScreen(cumple: item),
-                ),
-              );
-            } else if (item is CalendarioEvento) {
+    return Column(
+      children: proximos.map((item) {
+        if (item is CalendarioEvento) {
+          return _buildEventoCard(
+            icon: Icons.event,
+            titulo: item.titulo,
+            subtitulo: item.descripcion,
+            color: const Color(0xFF0052A3),
+            onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => DetalleEventoScreen(evento: item),
                 ),
               );
-            }
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: color, width: 1.5),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: color,
-                child: Icon(icono, color: Colors.white),
-              ),
-              title: Text(
-                titulo,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: Colors.black87),
-              ),
-              subtitle:
-                  Text(detalle, style: const TextStyle(color: Colors.black54)),
-            ),
-          ),
-        );
-      },
+            },
+          );
+        } else if (item is Cumpleanios) {
+          return _buildEventoCard(
+            icon: Icons.cake,
+            titulo: item.titulo,
+            subtitulo: item.descripcion,
+            color: const Color(0xFF0052A3),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DetalleCumpleaniosScreen(cumple: item),
+                ),
+              );
+            },
+          );
+        }
+        return const SizedBox.shrink();
+      }).toList(),
     );
   }
+
+  Widget _buildEventoCard({
+    required IconData icon,
+    required String titulo,
+    required String subtitulo,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0052A3),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitulo,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF666666),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CalendarioWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    
+    path.lineTo(0, size.height - 30);
+    
+    var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
+    var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
+    path.quadraticBezierTo(
+      firstControlPoint.dx,
+      firstControlPoint.dy,
+      firstEndPoint.dx,
+      firstEndPoint.dy,
+    );
+    
+    var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
+    var secondEndPoint = Offset(size.width, size.height - 30);
+    path.quadraticBezierTo(
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      secondEndPoint.dx,
+      secondEndPoint.dy,
+    );
+    
+    path.lineTo(size.width, 0);
+    path.close();
+    
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
