@@ -207,7 +207,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final List<Map<String, dynamic>> menus = [
       {
-        'titulo': 'Eventos',
+        'titulo': 'Gestión de Eventos',
         'subtitulo': 'Crea y organiza',
         'imagen': 'assets/icono/eventos.jpg',
         'ruta': '/eventos_page',
@@ -221,13 +221,6 @@ class _MenuScreenState extends State<MenuScreen> {
         'tipo': 'cumpleanios',
       },
       {
-        'titulo': 'Sorteo',
-        'subtitulo': 'Ver Sorteos y Resultados',
-        'imagen': 'assets/icono/detalleevento.jpg',
-        'ruta': '/sorteos',
-        'tipo': 'sorteos',
-      },
-      {
         'titulo': 'Calendario',
         'subtitulo': 'Agenda de actividades',
         'imagen': 'assets/icono/calendario.jpg',
@@ -235,7 +228,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'tipo': 'calendario',
       },
       {
-        'titulo': 'Buzón de sugerencias',
+        'titulo': 'Buzón de Sugerencias',
         'subtitulo': 'Crea y organiza',
         'imagen': 'assets/icono/correo.jpg',
         'ruta': '/buzon',
