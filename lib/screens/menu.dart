@@ -149,50 +149,47 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final List<Map<String, dynamic>> menus = [
       {
-        'titulo': 'Calendario',
-        'subtitulo': 'Agenda de actividades',
-        'icono': Image.asset('assets/icono/calendario.png', width: 60, height: 60),
-        'ruta': '/calendario_eventos',
-        'tipo': 'calendario',
-      },
-      {
-        'titulo': 'Gestión de eventos',
+        'titulo': 'Eventos',
         'subtitulo': 'Crea y organiza',
-        'icono': Image.asset('assets/icono/evento.png', width: 60, height: 60),
+        'imagen': 'assets/icono/eventos.jpg',
         'ruta': '/eventos_page',
         'tipo': 'eventos',
       },
       {
         'titulo': 'Cumpleaños',
         'subtitulo': 'Crea y organiza',
-        'icono': Image.asset('assets/icono/cumpleanos.png', width: 60, height: 60),
+        'imagen': 'assets/icono/cumpleanos.jpg',
         'ruta': '/cumpleanios',
         'tipo': 'cumpleanios',
       },
       {
-        'titulo': 'Buzón de sugerencias',
-        'subtitulo': 'Crea y organiza',
-        'icono': Image.asset('assets/icono/correo.png', width: 60, height: 60),
-        'ruta': '/buzon',
-      },
-      {
         'titulo': 'Sorteo',
         'subtitulo': 'Ver Sorteos y Resultados',
-        'icono': Image.asset('assets/icono/eventodetalle.png', width: 60, height: 60),
+        'imagen': 'assets/icono/detalleevento.jpg',
         'ruta': '/sorteos',
         'tipo': 'sorteos',
+      },
+      {
+        'titulo': 'Calendario',
+        'subtitulo': 'Agenda de actividades',
+        'imagen': 'assets/icono/calendario.jpg',
+        'ruta': '/calendario_eventos',
+        'tipo': 'calendario',
+      },
+      {
+        'titulo': 'Buzón de sugerencias',
+        'subtitulo': 'Crea y organiza',
+        'imagen': 'assets/icono/correo.jpg',
+        'ruta': '/buzon',
       },
     ];
 
     return Scaffold(
       body: Stack(
         children: [
-          // Fondo blanco
           Container(
             color: Colors.white,
           ),
-
-          // Fondo azul con curva ondulada
           ClipPath(
             clipper: MenuWaveClipper(),
             child: Container(
@@ -202,12 +199,9 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
           ),
-
-          // Contenido
           SafeArea(
             child: Column(
               children: [
-                // Header con info de usuario
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   child: Column(
@@ -215,33 +209,37 @@ class _MenuScreenState extends State<MenuScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Avatar izquierdo
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 120,
+                            height: 120,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.person_outline,
-                              size: 50,
-                              color: Color(0xFF0052A3),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/icono/femenino.jpg',
+                                width: 280,
+                                height: 280,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 20),
-                          // Avatar derecho
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 120,
+                            height: 120,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.person_outline,
-                              size: 50,
-                              color: Color(0xFF0052A3),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/icono/masculino.jpg',
+                                width: 280,
+                                height: 280,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                         ],
@@ -268,8 +266,6 @@ class _MenuScreenState extends State<MenuScreen> {
                     ],
                   ),
                 ),
-
-                // Lista de menús
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
@@ -280,7 +276,7 @@ class _MenuScreenState extends State<MenuScreen> {
                         context,
                         menu['titulo'],
                         menu['subtitulo'],
-                        menu['icono'],
+                        menu['imagen'],
                         menu['ruta'],
                         tipo: menu['tipo'],
                       );
@@ -290,14 +286,12 @@ class _MenuScreenState extends State<MenuScreen> {
               ],
             ),
           ),
-
-          // Bottom Navigation Bar
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              height: 70,
+              height: 65,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -308,26 +302,29 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildBottomNavItem(
-                    icon: Icons.home_outlined,
-                    label: 'Inicio',
-                    index: 0,
-                  ),
-                  _buildBottomNavItem(
-                    icon: Icons.notifications_outlined,
-                    label: 'Notificaciones',
-                    index: 1,
-                    badge: _totalNotificaciones > 0 ? _totalNotificaciones : null,
-                  ),
-                  _buildBottomNavItem(
-                    icon: Icons.person_outline,
-                    label: 'Perfil',
-                    index: 2,
-                  ),
-                ],
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildBottomNavItem(
+                      icon: Icons.home_outlined,
+                      label: 'Inicio',
+                      index: 0,
+                    ),
+                    _buildBottomNavItem(
+                      icon: Icons.notifications_outlined,
+                      label: 'Notificaciones',
+                      index: 1,
+                      badge: _totalNotificaciones > 0 ? _totalNotificaciones : null,
+                    ),
+                    _buildBottomNavItem(
+                      icon: Icons.person_outline,
+                      label: 'Perfil',
+                      index: 2,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -344,77 +341,81 @@ class _MenuScreenState extends State<MenuScreen> {
   }) {
     final isSelected = _selectedIndex == index;
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
 
-        // Navegación según el índice
-        if (index == 2) {
-          Navigator.pushNamed(context, '/perfil');
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
-                  size: 28,
-                ),
-                if (badge != null)
-                  Positioned(
-                    right: -8,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 18,
-                        minHeight: 18,
-                      ),
-                      child: Text(
-                        badge > 9 ? '9+' : badge.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+          if (index == 2) {
+            Navigator.pushNamed(context, '/perfil');
+          }
+        },
+        child: SizedBox(
+          height: 65,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
+                    size: 24,
+                  ),
+                  if (badge != null)
+                    Positioned(
+                      right: -6,
+                      top: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
                         ),
-                        textAlign: TextAlign.center,
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          badge > 9 ? '9+' : badge.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ],
               ),
-            ),
-            if (isSelected)
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 2),
               Container(
-                margin: const EdgeInsets.only(top: 2),
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0052A3),
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF0052A3) : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -435,7 +436,7 @@ class _MenuScreenState extends State<MenuScreen> {
     BuildContext context,
     String title,
     String subtitle,
-    Widget icon,
+    String imagePath,
     String route, {
     String? tipo,
   }) {
@@ -454,7 +455,7 @@ class _MenuScreenState extends State<MenuScreen> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -465,27 +466,48 @@ class _MenuScreenState extends State<MenuScreen> {
         ),
         child: Row(
           children: [
-            icon,
-            const SizedBox(width: 16),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  imagePath,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     title,
                     style: const TextStyle(
                       color: Color(0xFF0052A3),
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: const TextStyle(
                       color: Colors.grey,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -497,7 +519,6 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 }
 
-// Custom clipper para la curva ondulada del menú
 class MenuWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -532,4 +553,3 @@ class MenuWaveClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
-nnn
