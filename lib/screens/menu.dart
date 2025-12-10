@@ -145,7 +145,6 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final Usuario? usuario = auth.currentUser;
-    final screenWidth = MediaQuery.of(context).size.width;
 
     final List<Map<String, dynamic>> menus = [
       {
@@ -271,19 +270,29 @@ class _MenuScreenState extends State<MenuScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
                     itemCount: menus.length,
                     itemBuilder: (context, index) {
-                      final menu = menus[index];
                       return _buildMenuButton(
                         context,
-                        menu['titulo'],
-                        menu['subtitulo'],
-                        menu['imagen'],
-                        menu['ruta'],
-                        tipo: menu['tipo'],
+                        menus[index]['titulo'],
+                        menus[index]['subtitulo'],
+                        menus[index]['imagen'],
+                        menus[index]['ruta'],
+                        tipo: menus[index]['tipo'],
                       );
                     },
                   ),
                 ),
               ],
+            ),
+          ),
+          Positioned(
+            right: 10,
+            top: 50, // Ajustamos la posición para la esquina superior derecha
+            child: IconButton(
+              icon: Icon(Icons.exit_to_app, color: Colors.white, size: 30), // Ícono de salida
+              onPressed: () {
+                auth.logout();
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false); // Redirige al login y elimina las pantallas anteriores
+              },
             ),
           ),
           Positioned(
@@ -311,12 +320,6 @@ class _MenuScreenState extends State<MenuScreen> {
                       icon: Icons.home_outlined,
                       label: 'Inicio',
                       index: 0,
-                    ),
-                    _buildBottomNavItem(
-                      icon: Icons.notifications_outlined,
-                      label: 'Notificaciones',
-                      index: 1,
-                      badge: _totalNotificaciones > 0 ? _totalNotificaciones : null,
                     ),
                     _buildBottomNavItem(
                       icon: Icons.person_outline,
@@ -466,10 +469,9 @@ class _MenuScreenState extends State<MenuScreen> {
         ),
         child: Row(
           children: [
-            // CONTENEDOR TAMAÑO IMAGEN
             Container(
-              width: 100, 
-              height: 100, 
+              width: 80, 
+              height: 80, 
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -478,8 +480,8 @@ class _MenuScreenState extends State<MenuScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
                   imagePath,
-                  width: 100,  // Tamaño más grande de la imagen
-                  height: 100, 
+                  width: 80, 
+                  height: 80, 
                   fit: BoxFit.contain,
                 ),
               ),
@@ -513,7 +515,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 ],
               ),
             ),
-          ],// FIN CONTENEDOR TAMAÑO IMAGEN
+          ], 
         ),
       ),
     );

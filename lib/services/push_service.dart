@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 import '../core/notification_banner.dart';
 
 final FlutterLocalNotificationsPlugin localNotifications =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -28,7 +28,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 const AndroidNotificationChannel highImportanceChannel =
-AndroidNotificationChannel(
+    AndroidNotificationChannel(
   'high_importance_channel',
   'Notificaciones importantes',
   description: 'Canal para notificaciones importantes',
@@ -71,10 +71,9 @@ class PushService {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     const AndroidInitializationSettings initSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initSettingsIOS =
-    DarwinInitializationSettings(
+    const DarwinInitializationSettings initSettingsIOS = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
@@ -89,8 +88,7 @@ class PushService {
 
     if (Platform.isAndroid) {
       await localNotifications
-          .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(highImportanceChannel);
     }
 
@@ -119,45 +117,44 @@ class PushService {
 
     _listener =
         FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-          print('NOTIFICACIÓN EN FOREGROUND - 1 SOLO LISTENER');
+      print('NOTIFICACIÓN EN FOREGROUND - 1 SOLO LISTENER');
 
-          final notification = message.notification;
-          if (notification != null && Platform.isAndroid) {
-            await localNotifications.show(
-              notification.hashCode,
-              notification.title,
-              notification.body,
-              const NotificationDetails(
-                android: AndroidNotificationDetails(
-                  'high_importance_channel',
-                  'Notificaciones importantes',
-                  channelDescription: 'Canal para notificaciones importantes',
-                  importance: Importance.max,
-                  priority: Priority.high,
-                  playSound: true,
-                  icon: '@mipmap/ic_launcher',
-                ),
-              ),
-            );
-          } else if (notification != null && Platform.isIOS) {
-            await localNotifications.show(
-              notification.hashCode,
-              notification.title,
-              notification.body,
-              const NotificationDetails(
-                iOS: DarwinNotificationDetails(
-                  presentAlert: true,
-                  presentBadge: true,
-                  presentSound: true,
-                ),
-              ),
-            );
-          }
-        });
+      final notification = message.notification;
+      if (notification != null && Platform.isAndroid) {
+        await localNotifications.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'high_importance_channel',
+              'Notificaciones importantes',
+              channelDescription: 'Canal para notificaciones importantes',
+              importance: Importance.max,
+              priority: Priority.high,
+              playSound: true,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+        );
+      } else if (notification != null && Platform.isIOS) {
+        await localNotifications.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+        );
+      }
+    });
   }
 
-
-    Future<void> stop() async {
+  Future<void> stop() async {
     await _listener?.cancel();
     _listener = null;
   }
