@@ -210,8 +210,8 @@ class _MenuScreenState extends State<MenuScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 100,
+                            height: 100,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -219,16 +219,16 @@ class _MenuScreenState extends State<MenuScreen> {
                             child: ClipOval(
                               child: Image.asset(
                                 'assets/icono/femenino.jpg',
-                                width: 280,
-                                height: 280,
+                                width: 100,
+                                height: 100,
                                 fit: BoxFit.cover,
                               ),
                             ),
                           ),
                           const SizedBox(width: 20),
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 100,
+                            height: 100,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -236,8 +236,8 @@ class _MenuScreenState extends State<MenuScreen> {
                             child: ClipOval(
                               child: Image.asset(
                                 'assets/icono/masculino.jpg',
-                                width: 280,
-                                height: 280,
+                                width: 100,
+                                height: 100,
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -466,9 +466,10 @@ class _MenuScreenState extends State<MenuScreen> {
         ),
         child: Row(
           children: [
+            // CONTENEDOR TAMAÑO IMAGEN
             Container(
-              width: 50,
-              height: 50,
+              width: 100, 
+              height: 100, 
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -477,8 +478,8 @@ class _MenuScreenState extends State<MenuScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
                   imagePath,
-                  width: 50,
-                  height: 50,
+                  width: 100,  // Tamaño más grande de la imagen
+                  height: 100, 
                   fit: BoxFit.contain,
                 ),
               ),
@@ -512,7 +513,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 ],
               ),
             ),
-          ],
+          ],// FIN CONTENEDOR TAMAÑO IMAGEN
         ),
       ),
     );
