@@ -86,17 +86,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Future.microtask(() async {
-      final auth = context.read<AuthService>();
-      final sesionActiva = await auth.verificarSesionGuardada();
-
-      if (sesionActiva && auth.isLoggedIn) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacementNamed(context, '/menu');
-        });
-      }
-    });
-
     return Consumer<LocaleProvider>(
       builder: (context, localeProvider, child) {
         return MaterialApp(
@@ -119,8 +108,7 @@ class MyApp extends StatelessWidget {
             '/recursos': (context) => const RecursosScreen(),
             '/buzon': (context) => const SugerenciaScreen(),
             '/cumpleanios': (context) => const CumpleaniosScreen(),
-            '/calendario_eventos': (context) =>
-                const CalendarioEventosScreen(),
+            '/calendario_eventos': (context) => const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
             '/sorteos': (context) => const SorteoScreen(),
           },

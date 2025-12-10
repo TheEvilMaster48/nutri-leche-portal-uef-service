@@ -90,6 +90,7 @@ class _MenuScreenState extends State<MenuScreen> {
     _actualizarContadoresPendientes();
 
     Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
       final auth = context.read<AuthService>();
       auth.showNotification(
         "Bienvenido ${auth.currentUser?.nombre ?? ''}",
@@ -139,6 +140,64 @@ class _MenuScreenState extends State<MenuScreen> {
 
   int get _totalNotificaciones {
     return _notificaciones.values.fold(0, (sum, count) => sum + count);
+  }
+
+  Future<void> _cerrarSesion() async {
+    final auth = context.read<AuthService>();
+    
+    // Mostrar diálogo de confirmación
+    final confirmLogout = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Cerrar Sesión'),
+          content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Cerrar Sesión'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmLogout == true) {
+      // Mostrar loading
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      // Ejecutar logout
+      await auth.logout();
+      await PushService.instance.stopCompletely();
+      
+      if (!mounted) return;
+      
+      // Cerrar el dialog de loading
+      Navigator.of(context).pop();
+      
+      // Navegar al login limpiando toda la pila
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/',
+        (Route<dynamic> route) => false,
+      );
+    }
   }
 
   @override
@@ -286,13 +345,11 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
           Positioned(
             right: 10,
-            top: 50, // Ajustamos la posición para la esquina superior derecha
+            top: 50,
             child: IconButton(
-              icon: Icon(Icons.exit_to_app, color: Colors.white, size: 30), // Ícono de salida
-              onPressed: () {
-                auth.logout();
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false); // Redirige al login y elimina las pantallas anteriores
-              },
+              icon: const Icon(Icons.exit_to_app, color: Colors.white, size: 30),
+              onPressed: _cerrarSesion,
+              tooltip: 'Cerrar Sesión',
             ),
           ),
           Positioned(
@@ -408,7 +465,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Container(
                 width: 5,
                 height: 5,
