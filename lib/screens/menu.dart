@@ -23,6 +23,7 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   Timer? _timer;
+  int _selectedIndex = 0;
 
   final Map<String, int> _notificaciones = {
     'eventos': 0,
@@ -37,16 +38,16 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Widget _ImagenNutri() {
     if (useLocalGif) {
-      return Image.asset(
-        'assets/icono/nutri.png',
-        width: 200,
-      );
+      return Image.asset('assets/icono/nutri.png', width: 120);
     } else {
       return Image.network(
         url,
-        width: 200,
-        loadingBuilder: (BuildContext context, Widget child,
-            ImageChunkEvent? loadingProgress) {
+        width: 120,
+        loadingBuilder: (
+          BuildContext context,
+          Widget child,
+          ImageChunkEvent? loadingProgress,
+        ) {
           if (loadingProgress == null) return child;
           return Center(
             child: CircularProgressIndicator(
@@ -73,14 +74,12 @@ class _MenuScreenState extends State<MenuScreen> {
       setState(() {
         final tipo = data['tipo'] ?? '';
         if (tipo == 'evento') {
-          _notificaciones['eventos'] =
-              (_notificaciones['eventos'] ?? 0) + 1;
+          _notificaciones['eventos'] = (_notificaciones['eventos'] ?? 0) + 1;
         } else if (tipo == 'cumpleanios') {
           _notificaciones['cumpleanios'] =
               (_notificaciones['cumpleanios'] ?? 0) + 1;
         } else if (tipo == 'sorteo') {
-          _notificaciones['sorteos'] =
-              (_notificaciones['sorteos'] ?? 0) + 1;
+          _notificaciones['sorteos'] = (_notificaciones['sorteos'] ?? 0) + 1;
         } else if (tipo == 'calendario') {
           _notificaciones['calendario'] =
               (_notificaciones['calendario'] ?? 0) + 1;
@@ -114,23 +113,18 @@ class _MenuScreenState extends State<MenuScreen> {
 
       await eventoService.obtenerEventos(idUsuario: usuario.id);
       final eventos = eventoService.eventos;
-      final pendientesEventos =
-          eventos.where((e) => e.estado == 0).length;
+      final pendientesEventos = eventos.where((e) => e.estado == 0).length;
 
       await cumpleService.obtenerCumpleanios(idUsuario: usuario.id);
       final cumpleanios = cumpleService.cumpleanios;
-      final pendientesCumples =
-          cumpleanios.where((c) => c.estado == 0).length;
+      final pendientesCumples = cumpleanios.where((c) => c.estado == 0).length;
 
       await sorteoService.obtenerSorteos(idUsuario: usuario.id);
       final sorteos = sorteoService.sorteos;
-      final pendientesSorteos =
-          sorteos.where((c) => c.estado == 0).length;
 
       setState(() {
         _notificaciones['eventos'] = pendientesEventos;
         _notificaciones['cumpleanios'] = pendientesCumples;
-        _notificaciones['sorteos'] = pendientesSorteos;
       });
     } catch (e) {
       debugPrint('Error al actualizar contadores: $e');
@@ -143,6 +137,10 @@ class _MenuScreenState extends State<MenuScreen> {
     super.dispose();
   }
 
+  int get _totalNotificaciones {
+    return _notificaciones.values.fold(0, (sum, count) => sum + count);
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -151,198 +149,271 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final List<Map<String, dynamic>> menus = [
       {
-        'titulo': 'Gestión de Eventos',
-        'subtitulo': 'Crea y organiza actividades corporativas',
-        'icono': Icons.event_available_rounded,
-        'ruta': '/eventos_page',
-        'tipo': 'eventos',
-        'colores': [
-          const Color(0xFF0048FF),
-          const Color(0xFF64B5F6)
-        ],
+        'titulo': 'Calendario',
+        'subtitulo': 'Agenda de actividades',
+        'icono': Image.asset('assets/icono/calendario.png', width: 60, height: 60),
+        'ruta': '/calendario_eventos',
+        'tipo': 'calendario',
       },
       {
-        'titulo': 'Gestión de Cumpleaños',
-        'subtitulo': 'Administra cumpleaños del personal',
-        'icono': Icons.cake_rounded,
+        'titulo': 'Gestión de eventos',
+        'subtitulo': 'Crea y organiza',
+        'icono': Image.asset('assets/icono/evento.png', width: 60, height: 60),
+        'ruta': '/eventos_page',
+        'tipo': 'eventos',
+      },
+      {
+        'titulo': 'Cumpleaños',
+        'subtitulo': 'Crea y organiza',
+        'icono': Image.asset('assets/icono/cumpleanos.png', width: 60, height: 60),
         'ruta': '/cumpleanios',
         'tipo': 'cumpleanios',
-        'colores': [
-          const Color(0xFFFF4081),
-          const Color(0xFFF8BBD0)
-        ],
+      },
+      {
+        'titulo': 'Buzón de sugerencias',
+        'subtitulo': 'Crea y organiza',
+        'icono': Image.asset('assets/icono/correo.png', width: 60, height: 60),
+        'ruta': '/buzon',
       },
       {
         'titulo': 'Sorteo',
         'subtitulo': 'Ver Sorteos y Resultados',
-        'icono': Icons.card_giftcard_rounded,
+        'icono': Image.asset('assets/icono/eventodetalle.png', width: 60, height: 60),
         'ruta': '/sorteos',
         'tipo': 'sorteos',
-        'colores': [
-          const Color(0xFFFA0000),
-          const Color(0xFF00ACC1)
-        ],
-      },
-      {
-        'titulo': 'Calendario',
-        'subtitulo': 'Agenda de actividades laborales',
-        'icono': Icons.calendar_month_rounded,
-        'ruta': '/calendario_eventos',
-        'tipo': 'calendario',
-        'colores': [
-          const Color(0xFF3F51B5),
-          const Color(0xFF7986CB)
-        ],
-      },/*
-      {
-        'titulo': 'Buzón de sugerencias',
-        'subtitulo': 'Envía tus ideas y comentarios',
-        'icono': Icons.mail_rounded,
-        'ruta': '/buzon',
-        'colores': [
-          const Color(0xFFFF5722),
-          const Color(0xFFFFAB91)
-        ],
-      },*/
-      {
-        'titulo': 'Perfil',
-        'subtitulo': 'Ver información personal',
-        'icono': Icons.person_rounded,
-        'ruta': '/perfil',
-        'colores': [
-          const Color(0xFFFF9900),
-          const Color(0xFFFFB74D)
-        ],
       },
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Container(
-              color: const Color(0xFFE3F2FD),
-            ),
+      body: Stack(
+        children: [
+          // Fondo blanco
+          Container(
+            color: Colors.white,
+          ),
 
-            SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 20, horizontal: 16),
-                child: Column(
-                  children: [
-
-                    const SizedBox(height: 10),
-                    _ImagenNutri(),
-                    const SizedBox(height: 20),
-
-                    Text(
-                      usuario?.nombre.toUpperCase() ?? '',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    Text(
-                      _obtenerDescripcionUsuario(usuario),
-                      style: const TextStyle(
-                          color: Colors.black54, fontSize: 17),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          onPressed: () async {
-                            await context
-                                .read<AuthService>()
-                                .logout();
-                            if (context.mounted) {
-                              Navigator.pushReplacementNamed(
-                                  context, '/');
-                            }
-                          },
-                          icon: const Icon(Icons.logout,
-                              color: Colors.black),
-                          tooltip: 'Cerrar sesión',
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    Container(
-                      height: 4,
-                      width: screenWidth * 0.9,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    Wrap(
-                      spacing: 18,
-                      runSpacing: 18,
-                      alignment: WrapAlignment.center,
-                      children: menus.map((menu) {
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            _buildMenuButton(
-                              context,
-                              menu['titulo'],
-                              menu['subtitulo'],
-                              menu['icono'],
-                              menu['colores'][0],
-                              menu['colores'][1],
-                              menu['ruta'],
-                              screenWidth,
-                              tipo: menu['tipo'],
-                            ),
-                            if (menu.containsKey('tipo') &&
-                                (_notificaciones[menu['tipo']] ??
-                                        0) >
-                                    0)
-                              Positioned(
-                                top: -6,
-                                right: -6,
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    '${_notificaciones[menu['tipo']]}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight:
-                                          FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 40),
-                  ],
-                ),
+          // Fondo azul con curva ondulada
+          ClipPath(
+            clipper: MenuWaveClipper(),
+            child: Container(
+              height: 320,
+              decoration: const BoxDecoration(
+                color: Color(0xFF0052A3),
               ),
             ),
+          ),
+
+          // Contenido
+          SafeArea(
+            child: Column(
+              children: [
+                // Header con info de usuario
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Avatar izquierdo
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.person_outline,
+                              size: 50,
+                              color: Color(0xFF0052A3),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          // Avatar derecho
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.person_outline,
+                              size: 50,
+                              color: Color(0xFF0052A3),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        usuario?.nombre.toUpperCase() ?? '',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _obtenerDescripcionUsuario(usuario),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Lista de menús
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
+                    itemCount: menus.length,
+                    itemBuilder: (context, index) {
+                      final menu = menus[index];
+                      return _buildMenuButton(
+                        context,
+                        menu['titulo'],
+                        menu['subtitulo'],
+                        menu['icono'],
+                        menu['ruta'],
+                        tipo: menu['tipo'],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Navigation Bar
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildBottomNavItem(
+                    icon: Icons.home_outlined,
+                    label: 'Inicio',
+                    index: 0,
+                  ),
+                  _buildBottomNavItem(
+                    icon: Icons.notifications_outlined,
+                    label: 'Notificaciones',
+                    index: 1,
+                    badge: _totalNotificaciones > 0 ? _totalNotificaciones : null,
+                  ),
+                  _buildBottomNavItem(
+                    icon: Icons.person_outline,
+                    label: 'Perfil',
+                    index: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+    int? badge,
+  }) {
+    final isSelected = _selectedIndex == index;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+
+        // Navegación según el índice
+        if (index == 2) {
+          Navigator.pushNamed(context, '/perfil');
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
+                  size: 28,
+                ),
+                if (badge != null)
+                  Positioned(
+                    right: -8,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Text(
+                        badge > 9 ? '9+' : badge.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0052A3),
+                  shape: BoxShape.circle,
+                ),
+              ),
           ],
         ),
       ),
@@ -352,7 +423,7 @@ class _MenuScreenState extends State<MenuScreen> {
   String _obtenerDescripcionUsuario(Usuario? usuario) {
     if (usuario == null) return 'Sin datos de usuario';
     if (usuario.areaUsuario.isNotEmpty) {
-      return 'Área: ${usuario.areaUsuario}';
+      return 'Área Administrativa';
     }
     if (usuario.cargo.isNotEmpty) {
       return 'Cargo: ${usuario.cargo}';
@@ -364,11 +435,8 @@ class _MenuScreenState extends State<MenuScreen> {
     BuildContext context,
     String title,
     String subtitle,
-    IconData icon,
-    Color color1,
-    Color color2,
-    String route,
-    double screenWidth, {
+    Widget icon,
+    String route, {
     String? tipo,
   }) {
     return InkWell(
@@ -383,64 +451,84 @@ class _MenuScreenState extends State<MenuScreen> {
           }
         });
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        width: screenWidth * 0.42,
-        height: 120,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color1, color2],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFE0E0E0),
+            width: 1,
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: color1.withOpacity(0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+        ),
+        child: Row(
+          children: [
+            icon,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFF0052A3),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
-        ),
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(icon, size: 45, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 19,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
   }
+}
+
+// Custom clipper para la curva ondulada del menú
+class MenuWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+
+    path.lineTo(0, size.height - 50);
+
+    var firstControlPoint = Offset(size.width * 0.25, size.height - 70);
+    var firstEndPoint = Offset(size.width * 0.5, size.height - 50);
+    path.quadraticBezierTo(
+      firstControlPoint.dx,
+      firstControlPoint.dy,
+      firstEndPoint.dx,
+      firstEndPoint.dy,
+    );
+
+    var secondControlPoint = Offset(size.width * 0.75, size.height - 30);
+    var secondEndPoint = Offset(size.width, size.height - 50);
+    path.quadraticBezierTo(
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      secondEndPoint.dx,
+      secondEndPoint.dy,
+    );
+
+    path.lineTo(size.width, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
