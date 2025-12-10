@@ -62,99 +62,164 @@ class _EventosPageState extends State<EventosPage> {
     final eventos = context.watch<EventoService>().eventos;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF003BCE),
-              Color(0xFF1565C0),
-              Color(0xFF42A5F5),
-              Color(0xFFE3F2FD)
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // ENCABEZADO CON BOTÓN REGRESAR
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0048FF), Color(0xFF64B5F6)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white),
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const MenuScreen()),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Eventos Corporativos',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                      ),
-                    ),
-                  ],
-                ),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: Stack(
+        children: [
+          // Fondo azul superior con curva
+          ClipPath(
+            clipper: EventosWaveClipper(),
+            child: Container(
+              height: 120,
+              decoration: const BoxDecoration(
+                color: Color(0xFF0052A3),
               ),
-              Expanded(
-                child: _cargando
-                    ? const Center(child: CircularProgressIndicator())
-                    : Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: eventos.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No hay eventos disponibles actualmente.',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.black54,
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'EVENTOS CORPORATIVOS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                Expanded(
+                  child: _cargando
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF0052A3),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            await context
+                                .read<EventoService>()
+                                .obtenerEventos(idUsuario: idUsuario);
+                          },
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: Column(
+                              children: [
+                                // Card con imagen y título
+                                Container(
+                                  margin: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE0E0E0),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Texto a la izquierda
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: const [
+                                            Text(
+                                              'Eventos Corporativos',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF0052A3),
+                                              ),
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Revisa Todos los Eventos',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Color(0xFF666666),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Imagen a la derecha alineada arriba
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.asset(
+                                          'assets/icono/detalleevento.jpg',
+                                          height: 120,
+                                          width: 120,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              )
-                            : RefreshIndicator(
-                                onRefresh: () async {
-                                  await context
-                                      .read<EventoService>()
-                                      .obtenerEventos(idUsuario: idUsuario);
-                                },
-                                child: ListView.builder(
-                                  itemCount: eventos.length,
-                                  itemBuilder: (context, i) {
-                                    final evento = eventos[i];
-                                    return _EventoItem(
-                                      evento: evento,
-                                      idUsuario: idUsuario,
-                                    );
-                                  },
+                                
+                                // Título de la sección
+                                Container(
+                                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                  alignment: Alignment.centerLeft,
+                                  child: const Text(
+                                    'Eventos',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0052A3),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                      ),
-              ),
-            ],
+                                
+                                // Lista de eventos
+                                eventos.isEmpty
+                                    ? Container(
+                                        padding: const EdgeInsets.all(40),
+                                        child: const Center(
+                                          child: Text(
+                                            'No hay eventos disponibles actualmente.',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Color(0xFF666666),
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Column(
+                                          children: eventos.map((evento) {
+                                            return _EventoItem(
+                                              evento: evento,
+                                              idUsuario: idUsuario,
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ),
+                                
+                                const SizedBox(height: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -165,66 +230,141 @@ class _EventoItem extends StatelessWidget {
   final Evento evento;
   final int idUsuario;
 
+  IconData _getEventIcon() {
+    // Puedes personalizar el icono según el tipo de evento
+    if (evento.titulo.toLowerCase().contains('navidad')) {
+      return Icons.card_giftcard;
+    } else if (evento.titulo.toLowerCase().contains('capacitación') || 
+               evento.titulo.toLowerCase().contains('capacitacion')) {
+      return Icons.school;
+    }
+    return Icons.event;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textoEstado = evento.estado == 0 ? 'Pendiente' : 'Leído';
-    final colorEstado = evento.estado == 0 ? Colors.orange : Colors.green;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetalleEventoScreen(evento: evento),
+          ),
+        );
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      elevation: 3,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        leading: const Icon(Icons.event, color: Color(0xFF0048FF)),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        if (evento.estado == 0) {
+          evento.estado = 1;
+          Future.microtask(() {
+            context.read<EventoService>().marcarEventoComoVisto(
+                  idUsuario: idUsuario,
+                  idEvento: evento.idEvento,
+                );
+          });
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
           children: [
-            Expanded(
-              child: Text(
-                evento.titulo,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0048FF),
-                ),
-                overflow: TextOverflow.ellipsis,
+            // Icono del evento
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0052A3).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                _getEventIcon(),
+                color: const Color(0xFF0052A3),
+                size: 32,
               ),
             ),
-            Text(
-              textoEstado,
-              style: TextStyle(
-                color: colorEstado,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+            const SizedBox(width: 16),
+            
+            // Información del evento
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    evento.titulo,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0052A3),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    evento.fecha,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                  if (evento.horaEvento.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      evento.horaEvento,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
         ),
-        subtitle: Text("${evento.fecha}  ${evento.horaEvento}"),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DetalleEventoScreen(evento: evento),
-            ),
-          );
-
-          if (evento.estado == 0) {
-            evento.estado = 1;
-            Future.microtask(() {
-              context.read<EventoService>().marcarEventoComoVisto(
-                    idUsuario: idUsuario,
-                    idEvento: evento.idEvento,
-                  );
-            });
-          }
-        },
       ),
     );
   }
+}
+
+class EventosWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    
+    path.lineTo(0, size.height - 30);
+    
+    var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
+    var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
+    path.quadraticBezierTo(
+      firstControlPoint.dx,
+      firstControlPoint.dy,
+      firstEndPoint.dx,
+      firstEndPoint.dy,
+    );
+    
+    var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
+    var secondEndPoint = Offset(size.width, size.height - 30);
+    path.quadraticBezierTo(
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      secondEndPoint.dx,
+      secondEndPoint.dy,
+    );
+    
+    path.lineTo(size.width, 0);
+    path.close();
+    
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

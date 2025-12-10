@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,7 +7,6 @@ import '../services/cumpleanios_service.dart';
 import '../core/notification_banner.dart';
 import '../services/auth_service.dart';
 import 'detalle_cumpleanios_screen.dart';
-import 'menu.dart';
 
 class CumpleaniosScreen extends StatefulWidget {
   const CumpleaniosScreen({super.key});
@@ -26,15 +26,14 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
   }
 
   Future<void> _cargarCumpleanios() async {
-    final cumpleService = context.read<CumpleaniosService>();
+    final cumpleaniosService = context.read<CumpleaniosService>();
 
     try {
       final authService = context.read<AuthService>();
       final usuarioActual = authService.currentUser;
+      idUsuario = usuarioActual?.id ?? 0;
 
-      if (usuarioActual != null && usuarioActual.id != 0) {
-        idUsuario = usuarioActual.id;
-      } else {
+      if (idUsuario == 0) {
         final prefs = await SharedPreferences.getInstance();
         idUsuario = prefs.getInt('idUsuario') ?? 0;
       }
@@ -52,26 +51,8 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
       return;
     }
 
-    await cumpleService.obtenerCumpleanios(idUsuario: idUsuario);
+    await cumpleaniosService.obtenerCumpleanios(idUsuario: idUsuario);
     setState(() => _cargando = false);
-  }
-
-  DateTime _parseFecha(String fecha) {
-    try {
-      if (fecha.isEmpty || fecha == '0000-00-00') return DateTime.now();
-      if (fecha.contains('/')) {
-        final partes = fecha.split('/');
-        if (partes.length == 3) {
-          final dia = int.tryParse(partes[0]) ?? 1;
-          final mes = int.tryParse(partes[1]) ?? 1;
-          final anio = int.tryParse(partes[2]) ?? DateTime.now().year;
-          return DateTime(anio, mes, dia);
-        }
-      }
-      return DateTime.tryParse(fecha) ?? DateTime.now();
-    } catch (_) {
-      return DateTime.now();
-    }
   }
 
   @override
@@ -79,178 +60,300 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
     final cumpleanios = context.watch<CumpleaniosService>().cumpleanios;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFFF4081),
-              Color(0xFFFF80AB),
-              Color(0xFFFFC1E3),
-              Color(0xFFFFFFFF)
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFFF4081), Color(0xFFFF80AB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white),
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const MenuScreen()),
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Cumpleaños Corporativos',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                      ),
-                    ),
-                  ],
-                ),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: Stack(
+        children: [
+          // Fondo azul superior con curva
+          ClipPath(
+            clipper: CumpleanosWaveClipper(),
+            child: Container(
+              height: 120,
+              decoration: const BoxDecoration(
+                color: Color(0xFF0052A3),
               ),
-              Expanded(
-                child: _cargando
-                    ? const Center(child: CircularProgressIndicator())
-                    : Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: cumpleanios.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No hay cumpleaños disponibles actualmente.',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.black54,
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'CUMPLEAÑOS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                Expanded(
+                  child: _cargando
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF0052A3),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            await context
+                                .read<CumpleaniosService>()
+                                .obtenerCumpleanios(idUsuario: idUsuario);
+                          },
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: Column(
+                              children: [
+                                // Card con imagen y título
+                                Container(
+                                  margin: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE0E0E0),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Texto a la izquierda
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: const [
+                                            Text(
+                                              'Cumpleaños',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF0052A3),
+                                              ),
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Revisa Todos los Cumpleaños',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF666666),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Imagen a la derecha alineada arriba
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.asset(
+                                          'assets/icono/cumpleanosdetalle.jpg',
+                                          height: 120,
+                                          width: 120,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              )
-                            : RefreshIndicator(
-                                onRefresh: () async {
-                                  await context
-                                      .read<CumpleaniosService>()
-                                      .obtenerCumpleanios(
-                                          idUsuario: idUsuario);
-                                },
-                                child: ListView.builder(
-                                  itemCount: cumpleanios.length,
-                                  itemBuilder: (context, i) {
-                                    final cumple = cumpleanios[i];
-                                    return _CumpleItem(
-                                      cumple: cumple,
-                                      idUsuario: idUsuario,
-                                      parseFecha: _parseFecha,
-                                    );
-                                  },
+                                
+                                // Título de la sección
+                                Container(
+                                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                  alignment: Alignment.centerLeft,
+                                  child: const Text(
+                                    'Eventos',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0052A3),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                      ),
-              ),
-            ],
+                                
+                                // Lista de cumpleaños
+                                cumpleanios.isEmpty
+                                    ? Container(
+                                        padding: const EdgeInsets.all(40),
+                                        child: const Center(
+                                          child: Text(
+                                            'No hay cumpleaños disponibles actualmente.',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Color(0xFF666666),
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Column(
+                                          children: cumpleanios.map((cumple) {
+                                            return _CumpleanosItem(
+                                              cumpleanios: cumple,
+                                              idUsuario: idUsuario,
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ),
+                                
+                                const SizedBox(height: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CumpleanosItem extends StatelessWidget {
+  const _CumpleanosItem({required this.cumpleanios, required this.idUsuario});
+  final Cumpleanios cumpleanios;
+  final int idUsuario;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetalleCumpleaniosScreen(cumple: cumpleanios),
+          ),
+        );
+
+        if (cumpleanios.estado == 0) {
+          cumpleanios.estado = 1;
+          Future.microtask(() {
+            context.read<CumpleaniosService>().marcarCumpleaniosComoVisto(
+                  idUsuario: idUsuario,
+                  idCumpleanios: cumpleanios.idCumpleanios,
+                );
+          });
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icono del cumpleaños
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0052A3).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.cake,
+                color: Color(0xFF0052A3),
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 16),
+            
+            // Información del cumpleaños
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cumpleanios.titulo,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0052A3),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    cumpleanios.fecha,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                  if (cumpleanios.descripcion.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      cumpleanios.descripcion,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF666666),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CumpleItem extends StatelessWidget {
-  const _CumpleItem({
-    required this.cumple,
-    required this.idUsuario,
-    required this.parseFecha,
-  });
-  final Cumpleanios cumple;
-  final int idUsuario;
-  final DateTime Function(String) parseFecha;
+class CumpleanosWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    
+    path.lineTo(0, size.height - 30);
+    
+    var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
+    var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
+    path.quadraticBezierTo(
+      firstControlPoint.dx,
+      firstControlPoint.dy,
+      firstEndPoint.dx,
+      firstEndPoint.dy,
+    );
+    
+    var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
+    var secondEndPoint = Offset(size.width, size.height - 30);
+    path.quadraticBezierTo(
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      secondEndPoint.dx,
+      secondEndPoint.dy,
+    );
+    
+    path.lineTo(size.width, 0);
+    path.close();
+    
+    return path;
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final textoEstado = cumple.estado == 0 ? 'Pendiente' : 'Leído';
-    final colorEstado = cumple.estado == 0 ? Colors.orange : Colors.green;
-    final fechaFormateada = parseFecha(cumple.fecha);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      elevation: 3,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        leading: const Icon(Icons.cake, color: Color(0xFFFF4081)),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                cumple.titulo,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFFF4081),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Text(
-              textoEstado,
-              style: TextStyle(
-                color: colorEstado,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        subtitle: Text(
-          '${fechaFormateada.day.toString().padLeft(2, '0')}/${fechaFormateada.month.toString().padLeft(2, '0')}/${fechaFormateada.year}',
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DetalleCumpleaniosScreen(cumple: cumple),
-            ),
-          );
-
-          if (cumple.estado == 0) {
-            cumple.estado = 1;
-            Future.microtask(() {
-              context.read<CumpleaniosService>().marcarCumpleaniosComoVisto(
-                    idUsuario: idUsuario,
-                    idCumpleanios: cumple.idCumpleanios,
-                  );
-            });
-          }
-        },
-      ),
-    );
-  }
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
