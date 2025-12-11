@@ -23,6 +23,27 @@ class AuthService extends ChangeNotifier {
   static const String loginUrl =
       "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
 
+  // MÉTODO PARA OBTENER EL GÉNERO DESDE EL BACKEND
+  Future<String> obtenerGenero(String userId) async {
+    final url = Uri.parse("$baseUrl/obtenerGenero/$userId"); // Ajusta la URL de acuerdo al backend
+
+    try {
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        // Si la respuesta es exitosa, obtenemos el género
+        final data = json.decode(response.body);
+        return data['genero'] ?? 'masculino';  // Default 'masculino' si no hay género
+      } else {
+        // Si la respuesta no es exitosa, devolver un valor por defecto
+        return 'masculino';
+      }
+    } catch (e) {
+      print("Error obteniendo el género: $e");
+      return 'masculino'; // Default en caso de error
+    }
+  }
+
   Future<bool> login(String usuario, String password) async {
     String? token;
 

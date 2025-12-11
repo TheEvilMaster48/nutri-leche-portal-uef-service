@@ -200,6 +200,19 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
+  // NUEVO: Método para obtener la imagen según el género
+  String _obtenerImagenPorGenero(Usuario? usuario) {
+    if (usuario == null) return 'assets/icono/masculino.jpg';
+    
+    final genero = usuario.genero?.toLowerCase().trim() ?? '';
+    
+    if (genero == 'femenino' || genero == 'f' || genero == 'mujer') {
+      return 'assets/icono/femenino.jpg';
+    } else {
+      return 'assets/icono/masculino.jpg';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -257,43 +270,29 @@ class _MenuScreenState extends State<MenuScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
+                      // MODIFICADO: Mostrar UNA SOLA imagen según el género
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/icono/femenino.jpg',
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            _obtenerImagenPorGenero(usuario),
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
                           ),
-                          const SizedBox(width: 20),
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/icono/masculino.jpg',
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(

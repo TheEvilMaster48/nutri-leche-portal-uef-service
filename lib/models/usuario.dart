@@ -8,7 +8,8 @@ class Usuario {
   final String modulos;      
   final String usuario;      
   final String centro;       
-  final String? cedula;      
+  final String? cedula;  
+  final String? genero;    
 
   Usuario({
     required this.id,
@@ -21,6 +22,7 @@ class Usuario {
     required this.usuario,
     required this.centro,
     required this.cedula,
+    required this.genero
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class Usuario {
           json['documento'] ??
           json['dni'] ??
           json['ci'],
+      genero: json['genero'] ?? '',
     );
   }
 
@@ -58,6 +61,7 @@ class Usuario {
       'usuario': usuario,
       'centro': centro,
       'cedula': cedula,
+      'genero': genero,
     };
   }
 }
