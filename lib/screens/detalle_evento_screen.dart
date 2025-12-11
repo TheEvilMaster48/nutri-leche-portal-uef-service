@@ -18,121 +18,260 @@ class DetalleEventoScreen extends StatelessWidget {
     final String fecha =
         (evento is Evento) ? evento.fecha : (evento.fecha ?? '');
     final String hora = (evento is Evento)
-        ? (evento.horaEvento.isNotEmpty ? evento.horaEvento : '—')
-        : (evento.hora ?? '—');
-
-    // DETERMINAR FUENTE DE IMAGEN (imagenPath o imagenBase64)
-    final String? imagen = (evento is Evento)
-        ? evento.imagenPath
-        : (evento.imagenBase64 ?? '');
-
-    Widget imagenWidget;
-
-    // MOSTRAR IMAGEN DESDE BACKEND (URL O BASE64)
-    if (imagen != null && imagen.isNotEmpty) {
-      try {
-        if (imagen.startsWith('http')) {
-          imagenWidget = Image.network(
-            imagen,
-            width: 260,
-            height: 260,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.image_not_supported,
-              size: 130,
-              color: Colors.grey,
-            ),
-          );
-        } else {
-          final bytes = base64Decode(imagen);
-          imagenWidget = Image.memory(
-            Uint8List.fromList(bytes),
-            width: 260,
-            height: 260,
-            fit: BoxFit.cover,
-          );
-        }
-      } catch (_) {
-        imagenWidget =
-            const Icon(Icons.broken_image, size: 130, color: Colors.grey);
-      }
-    } else {
-      imagenWidget = const Icon(Icons.image, size: 130, color: Colors.grey);
-    }
+        ? (evento.horaEvento.isNotEmpty ? evento.horaEvento : '')
+        : (evento.hora ?? '');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Detalle del Evento',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF0048FF),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      backgroundColor: const Color(0xFFF8F9FF),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // TÍTULO
-            Text(
-              titulo,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: Stack(
+        children: [
+          // Fondo azul superior con curva
+          ClipPath(
+            clipper: DetalleEventoWaveClipper(),
+            child: Container(
+              height: 120,
+              decoration: const BoxDecoration(
+                color: Color(0xFF0052A3),
               ),
             ),
-            const SizedBox(height: 25),
-
-            // DETALLES PRINCIPALES
-            _filaDetalle('Descripción', descripcion),
-            const SizedBox(height: 10),
-            _filaDetalle('Fecha', fecha),
-            const SizedBox(height: 10),
-            _filaDetalle('Hora', hora),
-            const SizedBox(height: 25),
-
-            // IMAGEN DEL EVENTO
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imagenWidget,
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'DETALLE DEL EVENTO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          // Card principal con toda la información
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // IMAGEN
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    topRight: Radius.circular(20),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/icono/detalleevento.jpg',
+                                    height: 220,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 220,
+                                        color: const Color(0xFFE0E0E0),
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          size: 80,
+                                          color: Color(0xFF999999),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                
+                                // CONTENIDO
+                                Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // TÍTULO
+                                      Text(
+                                        titulo,
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF0052A3),
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      
+                                      // Divider decorativo
+                                      Container(
+                                        height: 3,
+                                        width: 60,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF0052A3),
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      
+                                      // DESCRIPCIÓN
+                                      _buildInfoRow(
+                                        icon: Icons.description,
+                                        label: 'Descripción',
+                                        value: descripcion,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      
+                                      // FECHA
+                                      _buildInfoRow(
+                                        icon: Icons.calendar_today,
+                                        label: 'Fecha',
+                                        value: fecha,
+                                      ),
+                                      
+                                      // HORA (solo si existe)
+                                      if (hora.isNotEmpty) ...[
+                                        const SizedBox(height: 16),
+                                        _buildInfoRow(
+                                          icon: Icons.access_time,
+                                          label: 'Hora',
+                                          value: hora,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _filaDetalle(String titulo, String valor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            titulo,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0052A3).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF0052A3),
+              size: 20,
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          flex: 3,
-          child: Text(
-            valor,
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF666666),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+class DetalleEventoWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+
+    path.lineTo(0, size.height - 30);
+
+    var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
+    var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
+    path.quadraticBezierTo(
+      firstControlPoint.dx,
+      firstControlPoint.dy,
+      firstEndPoint.dx,
+      firstEndPoint.dy,
+    );
+
+    var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
+    var secondEndPoint = Offset(size.width, size.height - 30);
+    path.quadraticBezierTo(
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      secondEndPoint.dx,
+      secondEndPoint.dy,
+    );
+
+    path.lineTo(size.width, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
