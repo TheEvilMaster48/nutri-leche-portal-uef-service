@@ -96,7 +96,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ClipPath(
             clipper: PerfilWaveClipper(),
             child: Container(
-              height: 320,
+              height: 270,
               decoration: const BoxDecoration(
                 color: Color(0xFF0052A3),
               ),
@@ -177,44 +177,44 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           ),
                           child: Column(
                             children: [
-                              // ID
-                              _buildInfoItem(
-                                icon: Icons.badge_outlined,
+                              // ID (con imagen)
+                              _buildInfoItemWithImage(
+                                imagePath: 'assets/icono/id.jpg',
                                 label: 'ID',
                                 value: usuario.id.toString(),
                               ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
-                              // CORREO
-                              _buildInfoItem(
-                                icon: Icons.email_outlined,
+                              // CORREO (con imagen)
+                              _buildInfoItemWithImage(
+                                imagePath: 'assets/icono/correo.jpg',
                                 label: 'Correo',
                                 value: usuario.correo,
                               ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
-                              // TELÉFONO
-                              _buildInfoItem(
-                                icon: Icons.phone_outlined,
+                              // TELÉFONO (con imagen)
+                              _buildInfoItemWithImage(
+                                imagePath: 'assets/icono/telefono.jpg',
                                 label: 'Teléfono',
                                 value: usuario.telefono,
                               ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
-                              // ÁREA
-                              _buildInfoItem(
-                                icon: Icons.apartment_outlined,
+                              // ÁREA (con imagen)
+                              _buildInfoItemWithImage(
+                                imagePath: 'assets/icono/area.jpg',
                                 label: 'Área',
                                 value: usuario.areaUsuario.isNotEmpty ? usuario.areaUsuario : 'Administración',
                               ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
-                              // GÉNERO
-                              _buildInfoItem(
+                              // GÉNERO (con icono)
+                              _buildInfoItemWithIcon(
                                 icon: Icons.wc,
                                 label: 'Género',
                                 value: usuario.genero == 'femenino' ? 'Femenino' : 'Masculino',
@@ -222,9 +222,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
-                              // MÓDULOS
-                              _buildInfoItem(
-                                icon: Icons.grid_view_outlined,
+                              // MÓDULOS (con imagen)
+                              _buildInfoItemWithImage(
+                                imagePath: 'assets/icono/modulos.jpg',
                                 label: 'Módulos',
                                 value: usuario.modulos.isNotEmpty 
                                     ? usuario.modulos 
@@ -285,8 +285,69 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // ITEM DE INFORMACIÓN DENTRO DEL SIDEBOX
-  Widget _buildInfoItem({
+  // ITEM DE INFORMACIÓN CON IMAGEN DESDE ASSETS
+  Widget _buildInfoItemWithImage({
+    required String imagePath,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // IMAGEN DESDE ASSETS
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.asset(
+            imagePath,
+            width: 80,
+            height: 80,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 80,
+                height: 80,
+                color: const Color(0xFFE0E0E0),
+                child: const Icon(
+                  Icons.image_not_supported,
+                  color: Color(0xFF0052A3),
+                  size: 40,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 16),
+        // CONTENIDO
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0052A3),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value.isNotEmpty ? value : 'No registrado',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ITEM DE INFORMACIÓN CON ICONO (SOLO PARA GÉNERO)
+  Widget _buildInfoItemWithIcon({
     required IconData icon,
     required String label,
     required String value,
@@ -295,10 +356,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ICONO
-        Icon(
-          icon,
-          color: const Color(0xFF0052A3),
-          size: 28,
+        Container(
+          width: 80,
+          height: 80,
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            color: const Color(0xFF0052A3),
+            size: 80,
+          ),
         ),
         const SizedBox(width: 16),
         // CONTENIDO

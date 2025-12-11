@@ -80,6 +80,11 @@ flutter:
     - assets/icono/nutri.png
     - assets/icono/nutrileche.png
     - assets/icono/portalnutri.png
+    - assets/icono/id.jpg
+    - assets/icono/correo.jpg
+    - assets/icono/telefono.jpg
+    - assets/icono/area.jpg
+    - assets/icono/modulos.jpg
 
 
 # CONFIGURACIÓN DE ÍCONO DE APP
