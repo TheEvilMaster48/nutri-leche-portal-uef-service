@@ -27,10 +27,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
             _selectedIndex = index;
           });
           if (index == 0) {
-            Navigator.pushReplacementNamed(context, '/'); // Reemplazar pantalla actual con Inicio
+            Navigator.pushReplacementNamed(context, '/menu');
           }
           if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/perfil'); // Reemplazar pantalla actual con Perfil
+            Navigator.pushReplacementNamed(context, '/perfil');
           }
         },
         child: SizedBox(
@@ -68,35 +68,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // WIDGET AUXILIAR PARA MOSTRAR LA INFORMACIÓN CON ÍCONO
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: const Color.fromARGB(255, 1, 121, 145)),
-        title: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          value.isNotEmpty ? value : 'No registrado',
-          style: const TextStyle(fontSize: 16),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -106,7 +77,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Perfil'),
-          backgroundColor: const Color.fromARGB(255, 1, 121, 145),
+          backgroundColor: const Color(0xFF0052A3),
         ),
         body: const Center(
           child: Text(
@@ -118,86 +89,157 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,  // FONDO BLANCO
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // FONDO AZUL CON CURVA
           ClipPath(
             clipper: PerfilWaveClipper(),
             child: Container(
-              height: 150,
+              height: 320,
               decoration: const BoxDecoration(
-                color: Color(0xFF0052A3),  // AZUL
+                color: Color(0xFF0052A3),
               ),
             ),
           ),
 
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  // FOTO DE PERFIL USUARIO
-                  Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // FONDO BLANCO
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 12,
-                          offset: Offset(0, 6),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                    child: Column(
+                      children: [
+                        // FOTO DE PERFIL USUARIO
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              usuario.genero == 'femenino'
+                                  ? 'assets/icono/femenino.jpg'
+                                  : 'assets/icono/masculino.jpg',
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
+
+                        const SizedBox(height: 20),
+
+                        // NOMBRE DEL USUARIO
+                        Text(
+                          usuario.nombre.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // CARGO O ÁREA
+                        Text(
+                          usuario.cargo.isNotEmpty ? usuario.cargo : 'Área Administrativa',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // CARD CONTENEDOR DE TODA LA INFORMACIÓN
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0E0E0),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              // ID
+                              _buildInfoItem(
+                                icon: Icons.badge_outlined,
+                                label: 'ID',
+                                value: usuario.id.toString(),
+                              ),
+                              
+                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
+                              
+                              // CORREO
+                              _buildInfoItem(
+                                icon: Icons.email_outlined,
+                                label: 'Correo',
+                                value: usuario.correo,
+                              ),
+                              
+                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
+                              
+                              // TELÉFONO
+                              _buildInfoItem(
+                                icon: Icons.phone_outlined,
+                                label: 'Teléfono',
+                                value: usuario.telefono,
+                              ),
+                              
+                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
+                              
+                              // ÁREA
+                              _buildInfoItem(
+                                icon: Icons.apartment_outlined,
+                                label: 'Área',
+                                value: usuario.areaUsuario.isNotEmpty ? usuario.areaUsuario : 'Administración',
+                              ),
+                              
+                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
+                              
+                              // GÉNERO
+                              _buildInfoItem(
+                                icon: Icons.wc,
+                                label: 'Género',
+                                value: usuario.genero == 'femenino' ? 'Femenino' : 'Masculino',
+                              ),
+                              
+                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
+                              
+                              // MÓDULOS
+                              _buildInfoItem(
+                                icon: Icons.grid_view_outlined,
+                                label: 'Módulos',
+                                value: usuario.modulos.isNotEmpty 
+                                    ? usuario.modulos 
+                                    : 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrudliquip ex ea',
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
                       ],
                     ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        usuario.genero == 'femenino'
-                            ? 'assets/icono/femenino.jpg'
-                            : 'assets/icono/masculino.jpg',  // Usamos imagen directamente
-                        width: 130,
-                        height: 130,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // NOMBRE DEL USUARIO
-                  Text(
-                    usuario.nombre,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // CARGO O ÁREA
-                  Text(
-                    usuario.cargo.isNotEmpty ? usuario.cargo : 'Empleado Nutri',
-                    style: const TextStyle(fontSize: 18, color: Colors.black54),
-                  ),
-
-                  const Divider(height: 40, thickness: 1.2),
-
-                  // INFORMACIÓN DETALLADA
-                  _buildInfoRow(Icons.badge, 'ID', usuario.id.toString()),
-                  _buildInfoRow(Icons.email_rounded, 'Correo', usuario.correo),
-                  _buildInfoRow(Icons.wc, 'Género', usuario.genero  == 'femenino' ? 'Femenino' : 'Masculino'),
-                  _buildInfoRow(Icons.phone_rounded, 'Teléfono', usuario.telefono),
-                  _buildInfoRow(Icons.apartment_rounded, 'Área', usuario.areaUsuario),
-                  _buildInfoRow(Icons.widgets_rounded, 'Módulos', usuario.modulos),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
@@ -240,6 +282,51 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ITEM DE INFORMACIÓN DENTRO DEL SIDEBOX
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ICONO
+        Icon(
+          icon,
+          color: const Color(0xFF0052A3),
+          size: 28,
+        ),
+        const SizedBox(width: 16),
+        // CONTENIDO
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0052A3),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value.isNotEmpty ? value : 'No registrado',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6B7280),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
