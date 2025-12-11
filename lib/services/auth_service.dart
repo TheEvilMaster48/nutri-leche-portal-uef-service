@@ -18,10 +18,10 @@ class AuthService extends ChangeNotifier {
   Map<String, dynamic>? get currentNotification => _currentNotification;
 
   static const String baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1";
+      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/app/api/v1";
 
   static const String loginUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
+      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
 
   // MÉTODO PARA OBTENER EL GÉNERO DESDE EL BACKEND
   Future<String> obtenerGenero(String userId) async {
@@ -164,7 +164,7 @@ class AuthService extends ChangeNotifier {
       if (kIsWeb) {
         js.context.callMethod('console.log', ['🌍 Enviando token en Web: $token']);
         final response = await http.post(
-          Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          Uri.parse("https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
@@ -178,7 +178,7 @@ class AuthService extends ChangeNotifier {
 
       else if (Platform.isAndroid || Platform.isIOS) {
         final response = await http.post(
-          Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          Uri.parse("https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
@@ -206,7 +206,7 @@ class AuthService extends ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/EliminarToken"),
+        Uri.parse("https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/EliminarToken"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(map),
       );

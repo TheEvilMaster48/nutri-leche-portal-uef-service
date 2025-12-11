@@ -34,7 +34,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   bool useLocalGif = true;
   String url =
-      "https://servicioslsa.nutri.com.ec/resources/output-onlinegiftools.gif";
+      "https://servicioslsaqas.nutri.com.ec/resources/output-onlinegiftools.gif";
 
   Widget _ImagenNutri() {
     if (useLocalGif) {

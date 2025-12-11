@@ -8,7 +8,7 @@ class EventoService extends ChangeNotifier {
   List<Evento> get eventos => List.unmodifiable(_eventos);
 
   static const String baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
+      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
 
   Future<void> obtenerEventos({required int idUsuario}) async {
     final url = Uri.parse("$baseUrl/ObtenerEventos");

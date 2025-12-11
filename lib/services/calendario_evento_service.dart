@@ -15,7 +15,7 @@ class CalendarioEventoService extends ChangeNotifier {
   List<Cumpleanios> get cumpleanios => _cumpleanios;
 
   final String _baseUrl =
-      'https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1';
+      'https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1';
 
   // OBTENER EVENTOS DEL USUARIO LOGUEADO
   Future<void> obtenerEventos(BuildContext context) async {

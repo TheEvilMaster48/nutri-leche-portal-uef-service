@@ -6,7 +6,7 @@ import '../models/sugerencia.dart';
 
 class SugerenciaService with ChangeNotifier {
   final String baseUrl =
-      'https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/sugerencia';
+      'https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/app/api/v1/sugerencia';
 
   List<Sugerencia> _sugerencias = [];
   List<Sugerencia> get sugerencias => _sugerencias;

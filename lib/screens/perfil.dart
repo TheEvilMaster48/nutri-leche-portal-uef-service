@@ -3,37 +3,98 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../models/usuario.dart';
 
-class PerfilScreen extends StatelessWidget {
+class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
 
-  // MÉTODO PARA OBTENER LA IMAGEN SEGÚN EL GÉNERO DESDE EL BACKEND
-  Future<String> _obtenerImagenPorGenero(Usuario? usuario, BuildContext context) async {
-    if (usuario == null) return 'assets/icono/masculino.jpg';
+  @override
+  State<PerfilScreen> createState() => _PerfilScreenState();
+}
 
-    // LLAMAR AL MÉTODO 'obtenerGenero' PARA OBTENER EL GÉNERO DEL USUARIO
-    final genero = await Provider.of<AuthService>(context, listen: false)
-        .obtenerGenero(usuario.id.toString()); // LLAMADA AL MÉTODO ESTÁTICO
+class _PerfilScreenState extends State<PerfilScreen> {
+  int _selectedIndex = 2;  // Perfil debe estar seleccionado por defecto
 
-    if (genero == 'femenino' || genero == 'f' || genero == 'mujer') {
-      return 'assets/icono/femenino.jpg';
-    } else {
-      return 'assets/icono/masculino.jpg';
-    }
+  Widget _buildBottomNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final bool isSelected = _selectedIndex == index;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+          if (index == 0) {
+            Navigator.pushReplacementNamed(context, '/'); // Reemplazar pantalla actual con Inicio
+          }
+          if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/perfil'); // Reemplazar pantalla actual con Perfil
+          }
+        },
+        child: SizedBox(
+          height: 65,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
+                size: 24,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF0052A3) : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  // MÉTODO PARA FORMATEAR EL TEXTO DEL GÉNERO
-  String _formatearGenero(String? genero) {
-    if (genero == null || genero.isEmpty) return 'No especificado';
-
-    final generoLower = genero.toLowerCase().trim();
-
-    if (generoLower == 'masculino' || generoLower == 'm' || generoLower == 'hombre') {
-      return 'Masculino';
-    } else if (generoLower == 'femenino' || generoLower == 'f' || generoLower == 'mujer') {
-      return 'Femenino';
-    } else {
-      return genero;
-    }
+  // WIDGET AUXILIAR PARA MOSTRAR LA INFORMACIÓN CON ÍCONO
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: const Color.fromARGB(255, 1, 121, 145)),
+        title: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          value.isNotEmpty ? value : 'No registrado',
+          style: const TextStyle(fontSize: 16),
+        ),
+      ),
+    );
   }
 
   @override
@@ -78,44 +139,30 @@ class PerfilScreen extends StatelessWidget {
               child: Column(
                 children: [
                   // FOTO DE PERFIL USUARIO
-                  FutureBuilder<String>(
-                    future: _obtenerImagenPorGenero(usuario, context), // LLAMADA AL MÉTODO ASÍNCRONO
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator(); // MOSTRAR INDICADOR DE CARGA
-                      }
-
-                      if (snapshot.hasError) {
-                        return const Icon(Icons.error); // MANEJO DE ERROR
-                      }
-
-                      final imagePath = snapshot.data ?? 'assets/icono/masculino.jpg';
-
-                      return Container(
+                  Container(
+                    width: 130,
+                    height: 130,
+                    decoration: BoxDecoration(
+                      color: Colors.white, // FONDO BLANCO
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 12,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        usuario.genero == 'femenino'
+                            ? 'assets/icono/femenino.jpg'
+                            : 'assets/icono/masculino.jpg',  // Usamos imagen directamente
                         width: 130,
                         height: 130,
-                        decoration: BoxDecoration(
-                          color: Colors.white, // FONDO BLANCO
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2), // BORDE NEGRO
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            imagePath,
-                            width: 130,
-                            height: 130,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
-                    },
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 20),
@@ -143,65 +190,55 @@ class PerfilScreen extends StatelessWidget {
                   // INFORMACIÓN DETALLADA
                   _buildInfoRow(Icons.badge, 'ID', usuario.id.toString()),
                   _buildInfoRow(Icons.email_rounded, 'Correo', usuario.correo),
-                  // CAMPO DE GÉNERO
-                  _buildInfoRow(Icons.wc, 'Género', _formatearGenero(usuario.genero)),
+                  _buildInfoRow(Icons.wc, 'Género', usuario.genero  == 'femenino' ? 'Femenino' : 'Masculino'),
                   _buildInfoRow(Icons.phone_rounded, 'Teléfono', usuario.telefono),
                   _buildInfoRow(Icons.apartment_rounded, 'Área', usuario.areaUsuario),
                   _buildInfoRow(Icons.widgets_rounded, 'Módulos', usuario.modulos),
 
                   const SizedBox(height: 40),
-
-                  // BOTÓN REGRESAR AL MENÚ
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 1, 121, 145),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 35, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    label: const Text(
-                      'Volver al Menú',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  // WIDGET AUXILIAR PARA MOSTRAR LA INFORMACIÓN CON ÍCONO
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+          // MENÚ INFERIOR
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: 65,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildBottomNavItem(
+                      icon: Icons.home_outlined,
+                      label: 'Inicio',
+                      index: 0,
+                    ),
+                    _buildBottomNavItem(
+                      icon: Icons.person_outline,
+                      label: 'Perfil',
+                      index: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: const Color.fromARGB(255, 1, 121, 145)),
-        title: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          value.isNotEmpty ? value : 'No registrado',
-          style: const TextStyle(fontSize: 16),
-        ),
       ),
     );
   }

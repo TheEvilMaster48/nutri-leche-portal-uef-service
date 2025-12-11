@@ -8,7 +8,7 @@ class CumpleaniosService extends ChangeNotifier {
   List<Cumpleanios> get cumpleanios => List.unmodifiable(_cumpleanios);
 
   static const String baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
+      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
 
   Future<void> obtenerCumpleanios({required int idUsuario}) async {
     final url = Uri.parse("$baseUrl/ObtenerCumpleanos");

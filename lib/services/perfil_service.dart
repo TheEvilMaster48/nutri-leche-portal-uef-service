@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 
 class PerfilService with ChangeNotifier {
   final String _baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/perfil";
+      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/app/api/v1/perfil";
   final AuthService _authService;
 
   PerfilService(this._authService);
