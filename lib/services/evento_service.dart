@@ -23,17 +23,20 @@ class EventoService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final map = json.decode(response.body);
 
-        if (map["appEventoList"] != null) {
+        if (map["appEventoList"] != null &&
+            map["appEventoList"] is List &&
+            map["appEventoList"].isNotEmpty) {
+
           final List<dynamic> lista = map["appEventoList"];
+
           _eventos
             ..clear()
             ..addAll(lista.map((e) => Evento.fromJson(e)));
+
           notifyListeners();
-          debugPrint("EVENTOS CARGADOS (${_eventos.length})");
-          debugPrint("🎉 Eventos: ${_eventos.map((e) => e.estado).join(', ')}");
-        } else {
-          debugPrint("RESPUESTA VACÍA DEL BACKEND");
+          debugPrint("EVENTOS RECIBIDOS (${_eventos.length})");
         }
+        // SI ESTÁ VACÍO → SILENCIO TOTAL
       } else {
         debugPrint("ERROR HTTP: ${response.statusCode}");
       }
@@ -59,16 +62,12 @@ class EventoService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        debugPrint("EVENTO $idEvento MARCADO COMO VISTO EN BACKEND");
-
-        // ACTUALIZA LOCALMENTE EL ESTADO DEL EVENTO
         final index = _eventos.indexWhere((e) => e.idEvento == idEvento);
+
         if (index != -1) {
           _eventos[index].estado = 1;
           notifyListeners();
         }
-      } else {
-        debugPrint("ERROR AL MARCAR EVENTO COMO VISTO (${response.statusCode})");
       }
     } catch (e) {
       debugPrint("ERROR HTTP AL MARCAR EVENTO COMO VISTO: $e");
@@ -78,9 +77,12 @@ class EventoService extends ChangeNotifier {
   void agregarDesdeWs(Map<String, dynamic> data) {
     try {
       final nuevo = Evento.fromJson(data);
+
       if (_eventos.any((e) => e.idEvento == nuevo.idEvento)) return;
+
       _eventos.insert(0, nuevo);
       notifyListeners();
+
       debugPrint("EVENTO RECIBIDO VIA WS: ${nuevo.titulo}");
     } catch (e) {
       debugPrint("ERROR AL PROCESAR EVENTO WS: $e");
