@@ -291,29 +291,70 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required String label,
     required String value,
   }) {
+    // DETERMINAR TAMAÑO DEL ICONO SEGÚN EL TIPO
+    double iconWidth = 60;
+    double iconHeight = 60;
+    BoxFit iconFit = BoxFit.contain;
+    
+    // ICONO DE ID: 60 X 60
+    if (imagePath.contains('id.jpg')) {
+      iconWidth = 60;
+      iconHeight = 60;
+      iconFit = BoxFit.contain;
+    }
+    // ICONO DE CORREO: 40 X 40
+    else if (imagePath.contains('correo.jpg')) {
+      iconWidth = 40;
+      iconHeight = 40;
+      iconFit = BoxFit.scaleDown;
+    }
+    // ICONO DE TELÉFONO: 60 X 60
+    else if (imagePath.contains('telefono.jpg')) {
+      iconWidth = 60;
+      iconHeight = 60;
+      iconFit = BoxFit.contain;
+    }
+    // ICONO DE ÁREA: 60 X 60
+    else if (imagePath.contains('area.jpg')) {
+      iconWidth = 60;
+      iconHeight = 60;
+      iconFit = BoxFit.contain;
+    }
+    // ICONO DE MÓDULOS: 40 X 40
+    else if (imagePath.contains('modulos.jpg')) {
+      iconWidth = 40;
+      iconHeight = 40;
+      iconFit = BoxFit.scaleDown;
+    }
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // IMAGENES DESDE ASSETS
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Image.asset(
-            imagePath,
-            width: 60,
-            height:60,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 20,
-                height: 20,
-                color: const Color(0xFFE0E0E0),
-                child: const Icon(
-                  Icons.image_not_supported,
-                  color: Color(0xFF0052A3),
-                  size: 20,
-                ),
-              );
-            },
+        Container(
+          width: 60,
+          height: 60,
+          alignment: Alignment.center,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.asset(
+              imagePath,
+              width: iconWidth,
+              height: iconHeight,
+              fit: iconFit,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 20,
+                  height: 20,
+                  color: const Color(0xFFE0E0E0),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    color: Color(0xFF0052A3),
+                    size: 20,
+                  ),
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(width: 16),

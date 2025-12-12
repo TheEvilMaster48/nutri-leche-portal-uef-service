@@ -270,7 +270,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   child: Column(
                     children: [
-                      // MODIFICADO: Mostrar UNA SOLA imagen según el género
+                      // IMAGEN DE PERFIL: 120 X 120
                       Container(
                         width: 120,
                         height: 120,
@@ -492,6 +492,36 @@ class _MenuScreenState extends State<MenuScreen> {
     String route, {
     String? tipo,
   }) {
+    // DETERMINAR TAMAÑO DEL ICONO SEGÚN EL TIPO
+    double iconWidth = 60;
+    double iconHeight = 60;
+    BoxFit iconFit = BoxFit.contain;
+    
+    // ICONO DE EVENTOS: 80 X 80
+    if (imagePath.contains('eventos.jpg')) {
+      iconWidth = 80;
+      iconHeight = 80;
+      iconFit = BoxFit.contain;
+    }
+    // ICONO DE CUMPLEAÑOS: 80 X 80
+    else if (imagePath.contains('cumpleanos.jpg')) {
+      iconWidth = 80;
+      iconHeight = 80;
+      iconFit = BoxFit.contain;
+    }
+    // ICONO DE CALENDARIO: 80 X 80
+    else if (imagePath.contains('calendario.jpg')) {
+      iconWidth = 80;
+      iconHeight = 80;
+      iconFit = BoxFit.contain;
+    }
+    // ICONO DE CORREO (BUZÓN): 40 X 40
+    else if (imagePath.contains('correo.jpg')) {
+      iconWidth = 40;
+      iconHeight = 40;
+      iconFit = BoxFit.scaleDown;
+    }
+    
     return InkWell(
       onTap: () {
         Navigator.pushNamed(context, route).then((_) async {
@@ -525,13 +555,14 @@ class _MenuScreenState extends State<MenuScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
               ),
+              alignment: Alignment.center,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
                   imagePath,
-                  width: 80, 
-                  height: 80, 
-                  fit: BoxFit.contain,
+                  width: iconWidth,
+                  height: iconHeight,
+                  fit: iconFit,
                 ),
               ),
             ),
