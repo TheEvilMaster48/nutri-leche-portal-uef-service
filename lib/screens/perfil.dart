@@ -96,7 +96,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ClipPath(
             clipper: PerfilWaveClipper(),
             child: Container(
-              height: 270,
+              height: 340,
               decoration: const BoxDecoration(
                 color: Color(0xFF0052A3),
               ),
@@ -294,23 +294,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // IMAGEN DESDE ASSETS
+        // IMAGENES DESDE ASSETS
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: Image.asset(
             imagePath,
-            width: 80,
-            height: 80,
+            width: 60,
+            height:60,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               return Container(
-                width: 80,
-                height: 80,
+                width: 20,
+                height: 20,
                 color: const Color(0xFFE0E0E0),
                 child: const Icon(
                   Icons.image_not_supported,
                   color: Color(0xFF0052A3),
-                  size: 40,
+                  size: 20,
                 ),
               );
             },
@@ -346,7 +346,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // ITEM DE INFORMACIÓN CON ICONO (SOLO PARA GÉNERO)
+  // ITEM DE INFORMACIÓN CON ICONO (GÉNERO)
   Widget _buildInfoItemWithIcon({
     required IconData icon,
     required String label,
@@ -355,15 +355,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ICONO
+        // ICONO GENERO
         Container(
-          width: 80,
-          height: 80,
+          width: 60,
+          height: 40,
           alignment: Alignment.center,
           child: Icon(
             icon,
             color: const Color(0xFF0052A3),
-            size: 80,
+            size: 30,
           ),
         ),
         const SizedBox(width: 16),
