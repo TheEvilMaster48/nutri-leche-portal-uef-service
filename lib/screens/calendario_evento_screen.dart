@@ -80,22 +80,25 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
 
     // EVENTOS
     for (var e in eventos) {
-      final fechaParseada = parseFecha(e.fecha) ?? DateTime.now();
-      final dia =
-          DateTime(fechaParseada.year, fechaParseada.month, fechaParseada.day);
-      agrupados.putIfAbsent(dia, () => []);
-      agrupados[dia]!.add(e);
+      final fechaParseada = parseFecha(e.fecha);
+      if (fechaParseada != null) {
+        final dia = DateTime(fechaParseada.year, fechaParseada.month, fechaParseada.day);
+        agrupados.putIfAbsent(dia, () => []);
+        agrupados[dia]!.add(e);
+        debugPrint('Evento agregado: ${e.titulo} en fecha: ${DateFormat('dd/MM/yyyy').format(dia)}');
+      }
     }
 
     // CUMPLEAÑOS
     for (var c in cumpleanios) {
-      final fechaParseada = parseFecha(c.fecha) ?? DateTime.now();
-      final dia =
-          DateTime(fechaParseada.year, fechaParseada.month, fechaParseada.day);
-      agrupados.putIfAbsent(dia, () => []);
-      if (!agrupados[dia]!
-          .any((x) => x is Cumpleanios && x.idCumpleanios == c.idCumpleanios)) {
-        agrupados[dia]!.add(c);
+      final fechaParseada = parseFecha(c.fecha);
+      if (fechaParseada != null) {
+        final dia = DateTime(fechaParseada.year, fechaParseada.month, fechaParseada.day);
+        agrupados.putIfAbsent(dia, () => []);
+        if (!agrupados[dia]!.any((x) => x is Cumpleanios && x.idCumpleanios == c.idCumpleanios)) {
+          agrupados[dia]!.add(c);
+          debugPrint('Cumpleaños agregado: ${c.titulo} en fecha: ${DateFormat('dd/MM/yyyy').format(dia)}');
+        }
       }
     }
 
@@ -104,6 +107,8 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
         ..clear()
         ..addAll(agrupados);
     });
+    
+    debugPrint('Total fechas con eventos: ${_eventosPorFecha.length}');
   }
 
   List<dynamic> _obtenerEventos(DateTime day) {
@@ -120,7 +125,10 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
         _selectedDay!.month,
         _selectedDay!.day,
       );
-      return _eventosPorFecha[normalizado] ?? [];
+      debugPrint('Fecha seleccionada normalizada: ${DateFormat('dd/MM/yyyy').format(normalizado)}');
+      final eventos = _eventosPorFecha[normalizado] ?? [];
+      debugPrint('Eventos encontrados para esta fecha: ${eventos.length}');
+      return eventos;
     }
     
     // Si NO hay fecha seleccionada, mostrar TODOS los próximos eventos (futuros)
@@ -145,6 +153,7 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
       resultado.addAll(entry.value);
     }
     
+    debugPrint('Total eventos próximos: ${resultado.length}');
     return resultado;
   }
 
@@ -168,6 +177,7 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                     ),
                   ),
                 ),
+                
                 SafeArea(
                   child: Column(
                     children: [
@@ -203,6 +213,7 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                           ],
                         ),
                       ),
+                      
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
@@ -286,7 +297,7 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                                         Expanded(
                                           child: Text(
                                             _selectedDay != null
-                                                ? 'EVENTOS DEL ${DateFormat('dd/MM/yyyy').format(_selectedDay!)}'
+                                                ? 'EVENTOS PROGRAMADOS'
                                                 : 'PRÓXIMOS EVENTOS',
                                             style: const TextStyle(
                                               fontSize: 16,
@@ -334,6 +345,18 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                                           ),
                                       ],
                                     ),
+                                    // Mostrar fecha seleccionada si existe
+                                    if (_selectedDay != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        DateFormat('EEEE, dd \'de\' MMMM \'de\' yyyy', 'es_ES').format(_selectedDay!),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF666666),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                     const SizedBox(height: 16),
                                     _buildProximosEventos(),
                                   ],
@@ -478,10 +501,31 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
     return Column(
       children: eventosAMostrar.map((item) {
         if (item is CalendarioEvento) {
-          return _buildEventoCard(
+          // Obtener fecha y hora del evento
+          String fechaHora = '';
+          try {
+            DateTime? fecha;
+            if (item.fecha.contains('/')) {
+              fecha = DateFormat('dd/MM/yyyy').parse(item.fecha);
+            } else if (item.fecha.contains('-')) {
+              fecha = DateFormat('yyyy-MM-dd').parse(item.fecha);
+            }
+            
+            if (fecha != null) {
+              fechaHora = DateFormat('dd/MM/yyyy').format(fecha);
+              if (item.hora.isNotEmpty && item.hora != '00:00:00') {
+                fechaHora += ' • ${item.hora.substring(0, 5)}';
+              }
+            }
+          } catch (e) {
+            fechaHora = item.fecha;
+          }
+          
+          return _buildEventoCardConFecha(
             icon: Icons.event,
             titulo: item.titulo,
             subtitulo: item.descripcion,
+            fechaHora: fechaHora,
             color: const Color(0xFF0052A3),
             onTap: () {
               Navigator.push(
@@ -493,10 +537,28 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
             },
           );
         } else if (item is Cumpleanios) {
-          return _buildEventoCard(
+          // Obtener fecha del cumpleaños
+          String fechaHora = '';
+          try {
+            DateTime? fecha;
+            if (item.fecha.contains('/')) {
+              fecha = DateFormat('dd/MM/yyyy').parse(item.fecha);
+            } else if (item.fecha.contains('-')) {
+              fecha = DateFormat('yyyy-MM-dd').parse(item.fecha);
+            }
+            
+            if (fecha != null) {
+              fechaHora = DateFormat('dd/MM/yyyy').format(fecha);
+            }
+          } catch (e) {
+            fechaHora = item.fecha;
+          }
+          
+          return _buildEventoCardConFecha(
             icon: Icons.cake,
             titulo: item.titulo,
             subtitulo: item.descripcion,
+            fechaHora: fechaHora,
             color: const Color(0xFF0052A3),
             onTap: () {
               Navigator.push(
@@ -510,6 +572,92 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
         }
         return const SizedBox.shrink();
       }).toList(),
+    );
+  }
+
+  Widget _buildEventoCardConFecha({
+    required IconData icon,
+    required String titulo,
+    required String subtitulo,
+    required String fechaHora,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0052A3),
+                    ),
+                  ),
+                  if (fechaHora.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Color(0xFF0052A3),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          fechaHora,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF0052A3),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitulo,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF666666),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Color(0xFF0052A3),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -565,6 +713,11 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                   ),
                 ],
               ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Color(0xFF0052A3),
+              size: 16,
             ),
           ],
         ),
