@@ -726,6 +726,7 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
   }
 }
 
+
 class CalendarioWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
