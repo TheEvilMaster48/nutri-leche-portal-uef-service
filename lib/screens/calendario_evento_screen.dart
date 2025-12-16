@@ -168,9 +168,6 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                     ),
                   ),
                 ),
-                
-
-                
                 SafeArea(
                   child: Column(
                     children: [
