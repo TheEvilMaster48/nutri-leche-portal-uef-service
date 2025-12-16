@@ -1,0 +1,110 @@
+name: nutri
+description: Portal de Empleados Nutri Ecuador
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.7.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # WEBSOCKETS
+  web_socket_channel: ^3.0.3
+
+  # CONTACTOS DEL DISPOSITIVO
+  flutter_contacts: ^1.1.9+2
+
+  # UTILIDADES Y ESTADO
+  uuid: ^4.5.1
+  provider: ^6.1.5
+  shared_preferences: ^2.5.3
+
+  # INFORMACIÓN DEL DISPOSITIVO
+  device_info_plus: ^12.2.0
+
+  # SELECCIÓN DE ARCHIVOS
+  file_picker: ^10.3.6
+
+  # LOCALIZACIÓN E INTERNACIONALIZACIÓN
+  flutter_native_splash: ^2.4.7
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
+
+  # ARCHIVOS Y MULTIMEDIA
+  path_provider: ^2.1.5
+  image_picker: ^1.2.1
+  open_filex: ^4.7.0
+
+  # PDF Y HERRAMIENTAS
+  pdf: ^3.11.3
+  printing: ^5.14.2
+
+  # ÍCONOS Y ESTILO
+  flutter_launcher_icons: ^0.14.4
+  http: ^1.6.0
+  table_calendar: ^3.2.0
+  universal_html: ^2.3.0
+  mime: ^2.0.0
+
+  # FIREBASE
+  flutter_local_notifications: ^19.5.0
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.10
+
+  # OVERRIDE — FORZAR LA NUEVA VERSIÓN DEL PLUGIN
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.33
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # IMÁGENES Y LOGOS
+  assets:
+    - assets/icono/calendario.jpg
+    - assets/icono/correo.jpg
+    - assets/icono/cumpleanos.jpg
+    - assets/icono/cumpleanosdetalle.jpg
+    - assets/icono/detalleevento.jpg
+    - assets/icono/eventos.jpg
+    - assets/icono/femenino.jpg
+    - assets/icono/masculino.jpg
+    - assets/icono/nutri.gif
+    - assets/icono/nutri.png
+    - assets/icono/nutrileche.png
+    - assets/icono/id.jpg
+    - assets/icono/correo.jpg
+    - assets/icono/telefono.jpg
+    - assets/icono/area.jpg
+    - assets/icono/modulos.jpg
+
+
+# CONFIGURACIÓN DE ÍCONO DE APP
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icono/nutrileche.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icono/nutrileche.png"
+
+  web:
+    generate: true
+    image_path: "assets/icono/nutrileche.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+
+# CONFIGURACIÓN DE PANTALLA DE CARGA (SPLASH)
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/icono/nutrileche.png
+  android: true
+  ios: true
+  web: true
+  android_gravity: fill

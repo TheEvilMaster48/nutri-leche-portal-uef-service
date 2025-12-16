@@ -1,0 +1,63 @@
+// Primero, el bloque buildscript debe ir al principio
+buildscript {
+    repositories {
+        google()  // Repositorio de Android
+        mavenCentral()  // Repositorio de Maven
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:7.4.1")  // Versión del plugin de Android
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")  // Versión de Kotlin
+    }
+}
+
+// Luego, el bloque plugins
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
+android {
+    namespace = "com.nutrileche.portal"
+    compileSdkVersion(36)
+
+    defaultConfig {
+        applicationId = "com.nutrileche.portal"
+        minSdkVersion = flutter.minSdkVersion
+        targetSdkVersion = 36
+        versionCode = 1
+        versionName = "1.0"
+        multiDexEnabled = true
+    }
+
+    buildTypes {
+        getByName("release") {
+            minifyEnabled = false
+            shrinkResources = false
+            signingConfig = signingConfigs.debug
+        }
+        getByName("debug") {
+            signingConfig = signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24")
+    implementation("androidx.multidex:multidex:2.0.1")
+}
