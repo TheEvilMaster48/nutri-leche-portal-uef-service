@@ -203,7 +203,6 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                           ],
                         ),
                       ),
-                      
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
