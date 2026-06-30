@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+import '../base/base.dart';
 import '../models/calendario_evento.dart';
 import '../models/cumpleanios.dart';
 import '../services/auth_service.dart';
@@ -14,8 +15,7 @@ class CalendarioEventoService extends ChangeNotifier {
   List<CalendarioEvento> get eventos => _eventos;
   List<Cumpleanios> get cumpleanios => _cumpleanios;
 
-  final String _baseUrl =
-      'https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1';
+  late String _baseUrl = Base().BASE_URL_APPOFICIAL;
 
   // OBTENER EVENTOS DEL USUARIO LOGUEADO
   Future<void> obtenerEventos(BuildContext context) async {

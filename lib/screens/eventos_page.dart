@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:nutri/base/base.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/evento.dart';
@@ -18,6 +19,28 @@ class EventosPage extends StatefulWidget {
 class _EventosPageState extends State<EventosPage> {
   bool _cargando = true;
   int idUsuario = 0;
+
+  int _getEstado(dynamic evento) {
+    try {
+      // Caso: modelo Evento
+      if (evento is Evento) {
+        final v = evento.estado;
+        if (v is int) return v;
+        if (v is String) return int.tryParse(v as String) ?? 1;
+        return 1;
+      }
+
+      // Caso: Map (cuando viene como dynamic)
+      if (evento is Map) {
+        final v = evento['estado'];
+        if (v is int) return v;
+        if (v is String) return int.tryParse(v) ?? 1;
+      }
+    } catch (_) {}
+
+    return 1; // default: NO pendiente
+  }
+
 
   @override
   void initState() {
@@ -59,52 +82,58 @@ class _EventosPageState extends State<EventosPage> {
   Widget build(BuildContext context) {
     final eventos = context.watch<EventoService>().eventos;
 
+    // Inset físico de la barra de estado / notch. Usamos viewPadding (no
+    // padding) para que siempre refleje el notch real en iOS aunque algún
+    // ancestro haya consumido el SafeArea.
+    final double topInset = MediaQuery.of(context).viewPadding.top;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Base().COLOR_BLANCO,
       body: Stack(
         children: [
-          // Fondo azul superior con curva
+          // Fondo azul superior con curva (se extiende bajo la barra de estado)
           ClipPath(
             clipper: EventosWaveClipper(),
             child: Container(
-              height: 120,
-              decoration: const BoxDecoration(
-                color: Color(0xFF0052A3),
+              height: 120 + topInset,
+              decoration: BoxDecoration(
+                color: Base().COLOR_AZUL_CORP,
               ),
             ),
           ),
-          
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                        onPressed: () => Navigator.pop(context),
+
+          Column(
+            children: [
+              // Header (debajo de la barra de estado en ambas plataformas)
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'EVENTOS CORPORATIVOS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'EVENTOS CORPORATIVOS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                
+              ),
+
                 Expanded(
-                  child: _cargando
-                      ? const Center(
+                  child: SafeArea(
+                    top: false,
+                    child: _cargando
+                      ? Center(
                           child: CircularProgressIndicator(
-                            color: Color(0xFF0052A3),
+                            color: Base().COLOR_AZUL_CORP,
                           ),
                         )
                       : RefreshIndicator(
@@ -132,13 +161,13 @@ class _EventosPageState extends State<EventosPage> {
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: const [
+                                          children: [
                                             Text(
                                               'Eventos Corporativos',
                                               style: TextStyle(
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0052A3),
+                                                color: Base().COLOR_AZUL_CORP,
                                               ),
                                             ),
                                             SizedBox(height: 8),
@@ -146,7 +175,7 @@ class _EventosPageState extends State<EventosPage> {
                                               'Revisa Todos los Eventos',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: Color(0xFF666666),
+                                                color: Base().COLOR_AZUL_CORP,
                                               ),
                                             ),
                                           ],
@@ -171,12 +200,12 @@ class _EventosPageState extends State<EventosPage> {
                                 Container(
                                   margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                                   alignment: Alignment.centerLeft,
-                                  child: const Text(
+                                  child: Text(
                                     'Eventos',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0052A3),
+                                      color: Base().COLOR_AZUL_CORP,
                                     ),
                                   ),
                                 ),
@@ -185,12 +214,12 @@ class _EventosPageState extends State<EventosPage> {
                                 eventos.isEmpty
                                     ? Container(
                                         padding: const EdgeInsets.all(40),
-                                        child: const Center(
+                                        child: Center(
                                           child: Text(
                                             'No hay eventos disponibles actualmente.',
                                             style: TextStyle(
                                               fontSize: 15,
-                                              color: Color(0xFF666666),
+                                              color: Base().COLOR_GRIS,
                                             ),
                                             textAlign: TextAlign.center,
                                           ),
@@ -213,10 +242,10 @@ class _EventosPageState extends State<EventosPage> {
                             ),
                           ),
                         ),
+                  ),
                 ),
               ],
             ),
-          ),
         ],
       ),
     );
@@ -229,11 +258,10 @@ class _EventoItem extends StatelessWidget {
   final int idUsuario;
 
   IconData _getEventIcon() {
-    // Puedes personalizar el icono según el tipo de evento
     if (evento.titulo.toLowerCase().contains('navidad')) {
       return Icons.card_giftcard;
-    } else if (evento.titulo.toLowerCase().contains('capacitación') || 
-               evento.titulo.toLowerCase().contains('capacitacion')) {
+    } else if (evento.titulo.toLowerCase().contains('capacitación') ||
+        evento.titulo.toLowerCase().contains('capacitacion')) {
       return Icons.school;
     }
     return Icons.event;
@@ -241,23 +269,32 @@ class _EventoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isPendiente = (evento.estado == 0);
+
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        // 1) Abre detalle
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => DetalleEventoScreen(evento: evento),
           ),
         );
 
-        if (evento.estado == 0) {
-          evento.estado = 1;
-          Future.microtask(() {
-            context.read<EventoService>().marcarEventoComoVisto(
-                  idUsuario: idUsuario,
-                  idEvento: evento.idEvento,
-                );
-          });
+        // 2) Si estaba pendiente, márcalo como visto (backend) y refresca lista
+        if (isPendiente) {
+          try {
+            // Actualiza backend
+            await context.read<EventoService>().marcarEventoComoVisto(
+              idUsuario: idUsuario,
+              idEvento: evento.idEvento, // revisa: idEvento vs id
+            );
+
+            // Refresca lista para que cambie el estado en UI
+            await context.read<EventoService>().obtenerEventos(idUsuario: idUsuario);
+          } catch (e) {
+            debugPrint("Error marcando visto: $e");
+          }
         }
       },
       child: Container(
@@ -276,49 +313,81 @@ class _EventoItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icono del evento
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0052A3).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                _getEventIcon(),
-                color: const Color(0xFF0052A3),
-                size: 32,
-              ),
+            // Icono del evento + badge pendiente
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Base().COLOR_AZUL_CORP.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    _getEventIcon(),
+                    color: Base().COLOR_AZUL_CORP,
+                    size: 32,
+                  ),
+                ),
+
+                if (isPendiente)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+
             const SizedBox(width: 16),
-            
+
             // Información del evento
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    evento.titulo,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0052A3),
-                    ),
+                  // Título + chip "Pendiente"
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          evento.titulo,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Base().COLOR_AZUL_CORP,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
+
                   const SizedBox(height: 6),
+
                   Text(
                     evento.fecha,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF666666),
+                      color: Base().COLOR_GRIS,
                     ),
                   ),
+
                   if (evento.horaEvento.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       evento.horaEvento,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF666666),
+                        color: Base().COLOR_GRIS,
                       ),
                     ),
                   ],
@@ -331,6 +400,7 @@ class _EventoItem extends StatelessWidget {
     );
   }
 }
+
 
 class EventosWaveClipper extends CustomClipper<Path> {
   @override

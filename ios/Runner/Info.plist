@@ -4,6 +4,16 @@
 	<dict>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<!-- La app solo usa cifrado estándar (HTTPS/TLS), exento de
+		     cumplimiento de exportación. Evita la pregunta en App Store Connect. -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
+		<!-- Cadenas de propósito: la app permite adjuntar fotos a las
+		     sugerencias usando la cámara o la galería. -->
+		<key>NSCameraUsageDescription</key>
+		<string>Esta app usa la cámara para que puedas adjuntar fotos a tus sugerencias.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Esta app accede a tus fotos para que puedas adjuntar imágenes a tus sugerencias.</string>
 		<key>CFBundleDisplayName</key>
 		<string>Nutri Leche</string>
 		<key>CFBundleExecutable</key>

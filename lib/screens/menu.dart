@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:nutri/services/sorteo_service.dart';
 import 'package:provider/provider.dart';
+import '../base/base.dart';
 import '../services/auth_service.dart';
 import '../services/evento_service.dart';
 import '../services/cumpleanios_service.dart';
@@ -21,23 +21,25 @@ class MenuScreen extends StatefulWidget {
   State<MenuScreen> createState() => _MenuScreenState();
 }
 
-class _MenuScreenState extends State<MenuScreen> {
-  Timer? _timer;
+class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   final Map<String, int> _notificaciones = {
     'eventos': 0,
     'cumpleanios': 0,
-    'sorteos': 0,
     'calendario': 0,
   };
 
   bool useLocalGif = true;
-  String url = "https://servicioslsaqas.nutri.com.ec/resources/output-onlinegiftools.gif";
+  String url =
+      "https://servicioslsa.nutri.com.ec/resources/output-onlinegiftools.gif";
 
   @override
   void initState() {
     super.initState();
+
+    // Observa el ciclo de vida para refrescar al volver a primer plano.
+    WidgetsBinding.instance.addObserver(this);
 
     // Inicializar PushService PRIMERO
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -52,11 +54,11 @@ class _MenuScreenState extends State<MenuScreen> {
         if (tipo == 'evento') {
           _notificaciones['eventos'] = (_notificaciones['eventos'] ?? 0) + 1;
         } else if (tipo == 'cumpleanios') {
-          _notificaciones['cumpleanios'] = (_notificaciones['cumpleanios'] ?? 0) + 1;
-        } else if (tipo == 'sorteo') {
-          _notificaciones['sorteos'] = (_notificaciones['sorteos'] ?? 0) + 1;
+          _notificaciones['cumpleanios'] =
+              (_notificaciones['cumpleanios'] ?? 0) + 1;
         } else if (tipo == 'calendario') {
-          _notificaciones['calendario'] = (_notificaciones['calendario'] ?? 0) + 1;
+          _notificaciones['calendario'] =
+              (_notificaciones['calendario'] ?? 0) + 1;
         }
       });
     });
@@ -73,9 +75,17 @@ class _MenuScreenState extends State<MenuScreen> {
       );
     });
 
-    _timer = Timer.periodic(const Duration(minutes: 2), (_) {
-      if (mounted) _actualizarContadoresPendientes();
-    });
+    // Antes había un Timer.periodic cada 2 min (drenaje de batería/datos).
+    // Ahora confiamos en el push y refrescamos solo al volver a primer plano
+    // (didChangeAppLifecycleState), que es cuando el usuario realmente mira la app.
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _actualizarContadoresPendientes();
+    }
   }
 
   Future<void> _initializePushService() async {
@@ -93,7 +103,6 @@ class _MenuScreenState extends State<MenuScreen> {
     try {
       final eventoService = context.read<EventoService>();
       final cumpleService = context.read<CumpleaniosService>();
-      final sorteoService = context.read<SorteoService>();
       final auth = context.read<AuthService>();
       final usuario = auth.currentUser;
       if (usuario == null) return;
@@ -105,8 +114,6 @@ class _MenuScreenState extends State<MenuScreen> {
       await cumpleService.obtenerCumpleanios(idUsuario: usuario.id);
       final cumpleanios = cumpleService.cumpleanios;
       final pendientesCumples = cumpleanios.where((c) => c.estado == 0).length;
-
-      await sorteoService.obtenerSorteos(idUsuario: usuario.id);
 
       if (mounted) {
         setState(() {
@@ -121,7 +128,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -137,12 +144,16 @@ class _MenuScreenState extends State<MenuScreen> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Cerrar Sesión'),
-          content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+          backgroundColor: Base().COLOR_BLANCO,
+          title: Text('Cerrar Sesión', style: TextStyle(color: Base().COLOR_AZUL_CORP)),
+          content: Text('¿Estás seguro que deseas cerrar sesión?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancelar'),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(color: Base().COLOR_AZUL_CORP),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -169,7 +180,9 @@ class _MenuScreenState extends State<MenuScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
     }
   }
 
@@ -187,6 +200,14 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final Usuario? usuario = auth.currentUser;
+
+    // Inset inferior (home indicator de iPhone). La barra inferior debe
+    // reservar este espacio extra, si no se desborda en iOS.
+    final double bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
+    // Inset superior (barra de estado / notch). El fondo azul debe crecer con
+    // él para que el nombre y el subtítulo no caigan sobre la curva blanca.
+    final double topInset = MediaQuery.of(context).viewPadding.top;
 
     final List<Map<String, dynamic>> menus = [
       {
@@ -225,7 +246,7 @@ class _MenuScreenState extends State<MenuScreen> {
           ClipPath(
             clipper: MenuWaveClipper(),
             child: Container(
-              height: 320,
+              height: 320 + topInset,
               decoration: const BoxDecoration(color: Color(0xFF0052A3)),
             ),
           ),
@@ -233,7 +254,10 @@ class _MenuScreenState extends State<MenuScreen> {
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
+                  ),
                   child: Column(
                     children: [
                       Container(
@@ -286,13 +310,18 @@ class _MenuScreenState extends State<MenuScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
                     itemCount: menus.length,
                     itemBuilder: (context, index) {
+                      final tipo = menus[index]['tipo'] as String?;
+                      final badge =
+                          (tipo != null) ? (_notificaciones[tipo] ?? 0) : 0;
+
                       return _buildMenuButton(
                         context,
                         menus[index]['titulo'],
                         menus[index]['subtitulo'],
                         menus[index]['imagen'],
                         menus[index]['ruta'],
-                        tipo: menus[index]['tipo'],
+                        tipo: tipo,
+                        badge: badge,
                       );
                     },
                   ),
@@ -302,9 +331,13 @@ class _MenuScreenState extends State<MenuScreen> {
           ),
           Positioned(
             right: 10,
-            top: 50,
+            top: MediaQuery.of(context).viewPadding.top + 6,
             child: IconButton(
-              icon: const Icon(Icons.exit_to_app, color: Colors.white, size: 30),
+              icon: const Icon(
+                Icons.exit_to_app,
+                color: Colors.white,
+                size: 30,
+              ),
               onPressed: _cerrarSesion,
               tooltip: 'Cerrar Sesión',
             ),
@@ -314,7 +347,7 @@ class _MenuScreenState extends State<MenuScreen> {
             right: 0,
             bottom: 0,
             child: Container(
-              height: 65,
+              height: 65 + bottomInset,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -330,8 +363,16 @@ class _MenuScreenState extends State<MenuScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildBottomNavItem(icon: Icons.home_outlined, label: 'Inicio', index: 0),
-                    _buildBottomNavItem(icon: Icons.person_outline, label: 'Perfil', index: 2),
+                    _buildBottomNavItem(
+                      icon: Icons.home_outlined,
+                      label: 'Inicio',
+                      index: 0,
+                    ),
+                    _buildBottomNavItem(
+                      icon: Icons.person_outline,
+                      label: 'Perfil',
+                      index: 2,
+                    ),
                   ],
                 ),
               ),
@@ -380,7 +421,10 @@ class _MenuScreenState extends State<MenuScreen> {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
                         child: Text(
                           badge > 9 ? '9+' : badge.toString(),
                           style: const TextStyle(
@@ -411,7 +455,8 @@ class _MenuScreenState extends State<MenuScreen> {
                 width: 5,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF0052A3) : Colors.transparent,
+                  color:
+                      isSelected ? const Color(0xFF0052A3) : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -436,6 +481,7 @@ class _MenuScreenState extends State<MenuScreen> {
     String imagePath,
     String route, {
     String? tipo,
+    int badge = 0,
   }) {
     double iconWidth = 60;
     double iconHeight = 60;
@@ -485,16 +531,52 @@ class _MenuScreenState extends State<MenuScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  imagePath,
-                  width: iconWidth,
-                  height: iconHeight,
-                  fit: iconFit,
-                ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      imagePath,
+                      width: iconWidth,
+                      height: iconHeight,
+                      fit: iconFit,
+                    ),
+                  ),
+
+                  // ✅ BADGE (pendientes)
+                  if (badge > 0)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          badge > 99 ? '99+' : badge.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
+
             const SizedBox(width: 12),
             Expanded(
               child: Column(

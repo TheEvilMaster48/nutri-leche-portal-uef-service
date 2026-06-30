@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:nutri/base/base.dart';
 import '../models/evento.dart';
 
 class EventoService extends ChangeNotifier {
   final List<Evento> _eventos = [];
   List<Evento> get eventos => List.unmodifiable(_eventos);
 
-  static const String baseUrl =
-      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
+  late String baseUrl = Base().BASE_URL_APPOFICIAL;
 
   Future<void> obtenerEventos({required int idUsuario}) async {
     final url = Uri.parse("$baseUrl/ObtenerEventos");
@@ -22,7 +22,7 @@ class EventoService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final map = json.decode(response.body);
-
+        print('appEventoList' + map["appEventoList"].toString());
         if (map["appEventoList"] != null &&
             map["appEventoList"] is List &&
             map["appEventoList"].isNotEmpty) {

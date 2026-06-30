@@ -27,11 +27,27 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
+
+# CocoaPods
+**/Pods/
+
+# Environment / secrets
+*.env
+.env
+**/android/local.properties
+**/android/key.properties
+*.keystore
+*.jks
+
+# Capturas de pantalla sueltas (no subir screenshots accidentales)
+**/Captura de pantalla *.png
+**/Screenshot *.png
 
 # Symbolication related
 app.*.symbols

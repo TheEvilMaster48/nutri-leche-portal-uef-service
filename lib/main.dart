@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_store_plus/media_store_plus.dart';
 import 'package:nutri/screens/sorteo_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -43,11 +45,21 @@ class MyHttpOverrides extends HttpOverrides {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Inicializa media_kit (reproductor de video con fallback a software)
+  MediaKit.ensureInitialized();
+
   HttpOverrides.global = MyHttpOverrides();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // media_store_plus es solo Android. En iOS no hay implementación nativa y
+  // getPlatformSDKInt lanzaría MissingPluginException al iniciar.
+  if (Platform.isAndroid) {
+    await MediaStore.ensureInitialized();
+    MediaStore.appFolder =
+        "Nutri"; // 👈 nombre de carpeta que aparecerá en Descargas
+  }
 
   runApp(const NutriLechePortalApp());
 }

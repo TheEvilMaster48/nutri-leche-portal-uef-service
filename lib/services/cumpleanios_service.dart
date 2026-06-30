@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../base/base.dart';
 import '../models/cumpleanios.dart';
 
 class CumpleaniosService extends ChangeNotifier {
   final List<Cumpleanios> _cumpleanios = [];
   List<Cumpleanios> get cumpleanios => List.unmodifiable(_cumpleanios);
 
-  static const String baseUrl =
-      "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
+  late String baseUrl = Base().BASE_URL_APPOFICIAL;
 
   Future<void> obtenerCumpleanios({required int idUsuario}) async {
     final url = Uri.parse("$baseUrl/ObtenerCumpleanos");
@@ -34,6 +34,7 @@ class CumpleaniosService extends ChangeNotifier {
             ..addAll(lista.map((e) => Cumpleanios.fromJson(e)));
 
           notifyListeners();
+          debugPrint(lista.toString());
           debugPrint("CUMPLEAÑOS RECIBIDOS (${_cumpleanios.length})");
         }
         // SI ESTÁ VACÍO → NO IMPRIME NADA
@@ -49,7 +50,7 @@ class CumpleaniosService extends ChangeNotifier {
     required int idUsuario,
     required int idCumpleanios,
   }) async {
-    final url = Uri.parse("$baseUrl/cumpleanios_id_visto");
+    final url = Uri.parse("$baseUrl/evento_id_visto");
 
     try {
       final response = await http.post(
@@ -57,7 +58,7 @@ class CumpleaniosService extends ChangeNotifier {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "idUsuario": idUsuario,
-          "idCumpleanios": idCumpleanios,
+          "idEvento": idCumpleanios,
         }),
       );
 

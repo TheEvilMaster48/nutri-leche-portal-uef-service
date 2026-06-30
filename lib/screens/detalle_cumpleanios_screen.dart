@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../models/cumpleanios.dart';
 
 class DetalleCumpleaniosScreen extends StatelessWidget {
@@ -6,63 +10,148 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
 
   const DetalleCumpleaniosScreen({super.key, required this.cumple});
 
-  DateTime _parseFecha(String fecha) {
-    try {
-      if (fecha.isEmpty || fecha == '0000-00-00') return DateTime.now();
-      if (fecha.contains('/')) {
-        final partes = fecha.split('/');
-        if (partes.length == 3) {
-          final dia = int.tryParse(partes[0]) ?? 1;
-          final mes = int.tryParse(partes[1]) ?? 1;
-          final anio = int.tryParse(partes[2]) ?? DateTime.now().year;
-          return DateTime(anio, mes, dia);
-        }
-      }
-      return DateTime.tryParse(fecha) ?? DateTime.now();
-    } catch (_) {
-      return DateTime.now();
-    }
-  }
-
   String _limpiarDescripcion(String descripcion) {
     final lineas = descripcion
         .split('\n')
         .map((l) => l.trim())
         .where((l) =>
-            l.isNotEmpty &&
-            !RegExp(r'^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$').hasMatch(l))
+    l.isNotEmpty &&
+        !RegExp(r'^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$')
+            .hasMatch(l))
         .toList();
     return lineas.join('\n');
   }
 
+  // ✅ trata el campo "imagenBase64" como URL (porque el WS lo manda como link)
+  String _getImagenUrl() {
+    final raw = (cumple.imagenPath ?? '').toString().trim();
+
+    if (raw.isEmpty) return '';
+
+    // limpia comillas y basura
+    final cleaned = raw
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll(RegExp(r'[\r\n]+'), '')
+        .replaceAll(RegExp(r'[)\].,;]+$'), '');
+
+    final uri = Uri.tryParse(cleaned);
+    if (uri == null) return '';
+    if (!(uri.isScheme('http') || uri.isScheme('https'))) return '';
+
+    return cleaned;
+  }
+
+  Future<void> _openUrl(BuildContext context, String url) async {
+    final cleaned = url
+        .trim()
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll(RegExp(r'[\r\n]+'), '')
+        .replaceAll(RegExp(r'[)\].,;]+$'), '');
+
+    final uri = Uri.tryParse(cleaned);
+
+    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("URL inválida: $cleaned")),
+      );
+      return;
+    }
+
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No se pudo abrir el enlace")),
+      );
+    }
+  }
+
+  Widget _buildTextWithLinks(BuildContext context, String text) {
+    final RegExp urlRegex =
+    RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+
+    final spans = <TextSpan>[];
+    int start = 0;
+
+    final matches = urlRegex.allMatches(text);
+
+    for (final match in matches) {
+      if (match.start > start) {
+        spans.add(
+          TextSpan(
+            text: text.substring(start, match.start),
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF333333),
+              height: 1.4,
+            ),
+          ),
+        );
+      }
+
+      final url = match.group(0)!;
+
+      spans.add(
+        TextSpan(
+          text: url,
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF0052A3),
+            decoration: TextDecoration.underline,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => _openUrl(context, url),
+        ),
+      );
+
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(start),
+          style: const TextStyle(
+            fontSize: 15,
+            color: Color(0xFF333333),
+            height: 1.4,
+          ),
+        ),
+      );
+    }
+
+    return RichText(text: TextSpan(children: spans));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final fecha = _parseFecha(cumple.fecha);
-    final fechaFormateada =
-        "${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}";
-
     final descripcionFiltrada = _limpiarDescripcion(cumple.descripcion);
+
+    final imageUrl = _getImagenUrl();
+    final tieneImagen = imageUrl.isNotEmpty;
+
+    // Inset físico de la barra de estado / notch (consistente iOS/Android).
+    final double topInset = MediaQuery.of(context).viewPadding.top;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Stack(
         children: [
-          // Fondo azul superior con curva
           ClipPath(
             clipper: DetalleCumpleanosWaveClipper(),
             child: Container(
-              height: 120,
-              decoration: const BoxDecoration(
-                color: Color(0xFF0052A3),
-              ),
+              height: 120 + topInset,
+              decoration: const BoxDecoration(color: Color(0xFF0052A3)),
             ),
           ),
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
+          Column(
+            children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
                   child: Row(
                     children: [
                       IconButton(
@@ -84,14 +173,16 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: SafeArea(
+                    top: false,
+                    child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          // Card principal con toda la información
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -107,38 +198,56 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // IMAGEN
+                                // ✅ Imagen desde URL (NO base64)
                                 ClipRRect(
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(20),
                                     topRight: Radius.circular(20),
                                   ),
-                                  child: Image.asset(
-                                    'assets/icono/cumpleanosdetalle.jpg',
+                                  child: tieneImagen
+                                      ? CachedNetworkImage(
+                                    imageUrl: imageUrl,
                                     height: 220,
                                     width: double.infinity,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
+                                    placeholder: (context, url) {
+                                      return Container(
+                                        height: 220,
+                                        color: const Color(0xFFE0E0E0),
+                                        alignment: Alignment.center,
+                                        child: const CircularProgressIndicator(
+                                          color: Color(0xFF0052A3),
+                                        ),
+                                      );
+                                    },
+                                    errorWidget: (context, url, error) {
                                       return Container(
                                         height: 220,
                                         color: const Color(0xFFE0E0E0),
                                         child: const Icon(
-                                          Icons.cake,
-                                          size: 80,
+                                          Icons.broken_image,
+                                          size: 70,
                                           color: Color(0xFF999999),
                                         ),
                                       );
                                     },
+                                  )
+                                      : Container(
+                                    height: 220,
+                                    color: const Color(0xFFE0E0E0),
+                                    child: const Icon(
+                                      Icons.cake,
+                                      size: 80,
+                                      color: Color(0xFF999999),
+                                    ),
                                   ),
                                 ),
-                                
-                                // CONTENIDO
+
                                 Padding(
                                   padding: const EdgeInsets.all(24),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // TÍTULO
                                       Text(
                                         cumple.titulo,
                                         style: const TextStyle(
@@ -149,8 +258,7 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 20),
-                                      
-                                      // Divider decorativo
+
                                       Container(
                                         height: 3,
                                         width: 60,
@@ -160,21 +268,34 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 20),
-                                      
-                                      // DESCRIPCIÓN
+
                                       _buildInfoRow(
                                         icon: Icons.description,
                                         label: 'Descripción',
-                                        value: descripcionFiltrada,
+                                        valueWidget: _buildTextWithLinks(
+                                          context,
+                                          descripcionFiltrada,
+                                        ),
                                       ),
-                                      const SizedBox(height: 16),
-                                      
-                                      // FECHA
-                                      _buildInfoRow(
-                                        icon: Icons.calendar_today,
-                                        label: 'Fecha',
-                                        value: fechaFormateada,
-                                      ),
+
+                                      // (Opcional) Si quieres mostrar el link de la imagen para abrirlo
+                                      // const SizedBox(height: 16),
+                                      // if (tieneImagen)
+                                      //   _buildInfoRow(
+                                      //     icon: Icons.link,
+                                      //     label: 'Imagen',
+                                      //     valueWidget: GestureDetector(
+                                      //       onTap: () => _openUrl(context, imageUrl),
+                                      //       child: const Text(
+                                      //         'Abrir imagen',
+                                      //         style: TextStyle(
+                                      //           color: Color(0xFF0052A3),
+                                      //           decoration: TextDecoration.underline,
+                                      //           fontWeight: FontWeight.w600,
+                                      //         ),
+                                      //       ),
+                                      //     ),
+                                      //   ),
                                     ],
                                   ),
                                 ),
@@ -186,10 +307,10 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  ),
                 ),
               ],
             ),
-          ),
         ],
       ),
     );
@@ -198,7 +319,8 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
   Widget _buildInfoRow({
     required IconData icon,
     required String label,
-    required String value,
+    String? value,
+    Widget? valueWidget,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -215,11 +337,7 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
               color: const Color(0xFF0052A3).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF0052A3),
-              size: 20,
-            ),
+            child: Icon(icon, color: const Color(0xFF0052A3), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -236,14 +354,15 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF333333),
-                    height: 1.4,
-                  ),
-                ),
+                valueWidget ??
+                    Text(
+                      value ?? '',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF333333),
+                        height: 1.4,
+                      ),
+                    ),
               ],
             ),
           ),

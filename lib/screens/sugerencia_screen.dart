@@ -22,6 +22,7 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _tituloCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  static const int _maxImages = 2;
   String? _categoria;
   String? _archivoNombre;
   Uint8List? _archivoBytes;
@@ -57,41 +58,26 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
   }
 
   Future pickImage() async {
+    if (images.length >= _maxImages) {
+      NotificationBanner.show(
+        context,
+        'Solo puedes adjuntar máximo $_maxImages imágenes.',
+        NotificationType.error,
+      );
+      return;
+    }
+
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.camera);
       if (image == null) return;
+
       final imageTemp = File(image.path);
-      //agregar a la lista
+
       setState(() {
         images.add(imageTemp);
       });
     } on PlatformException catch (e) {
       print('Failed to pick image: $e');
-    }
-  }
-
-  // SELECCIONAR ARCHIVO (PDF, DOCX, IMAGEN, ETC)
-  Future<void> _seleccionarArchivo() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'docx', 'xls', 'xlsx', 'jpg', 'png'],
-        withData: true,
-      );
-
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
-
-      setState(() {
-        _archivoNombre = file.name;
-        _archivoBytes = file.bytes;
-      });
-    } catch (e) {
-      NotificationBanner.show(
-        context,
-        'Error al seleccionar archivo: $e',
-        NotificationType.error,
-      );
     }
   }
 
@@ -102,10 +88,12 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
     setState(() => _enviando = true);
 
     Future<List<String>> convertirImagenesABase64(List<File> imagenes) async {
-      return Future.wait(imagenes.map((file) async {
-        final bytes = await file.readAsBytes();
-        return base64Encode(bytes);
-      }));
+      return Future.wait(
+        imagenes.map((file) async {
+          final bytes = await file.readAsBytes();
+          return base64Encode(bytes);
+        }),
+      );
     }
 
     var map = <String, dynamic>{};
@@ -120,7 +108,8 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
       // HTTP al Webservice
       final response = await http.post(
         Uri.parse(
-            "https://servicioslsaqas.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/insertar_sugerencia"),
+          "https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/insertar_sugerencia",
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(map),
       );
@@ -166,30 +155,34 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Inset físico de la barra de estado / notch (consistente iOS/Android).
+    final double topInset = MediaQuery.of(context).viewPadding.top;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Stack(
         children: [
-          // Fondo azul superior con curva
+          // Fondo azul superior con curva (se extiende bajo la barra de estado)
           ClipPath(
             clipper: SugerenciaWaveClipper(),
             child: Container(
-              height: 120,
-              decoration: const BoxDecoration(
-                color: Color(0xFF0052A3),
-              ),
+              height: 120 + topInset,
+              decoration: const BoxDecoration(color: Color(0xFF0052A3)),
             ),
           ),
-          SafeArea(
-            child: Column(
-              children: [
+          Column(
+            children: [
                 // Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const SizedBox(width: 8),
@@ -206,7 +199,9 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                   ),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: SafeArea(
+                    top: false,
+                    child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -219,7 +214,9 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE0E0E0), // CAMBIADO DE 0xFFE8F4F8 A GRIS
+                                color: const Color(
+                                  0xFFE0E0E0,
+                                ), // CAMBIADO DE 0xFFE8F4F8 A GRIS
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Column(
@@ -289,10 +286,11 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                       ),
                                       filled: true,
                                       fillColor: const Color(0xFFF5F5F5),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 14,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide.none,
@@ -320,18 +318,27 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                       Icons.arrow_drop_down,
                                       color: Color(0xFF0052A3),
                                     ),
-                                    items: _categorias
-                                        .map((cat) => DropdownMenuItem(
-                                              value: cat,
-                                              child: Text(
-                                                cat,
-                                                style: const TextStyle(fontSize: 14),
+                                    items:
+                                        _categorias
+                                            .map(
+                                              (cat) => DropdownMenuItem(
+                                                value: cat,
+                                                child: Text(
+                                                  cat,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
                                               ),
-                                            ))
-                                        .toList(),
-                                    onChanged: (v) => setState(() => _categoria = v),
-                                    validator: (v) =>
-                                        v == null ? 'Seleccione una categoría' : null,
+                                            )
+                                            .toList(),
+                                    onChanged:
+                                        (v) => setState(() => _categoria = v),
+                                    validator:
+                                        (v) =>
+                                            v == null
+                                                ? 'Seleccione una categoría'
+                                                : null,
                                   ),
                                   const SizedBox(height: 20),
 
@@ -349,17 +356,19 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                     controller: _tituloCtrl,
                                     style: const TextStyle(fontSize: 14),
                                     decoration: InputDecoration(
-                                      hintText: 'Escribe el título de tu sugerencia',
+                                      hintText:
+                                          'Escribe el título de tu sugerencia',
                                       hintStyle: const TextStyle(
                                         color: Color(0xFF999999),
                                         fontSize: 14,
                                       ),
                                       filled: true,
                                       fillColor: const Color(0xFFF5F5F5),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 14,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide.none,
@@ -383,8 +392,11 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                         ),
                                       ),
                                     ),
-                                    validator: (v) =>
-                                        v == null || v.isEmpty ? 'Ingrese un título' : null,
+                                    validator:
+                                        (v) =>
+                                            v == null || v.isEmpty
+                                                ? 'Ingrese un título'
+                                                : null,
                                   ),
                                   const SizedBox(height: 20),
 
@@ -403,7 +415,8 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                     maxLines: 5,
                                     style: const TextStyle(fontSize: 14),
                                     decoration: InputDecoration(
-                                      hintText: 'Describe tu sugerencia en detalle...',
+                                      hintText:
+                                          'Describe tu sugerencia en detalle...',
                                       hintStyle: const TextStyle(
                                         color: Color(0xFF999999),
                                         fontSize: 14,
@@ -434,9 +447,11 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                         ),
                                       ),
                                     ),
-                                    validator: (v) => v == null || v.isEmpty
-                                        ? 'Ingrese una descripción'
-                                        : null,
+                                    validator:
+                                        (v) =>
+                                            v == null || v.isEmpty
+                                                ? 'Ingrese una descripción'
+                                                : null,
                                   ),
                                 ],
                               ),
@@ -459,29 +474,35 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                               child: Material(
                                 color: Colors.transparent,
                                 child: InkWell(
-                                  onTap: images.length >= 5 ? null : pickImage,
+                                  onTap:
+                                      images.length >= _maxImages
+                                          ? null
+                                          : pickImage,
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
                                     padding: const EdgeInsets.all(16),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.camera_alt,
-                                          color: images.length >= 5
-                                              ? Colors.grey
-                                              : const Color(0xFF0052A3),
+                                          color:
+                                              images.length >= 5
+                                                  ? Colors.grey
+                                                  : const Color(0xFF0052A3),
                                           size: 24,
                                         ),
                                         const SizedBox(width: 12),
                                         Text(
-                                          "Adjuntar fotos (${images.length}/5)",
+                                          "Adjuntar fotos (${images.length}/$_maxImages)",
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
-                                            color: images.length >= 5
-                                                ? Colors.grey
-                                                : const Color(0xFF0052A3),
+                                            color:
+                                                images.length >= 5
+                                                    ? Colors.grey
+                                                    : const Color(0xFF0052A3),
                                           ),
                                         ),
                                       ],
@@ -510,17 +531,20 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                 child: GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    crossAxisSpacing: 8,
-                                    mainAxisSpacing: 8,
-                                  ),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 8,
+                                        mainAxisSpacing: 8,
+                                      ),
                                   itemCount: images.length,
                                   itemBuilder: (context, index) {
                                     return Stack(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Image.file(
                                             images[index],
                                             fit: BoxFit.cover,
@@ -574,29 +598,31 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                   disabledBackgroundColor: Colors.grey[300],
                                 ),
                                 onPressed: _enviando ? null : _enviarSugerencia,
-                                child: _enviando
-                                    ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: const [
-                                          Icon(Icons.send, size: 20),
-                                          SizedBox(width: 10),
-                                          Text(
-                                            "Enviar Sugerencia",
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                child:
+                                    _enviando
+                                        ? const SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
                                           ),
-                                        ],
-                                      ),
+                                        )
+                                        : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: const [
+                                            Icon(Icons.send, size: 20),
+                                            SizedBox(width: 10),
+                                            Text(
+                                              "Enviar Sugerencia",
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -605,10 +631,10 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                       ),
                     ),
                   ),
+                  ),
                 ),
               ],
             ),
-          ),
         ],
       ),
     );

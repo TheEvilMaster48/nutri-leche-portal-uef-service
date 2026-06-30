@@ -73,6 +73,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final auth = context.watch<AuthService>();
     final Usuario? usuario = auth.currentUser;
 
+    // Inset inferior (home indicator de iPhone). La barra inferior debe
+    // reservar este espacio extra, si no se desborda en iOS.
+    final double bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
+    // Inset superior (barra de estado / notch). El fondo azul debe crecer con
+    // él para que el nombre y el cargo no caigan sobre la curva blanca.
+    final double topInset = MediaQuery.of(context).viewPadding.top;
+
     if (usuario == null) {
       return Scaffold(
         appBar: AppBar(
@@ -96,7 +104,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ClipPath(
             clipper: PerfilWaveClipper(),
             child: Container(
-              height: 340,
+              height: 340 + topInset,
               decoration: const BoxDecoration(
                 color: Color(0xFF0052A3),
               ),
@@ -249,7 +257,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             right: 0,
             bottom: 0,
             child: Container(
-              height: 65,
+              height: 65 + bottomInset,
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
