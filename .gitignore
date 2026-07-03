@@ -44,6 +44,8 @@ migrate_working_dir/
 **/android/key.properties
 *.keystore
 *.jks
+*.p8
+AuthKey_*.p8
 
 # Capturas de pantalla sueltas (no subir screenshots accidentales)
 **/Captura de pantalla *.png

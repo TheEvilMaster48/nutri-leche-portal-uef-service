@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "879259228713",
+    "project_id": "nutri-lsa",
+    "storage_bucket": "nutri-lsa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:879259228713:android:ecc5b346fcc5c30527da38",
+        "android_client_info": {
+          "package_name": "com.example.nutri"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW-FEPFZS5eu3lYO8Dv51I_aXWyUppY5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:879259228713:android:ebb8fa19da36318d27da38",
+        "android_client_info": {
+          "package_name": "com.nutri.portal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW-FEPFZS5eu3lYO8Dv51I_aXWyUppY5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:879259228713:android:ff166073f51097e627da38",
+        "android_client_info": {
+          "package_name": "com.nutrileche.nutri_leche"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW-FEPFZS5eu3lYO8Dv51I_aXWyUppY5Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

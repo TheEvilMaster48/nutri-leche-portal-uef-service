@@ -42,47 +42,47 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyD0EWBFwjMY7AQA5hxf8V6nGDKKxxMTBwQ',
-    appId: '1:879259228713:web:4421874c790124fb27da38',
+    appId: '1:879259228713:web:3ca05d9baafd036127da38',
     messagingSenderId: '879259228713',
     projectId: 'nutri-lsa',
     authDomain: 'nutri-lsa.firebaseapp.com',
     storageBucket: 'nutri-lsa.firebasestorage.app',
-    measurementId: 'G-H660FERNJB',
+    measurementId: 'G-3VYNVSTRCM',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAW-FEPFZS5eu3lYO8Dv51I_aXWyUppY5Q',
-    appId: '1:879259228713:android:ff166073f51097e627da38',
+    appId: '1:879259228713:android:ecc5b346fcc5c30527da38',
     messagingSenderId: '879259228713',
     projectId: 'nutri-lsa',
     storageBucket: 'nutri-lsa.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBNLmwdMRU8NjsbUHQWteL8of2ZGt7Ay80',
-    appId: '1:330528185869:ios:ed91c47d9b6a8f67923f44',
-    messagingSenderId: '330528185869',
-    projectId: 'nutri-leche-chat',
-    storageBucket: 'nutri-leche-chat.firebasestorage.app',
-    iosBundleId: 'com.example.nutriLeche',
+    apiKey: 'AIzaSyABka9SPZOMl9V5qvNh3Ntq0llObysOJCk',
+    appId: '1:879259228713:ios:20b6f53584a1509127da38',
+    messagingSenderId: '879259228713',
+    projectId: 'nutri-lsa',
+    storageBucket: 'nutri-lsa.firebasestorage.app',
+    iosBundleId: 'com.nutri.appoficial',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBNLmwdMRU8NjsbUHQWteL8of2ZGt7Ay80',
-    appId: '1:330528185869:ios:ed91c47d9b6a8f67923f44',
-    messagingSenderId: '330528185869',
-    projectId: 'nutri-leche-chat',
-    storageBucket: 'nutri-leche-chat.firebasestorage.app',
-    iosBundleId: 'com.example.nutriLeche',
+    apiKey: 'AIzaSyABka9SPZOMl9V5qvNh3Ntq0llObysOJCk',
+    appId: '1:879259228713:ios:20b6f53584a1509127da38',
+    messagingSenderId: '879259228713',
+    projectId: 'nutri-lsa',
+    storageBucket: 'nutri-lsa.firebasestorage.app',
+    iosBundleId: 'com.nutri.appoficial',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAzXGrtRFJBVdvFuyTO-VdtecIldcvGing',
-    appId: '1:330528185869:web:a32ca1b79ae08f45923f44',
-    messagingSenderId: '330528185869',
-    projectId: 'nutri-leche-chat',
-    authDomain: 'nutri-leche-chat.firebaseapp.com',
-    storageBucket: 'nutri-leche-chat.firebasestorage.app',
-    measurementId: 'G-SRQEF3WNZS',
+    apiKey: 'AIzaSyD0EWBFwjMY7AQA5hxf8V6nGDKKxxMTBwQ',
+    appId: '1:879259228713:web:3ca05d9baafd036127da38',
+    messagingSenderId: '879259228713',
+    projectId: 'nutri-lsa',
+    authDomain: 'nutri-lsa.firebaseapp.com',
+    storageBucket: 'nutri-lsa.firebasestorage.app',
+    measurementId: 'G-3VYNVSTRCM',
   );
 }

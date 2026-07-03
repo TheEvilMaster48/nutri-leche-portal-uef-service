@@ -388,14 +388,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                       if (defaultTargetPlatform ==
                                           TargetPlatform.iOS) {
-                                        final apnsToken =
-                                            await messaging.getAPNSToken();
+                                        // Asegura el permiso antes de pedir el APNs token.
+                                        await messaging.requestPermission(
+                                          alert: true,
+                                          badge: true,
+                                          sound: true,
+                                        );
+
+                                        // El APNs token puede tardar unos segundos
+                                        // en estar disponible tras conceder permisos.
+                                        // Reintentamos hasta 5 veces (~5s).
+                                        String? apnsToken;
+                                        for (int intento = 1;
+                                            intento <= 5;
+                                            intento++) {
+                                          apnsToken =
+                                              await messaging.getAPNSToken();
+                                          if (apnsToken != null) break;
+                                          debugPrint(
+                                            '⏳ APNs token no listo (intento $intento/5)...',
+                                          );
+                                          await Future.delayed(
+                                            const Duration(seconds: 1),
+                                          );
+                                        }
                                         debugPrint(
                                           '🍏 APNS TOKEN = $apnsToken',
                                         );
 
                                         if (apnsToken == null) {
-                                          debugPrint('⏳ APNs token no listo.');
+                                          debugPrint(
+                                            '⚠️ APNs token no disponible tras 5 intentos.',
+                                          );
                                         } else {
                                           fcmToken = await messaging.getToken();
                                           debugPrint(

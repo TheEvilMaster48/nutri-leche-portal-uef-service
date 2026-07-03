@@ -10,7 +10,7 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:label="Nutri"
+        android:label="Portal Nutri"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
