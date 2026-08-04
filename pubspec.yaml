@@ -1,7 +1,7 @@
 name: nutri
 description: Portal de Empleados Nutri Ecuador
 publish_to: 'none'
-version: 2.0.0+6
+version: 2.2.0+8
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -60,6 +60,9 @@ dependencies:
   flutter_local_notifications: ^19.5.0
   firebase_core: ^3.15.2
   firebase_messaging: ^15.2.10
+
+  # BADGE EN EL ÍCONO DE LA APP (pendientes en springboard iOS / launcher Android)
+  app_badge_plus: ^1.2.2
 
   # OVERRIDE — FORZAR LA NUEVA VERSIÓN DEL PLUGIN
 dependency_overrides:

@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import '../base/base.dart';
 import '../services/auth_service.dart';
 import '../services/evento_service.dart';
+import '../services/mensaje_service.dart';
 import '../services/cumpleanios_service.dart';
 import '../models/usuario.dart';
 import '../services/push_service.dart';
+import '../services/badge_service.dart';
 
 class FirebaseNotificationBus {
   static final _controller = StreamController<Map<String, dynamic>>.broadcast();
@@ -26,6 +28,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
 
   final Map<String, int> _notificaciones = {
     'eventos': 0,
+    'mensajes': 0,
     'cumpleanios': 0,
     'calendario': 0,
   };
@@ -53,6 +56,8 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
         final tipo = data['tipo'] ?? '';
         if (tipo == 'evento') {
           _notificaciones['eventos'] = (_notificaciones['eventos'] ?? 0) + 1;
+        } else if (tipo == 'mensaje') {
+          _notificaciones['mensajes'] = (_notificaciones['mensajes'] ?? 0) + 1;
         } else if (tipo == 'cumpleanios') {
           _notificaciones['cumpleanios'] =
               (_notificaciones['cumpleanios'] ?? 0) + 1;
@@ -61,6 +66,8 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
               (_notificaciones['calendario'] ?? 0) + 1;
         }
       });
+      // Refleja el nuevo total en el ícono de la app.
+      BadgeService.actualizar(_totalNotificaciones);
     });
 
     _actualizarContadoresPendientes();
@@ -102,6 +109,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     try {
       final eventoService = context.read<EventoService>();
+      final mensajeService = context.read<MensajeService>();
       final cumpleService = context.read<CumpleaniosService>();
       final auth = context.read<AuthService>();
       final usuario = auth.currentUser;
@@ -111,6 +119,10 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
       final eventos = eventoService.eventos;
       final pendientesEventos = eventos.where((e) => e.estado == 0).length;
 
+      await mensajeService.obtenerMensajes(idUsuario: usuario.id);
+      final mensajes = mensajeService.mensajes;
+      final pendientesMensajes = mensajes.where((m) => m.visto == 0).length;
+
       await cumpleService.obtenerCumpleanios(idUsuario: usuario.id);
       final cumpleanios = cumpleService.cumpleanios;
       final pendientesCumples = cumpleanios.where((c) => c.estado == 0).length;
@@ -118,8 +130,11 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _notificaciones['eventos'] = pendientesEventos;
+          _notificaciones['mensajes'] = pendientesMensajes;
           _notificaciones['cumpleanios'] = pendientesCumples;
         });
+        // Sincroniza el badge del ícono con el total real de pendientes.
+        await BadgeService.actualizar(_totalNotificaciones);
       }
     } catch (e) {
       debugPrint('Error al actualizar contadores: $e');
@@ -177,6 +192,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
 
       await auth.logout();
       await PushService.instance.stopCompletely();
+      await BadgeService.limpiar();
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -212,14 +228,14 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     final List<Map<String, dynamic>> menus = [
       {
         'titulo': 'Gestión de Eventos',
-        'subtitulo': 'Crea y organiza',
+        'subtitulo': 'Eventos y Notificaciones',
         'imagen': 'assets/icono/eventos.jpg',
         'ruta': '/eventos_page',
         'tipo': 'eventos',
       },
       {
         'titulo': 'Cumpleaños',
-        'subtitulo': 'Crea y organiza',
+        'subtitulo': 'Notificacion de cumpleañeros',
         'imagen': 'assets/icono/cumpleanos.jpg',
         'ruta': '/cumpleanios',
         'tipo': 'cumpleanios',
@@ -233,7 +249,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
       },
       {
         'titulo': 'Buzón de Sugerencias',
-        'subtitulo': 'Crea y organiza',
+        'subtitulo': 'Nueva Sugerencia',
         'imagen': 'assets/icono/correo.jpg',
         'ruta': '/buzon',
       },
@@ -394,8 +410,14 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     return Expanded(
       child: InkWell(
         onTap: () {
-          setState(() => _selectedIndex = index);
-          if (index == 2) Navigator.pushNamed(context, '/perfil');
+          if (index == 2) {
+            // Perfil es otra pantalla: al volver, "Inicio" queda seleccionado.
+            Navigator.pushNamed(context, '/perfil').then((_) {
+              if (mounted) setState(() => _selectedIndex = 0);
+            });
+          } else {
+            setState(() => _selectedIndex = index);
+          }
         },
         child: SizedBox(
           height: 65,
@@ -505,10 +527,11 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     return InkWell(
       onTap: () {
         Navigator.pushNamed(context, route).then((_) async {
-          if (tipo == 'eventos' || tipo == 'cumpleanios') {
+          if (tipo == 'eventos' || tipo == 'mensajes' || tipo == 'cumpleanios') {
             await _actualizarContadoresPendientes();
           } else if (tipo != null) {
             setState(() => _notificaciones[tipo] = 0);
+            await BadgeService.actualizar(_totalNotificaciones);
           }
         });
       },

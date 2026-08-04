@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:media_store_plus/media_store_plus.dart';
@@ -15,6 +17,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../models/evento.dart';
+import '../models/calendario_evento.dart';
 
 class DetalleEventoScreen extends StatefulWidget {
   final dynamic evento;
@@ -43,6 +46,15 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
   double get _mediaHeight => MediaQuery.of(context).size.height * 0.35;
 
   final MediaStore _mediaStore = MediaStore();
+
+  /// Un recognizer por URL detectada en el texto libre. Se reutilizan entre
+  /// builds (no se recrean) y se liberan al destruir la pantalla.
+  final Map<String, TapGestureRecognizer> _linkRecognizers = {};
+
+  /// http/https hasta el primer espacio o carácter de cierre. Se excluyen los
+  /// signos finales de puntuación al momento de limpiar la coincidencia.
+  static final RegExp _urlRegex =
+      RegExp(r'https?:\/\/[^\s<>"\)\]]+', caseSensitive: false);
 
   // -------------------------
   // Helpers URL / Tipo archivo
@@ -266,7 +278,9 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
     final String? url =
     (evento is Evento)
         ? (evento.imagenPath) // o cambia a evento.imagenBase64 si ese es el campo real
-        : (evento.imagenPath ?? evento.imagenBase64 ?? null);
+        : (evento is CalendarioEvento)
+            ? evento.imagenBase64
+            : (evento.imagenBase64 ?? evento.imagenPath);
 
     _mediaUrl = url?.trim();
 
@@ -295,7 +309,82 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
   @override
   void dispose() {
     _player?.dispose();
+    _limpiarRecognizers();
     super.dispose();
+  }
+
+  void _limpiarRecognizers() {
+    for (final r in _linkRecognizers.values) {
+      r.dispose();
+    }
+    _linkRecognizers.clear();
+  }
+
+  Future<void> _abrirEnlace(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+
+    bool ok = false;
+    try {
+      ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      ok = false;
+    }
+
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir el enlace: $url')),
+      );
+    }
+  }
+
+  /// Convierte el texto libre en un `Text.rich` donde las URLs quedan
+  /// subrayadas y se pueden tocar. Sin esto la descripción se pinta como texto
+  /// plano y los enlaces enviados en el evento no son accionables.
+  Widget _textoConEnlaces(String value, TextStyle baseStyle) {
+    final matches = _urlRegex.allMatches(value).toList();
+    if (matches.isEmpty) return Text(value, style: baseStyle);
+
+    final linkStyle = baseStyle.copyWith(
+      color: Base().COLOR_AZUL_CORP,
+      decoration: TextDecoration.underline,
+      decorationColor: Base().COLOR_AZUL_CORP,
+      fontWeight: FontWeight.w600,
+    );
+
+    final spans = <InlineSpan>[];
+    int cursor = 0;
+
+    for (final m in matches) {
+      if (m.start > cursor) {
+        spans.add(TextSpan(text: value.substring(cursor, m.start)));
+      }
+
+      // La puntuación final suele pertenecer a la frase, no a la URL.
+      var url = m.group(0)!;
+      while (url.isNotEmpty && '.,;:!?'.contains(url[url.length - 1])) {
+        url = url.substring(0, url.length - 1);
+      }
+
+      final recognizer = _linkRecognizers.putIfAbsent(
+        url,
+        () => TapGestureRecognizer()..onTap = () => _abrirEnlace(url),
+      );
+
+      spans.add(TextSpan(
+        text: url,
+        style: linkStyle,
+        recognizer: recognizer,
+      ));
+
+      cursor = m.start + url.length;
+    }
+
+    if (cursor < value.length) {
+      spans.add(TextSpan(text: value.substring(cursor)));
+    }
+
+    return Text.rich(TextSpan(style: baseStyle, children: spans));
   }
 
   // -------------------------
@@ -596,6 +685,7 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
                                     icon: Icons.description,
                                     label: 'Descripción',
                                     value: descripcion,
+                                    detectarEnlaces: true,
                                   ),
                                   const SizedBox(height: 20),
                                   if (fecha.trim().isNotEmpty) ...[
@@ -659,6 +749,7 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
     required IconData icon,
     required String label,
     required String value,
+    bool detectarEnlaces = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -692,14 +783,16 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  value,
-                  style: TextStyle(
+                Builder(builder: (_) {
+                  final estilo = TextStyle(
                     fontSize: 15,
                     color: Base().COLOR_GRIS,
                     height: 1.4,
-                  ),
-                ),
+                  );
+                  return detectarEnlaces
+                      ? _textoConEnlaces(value, estilo)
+                      : Text(value, style: estilo);
+                }),
               ],
             ),
           ),

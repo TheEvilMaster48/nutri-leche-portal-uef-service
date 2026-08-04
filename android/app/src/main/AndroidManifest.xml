@@ -2,6 +2,9 @@
     <!-- ✅ PERMISO NECESARIO PARA ABRIR LINKS -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- ✅ NOTIFICACIONES PUSH (Android 13+ requiere permiso en runtime) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- ✅ PERMISOS PARA GUARDAR PDFs EN DESCARGAS (media_store_plus) -->
     <!-- Android <= 9 (API 28): requiere permiso para escribir en almacenamiento compartido -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"

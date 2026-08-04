@@ -27,8 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  final _usuarioRecController = TextEditingController();
-  final _correoRecController = TextEditingController();
+  final _cedulaRecController = TextEditingController();
 
 
   bool _obscurePassword = true;
@@ -444,6 +443,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       );
                                     }
 
+                                    if (!mounted) return;
+
                                     Navigator.pushReplacementNamed(
                                       context,
                                       '/menu',
@@ -542,8 +543,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final parentContext = context;
 
     // Limpia campos cada vez que abras el dialog (opcional)
-    _usuarioRecController.clear();
-    _correoRecController.clear();
+    _cedulaRecController.clear();
 
     bool enviando = false;
 
@@ -551,42 +551,31 @@ class _LoginScreenState extends State<LoginScreen> {
       context: parentContext,
       barrierDismissible: !enviando,
       builder: (dialogContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
-          ),
-          child: StatefulBuilder(
+        return StatefulBuilder(
             builder: (dialogContext, setStateDialog) {
               return AlertDialog(
+                scrollable: true,
                 backgroundColor: base.COLOR_BLANCO,
                 title: Text(
                   'Recuperar contraseña',
                   style: TextStyle(color: base.COLOR_AZUL_CORP),
                 ),
-                content: SingleChildScrollView(
-                  child: Column(
+                content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: _usuarioRecController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Usuario',
-                          labelStyle: TextStyle(color: base.COLOR_AZUL_CORP),
-                          prefixIcon: Icon(Icons.person, color: base.COLOR_AZUL_CORP),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: base.COLOR_AZUL_CORP),
-                          ),
-                        ),
+                      Text(
+                        'Ingrese su número de cédula. Le enviaremos las '
+                        'instrucciones al correo registrado.',
+                        style: TextStyle(color: base.COLOR_AZUL_CORP, fontSize: 13),
                       ),
                       const SizedBox(height: 12),
                       TextField(
-                        controller: _correoRecController,
-                        keyboardType: TextInputType.emailAddress,
+                        controller: _cedulaRecController,
+                        keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Correo electrónico',
+                          labelText: 'Cédula',
                           labelStyle: TextStyle(color: base.COLOR_AZUL_CORP),
-                          prefixIcon: Icon(Icons.email_outlined, color: base.COLOR_AZUL_CORP),
+                          prefixIcon: Icon(Icons.badge_outlined, color: base.COLOR_AZUL_CORP),
                           focusedBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: base.COLOR_AZUL_CORP),
                           ),
@@ -594,7 +583,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                ),
                 actions: [
                   TextButton(
                     onPressed: enviando
@@ -616,13 +604,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: enviando
                         ? null
                         : () async {
-                      final usuario = _usuarioRecController.text.trim();
-                      final correo = _correoRecController.text.trim();
+                      final cedula = _cedulaRecController.text.trim();
 
-                      if (usuario.isEmpty || correo.isEmpty) {
+                      if (cedula.isEmpty) {
                         ScaffoldMessenger.of(parentContext).showSnackBar(
                           const SnackBar(
-                            content: Text('Ingrese su usuario y correo.'),
+                            content: Text('Ingrese su número de cédula.'),
                             backgroundColor: Colors.redAccent,
                           ),
                         );
@@ -631,25 +618,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       setStateDialog(() => enviando = true);
 
-                      final ok = await _enviarRecuperacionClave(
-                        usuario: usuario,
-                        correo: correo,
+                      final correo = await _enviarRecuperacionClave(
+                        cedula: cedula,
                       );
 
                       if (!mounted) return;
 
                       setStateDialog(() => enviando = false);
 
-                      if (ok) {
+                      if (correo != null && correo.isNotEmpty) {
                         FocusScope.of(dialogContext).unfocus();
                         Navigator.of(dialogContext).pop();
 
-                        // Solo el mensaje que pediste
                         ScaffoldMessenger.of(parentContext).showSnackBar(
                           SnackBar(
-                            content: const Text('Se han enviado  las instrucciones a su correo.'),
+                            content: Text(
+                              'Se han enviado las instrucciones a su correo '
+                              '${_enmascararCorreo(correo)}',
+                            ),
                             backgroundColor: base.COLOR_AZUL_VERDE,
-                            duration: const Duration(seconds: 3),
+                            duration: const Duration(seconds: 5),
                           ),
                         );
                       } else {
@@ -672,7 +660,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               );
             },
-          ),
         );
       },
     );
@@ -680,32 +667,71 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
 
-  Future<bool> _enviarRecuperacionClave({
-    required String usuario,
-    required String correo,
+  /// Solicita el cambio de contraseña por cédula.
+  /// Devuelve el correo al que se envió el mensaje, o null si falló.
+  Future<String?> _enviarRecuperacionClave({
+    required String cedula,
   }) async {
     const url =
-        'https://servicioslsa.nutri.com.ec/nutrisoft/rest/service/api/request_password_reset';
+        'https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/cambiar_contraseña';
 
     try {
       final resp = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'usuario': usuario, 'correo': correo}),
+        body: jsonEncode({'cedula': cedula}),
       );
 
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
-        return true;
+        return _extraerCorreo(resp.body);
       }
 
       debugPrint(
-        '❌ recuperarClave status=${resp.statusCode} body=${resp.body}',
+        '❌ cambiarContrasena status=${resp.statusCode} body=${resp.body}',
       );
-      return false;
+      return null;
     } catch (e) {
-      debugPrint('⚠️ Error llamar recuperarClave: $e');
-      return false;
+      debugPrint('⚠️ Error llamar cambiarContrasena: $e');
+      return null;
     }
+  }
+
+  /// Extrae el correo de la respuesta del servicio.
+  /// Formato esperado: {"correcto": true, "mensaje": "...", "correo": "..."}
+  /// Devuelve el correo solo si "correcto" es true.
+  String? _extraerCorreo(String body) {
+    final texto = body.trim();
+    if (texto.isEmpty) return null;
+
+    try {
+      final data = jsonDecode(texto);
+      if (data is Map) {
+        if (data['correcto'] == false) return null;
+        final correo = data['correo'];
+        if (correo is String && correo.trim().isNotEmpty) return correo.trim();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Respuesta no es JSON válido: $e');
+    }
+
+    return null;
+  }
+
+  /// Enmascara un correo: pruebaenvio@gmail.com -> pru*****o@gmail.com
+  String _enmascararCorreo(String correo) {
+    final at = correo.indexOf('@');
+    if (at <= 0) return correo;
+
+    final usuario = correo.substring(0, at);
+    final dominio = correo.substring(at); // incluye la @
+
+    if (usuario.length <= 2) {
+      return '${usuario[0]}*****$dominio';
+    }
+
+    final inicio = usuario.substring(0, 3);
+    final fin = usuario.substring(usuario.length - 1);
+    return '$inicio*****$fin$dominio';
   }
 
   @override
@@ -713,8 +739,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
 
-    _usuarioRecController.dispose();
-    _correoRecController.dispose();
+    _cedulaRecController.dispose();
 
     _timer?.cancel();
     super.dispose();

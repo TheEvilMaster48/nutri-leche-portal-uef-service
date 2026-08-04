@@ -23,14 +23,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return Expanded(
       child: InkWell(
         onTap: () {
+          // Ya estamos en Perfil: no recargar la página.
+          if (index == _selectedIndex) return;
+
           setState(() {
             _selectedIndex = index;
           });
           if (index == 0) {
-            Navigator.pushReplacementNamed(context, '/menu');
-          }
-          if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/perfil');
+            // El menú ya está debajo en el stack: volvemos a él sin recrearlo.
+            Navigator.pop(context);
           }
         },
         child: SizedBox(

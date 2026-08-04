@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'core/locale_provider.dart';
 import 'services/auth_service.dart';
 import 'services/evento_service.dart';
+import 'services/mensaje_service.dart';
 import 'services/usuario_service.dart';
 import 'services/global_notifier.dart';
 import 'services/language_service.dart';
@@ -23,6 +24,7 @@ import 'services/sorteo_service.dart';
 import 'screens/login.dart';
 import 'screens/menu.dart';
 import 'screens/eventos_page.dart';
+import 'screens/mensajes_page.dart';
 import 'screens/recursos.dart';
 import 'screens/cumpleanios_screen.dart';
 import 'screens/sugerencia_screen.dart';
@@ -77,6 +79,7 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LanguageService()),
         ChangeNotifierProvider(create: (_) => UsuarioService()),
         ChangeNotifierProvider(create: (_) => EventoService()),
+        ChangeNotifierProvider(create: (_) => MensajeService()),
         ChangeNotifierProvider(create: (_) => CumpleaniosService()),
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
         ChangeNotifierProvider(create: (_) => SugerenciaService()),
@@ -115,6 +118,7 @@ class MyApp extends StatelessWidget {
             '/': (context) => const LoginScreen(),
             '/menu': (context) => const MenuScreen(),
             '/eventos_page': (context) => const EventosPage(),
+            '/mensajes_page': (context) => const MensajesPage(),
             '/recursos': (context) => const RecursosScreen(),
             '/buzon': (context) => const SugerenciaScreen(),
             '/cumpleanios': (context) => const CumpleaniosScreen(),
