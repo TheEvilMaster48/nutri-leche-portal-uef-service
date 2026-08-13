@@ -1,5 +1,8 @@
 class Cumpleanios {
   final int idCumpleanios;
+
+  /// Id de la cabecera de notificación, si el WS lo manda (ver [Evento]).
+  final int idCabecera;
   final String titulo;
   final String descripcion;
   final String tipo;
@@ -12,6 +15,7 @@ class Cumpleanios {
 
   Cumpleanios({
     required this.idCumpleanios,
+    this.idCabecera = 0,
     required this.titulo,
     required this.descripcion,
     required this.tipo,
@@ -25,6 +29,7 @@ class Cumpleanios {
 
   factory Cumpleanios.fromJson(Map<String, dynamic> json) {
     return Cumpleanios(
+      idCabecera: _aIntCumple(json['idCabecera'] ?? json['id_cabecera']),
       idCumpleanios: (json['idCumpleanios'] ?? json['id'] ?? 0) is int
           ? (json['idCumpleanios'] ?? json['id'] ?? 0)
           : int.tryParse(json['idCumpleanios'].toString()) ?? 0,
@@ -53,6 +58,7 @@ class Cumpleanios {
   Map<String, dynamic> toJson() {
     return {
       'idCumpleanios': idCumpleanios,
+      'idCabecera': idCabecera,
       'titulo': titulo,
       'descripcion': descripcion,
       'tipo': tipo,
@@ -65,3 +71,6 @@ class Cumpleanios {
     };
   }
 }
+
+int _aIntCumple(dynamic v) =>
+    v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;

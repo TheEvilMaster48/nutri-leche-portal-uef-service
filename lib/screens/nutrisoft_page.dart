@@ -1,23 +1,24 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:nutri/base/base.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/evento.dart';
-import '../services/evento_service.dart';
+import 'dart:convert';
+
+import '../models/nutrisoft.dart';
+import '../services/nutrisoft_service.dart';
 import '../core/notification_banner.dart';
 import '../services/auth_service.dart';
 import '../widget/eliminar_notificacion.dart';
-import 'detalle_evento_screen.dart';
+import 'detalle_nutrisoft_screen.dart';
 
-class EventosPage extends StatefulWidget {
-  const EventosPage({super.key});
+class NutrisoftPage extends StatefulWidget {
+  const NutrisoftPage({super.key});
 
   @override
-  State<EventosPage> createState() => _EventosPageState();
+  State<NutrisoftPage> createState() => _NutrisoftPageState();
 }
 
-class _EventosPageState extends State<EventosPage> {
+class _NutrisoftPageState extends State<NutrisoftPage> {
   bool _cargando = true;
   int idUsuario = 0;
 
@@ -25,19 +26,17 @@ class _EventosPageState extends State<EventosPage> {
   bool _modoSeleccion = false;
   final Set<int> _seleccionados = <int>{};
 
-  void _alternarSeleccion(int idEvento) {
+  void _alternarSeleccion(int idMensaje) {
     setState(() {
-      if (!_seleccionados.remove(idEvento)) _seleccionados.add(idEvento);
-      // Al deseleccionar el último ítem se sale del modo: quedarse con la barra
-      // de selección vacía no aporta nada.
+      if (!_seleccionados.remove(idMensaje)) _seleccionados.add(idMensaje);
       if (_seleccionados.isEmpty) _modoSeleccion = false;
     });
   }
 
-  void _iniciarSeleccion(int idEvento) {
+  void _iniciarSeleccion(int idMensaje) {
     setState(() {
       _modoSeleccion = true;
-      _seleccionados.add(idEvento);
+      _seleccionados.add(idMensaje);
     });
   }
 
@@ -53,26 +52,23 @@ class _EventosPageState extends State<EventosPage> {
     });
   }
 
-  void _seleccionarTodos(List<Evento> eventos) {
+  void _seleccionarTodos(List<Nutrisoft> lista) {
     setState(() {
-      if (_seleccionados.length == eventos.length) {
+      if (_seleccionados.length == lista.length) {
         _seleccionados.clear();
         _modoSeleccion = false;
       } else {
         _seleccionados
           ..clear()
-          ..addAll(eventos.map((e) => e.idEvento));
+          ..addAll(lista.map((n) => n.idMensaje));
       }
     });
   }
 
-  /// Elimina todo lo seleccionado con una sola confirmación.
-  ///
-  /// Se reusa `eliminarEvento` uno por uno: ya hace el borrado optimista, el
-  /// registro en los ocultos locales y el POST. El backend no tiene un endpoint
-  /// de borrado en lote.
+  /// Elimina todo lo seleccionado con una sola confirmación. Reusa
+  /// `eliminarNutrisoft` uno por uno: el backend no tiene borrado en lote.
   Future<void> _eliminarSeleccionados() async {
-    final service = context.read<EventoService>();
+    final service = context.read<NutrisoftService>();
     final messenger = ScaffoldMessenger.of(context);
     final ids = _seleccionados.toList();
     if (ids.isEmpty) return;
@@ -92,8 +88,10 @@ class _EventosPageState extends State<EventosPage> {
 
     var fallidos = 0;
     for (final id in ids) {
-      final ok =
-          await service.eliminarEvento(idUsuario: idUsuario, idEvento: id);
+      final ok = await service.eliminarNutrisoft(
+        idUsuario: idUsuario,
+        idMensaje: id,
+      );
       if (!ok) fallidos++;
     }
 
@@ -115,92 +113,74 @@ class _EventosPageState extends State<EventosPage> {
     );
   }
 
-  int _getEstado(dynamic evento) {
-    try {
-      // Caso: modelo Evento
-      if (evento is Evento) {
-        final v = evento.estado;
-        if (v is int) return v;
-        if (v is String) return int.tryParse(v as String) ?? 1;
-        return 1;
-      }
-
-      // Caso: Map (cuando viene como dynamic)
-      if (evento is Map) {
-        final v = evento['estado'];
-        if (v is int) return v;
-        if (v is String) return int.tryParse(v) ?? 1;
-      }
-    } catch (_) {}
-
-    return 1; // default: NO pendiente
-  }
-
-
   @override
   void initState() {
     super.initState();
-    _cargarEventos();
+    _cargar();
   }
 
-  Future<void> _cargarEventos() async {
-    final eventoService = context.read<EventoService>();
+  Future<void> _cargar() async {
+    final service = context.read<NutrisoftService>();
 
     try {
       final authService = context.read<AuthService>();
-      final usuarioActual = authService.currentUser;
-      idUsuario = usuarioActual?.id ?? 0;
+      idUsuario = authService.currentUser?.id ?? 0;
 
       if (idUsuario == 0) {
+        // La sesión persistida vive en 'currentUser' como JSON.
         final prefs = await SharedPreferences.getInstance();
-        idUsuario = prefs.getInt('idUsuario') ?? 0;
+        final raw = prefs.getString('currentUser');
+        if (raw != null && raw.isNotEmpty) {
+          final decoded = json.decode(raw);
+          if (decoded is Map) {
+            final valor = decoded['id'] ?? decoded['idUsuario'];
+            idUsuario = valor is int ? valor : int.tryParse('$valor') ?? 0;
+          }
+        }
       }
     } catch (e) {
       debugPrint("No se pudo obtener el idUsuario: $e");
     }
 
     if (idUsuario == 0) {
+      if (!mounted) return;
       NotificationBanner.show(
         context,
-        "No se encontró un usuario válido para cargar los eventos.",
+        "No se encontró un usuario válido para cargar Nutrisoft.",
         NotificationType.error,
       );
       setState(() => _cargando = false);
       return;
     }
 
-    await eventoService.obtenerEventos(idUsuario: idUsuario);
+    await service.obtenerNutrisoft(idUsuario: idUsuario);
+    if (!mounted) return;
     setState(() => _cargando = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final eventos = context.watch<EventoService>().eventos;
+    final items = context.watch<NutrisoftService>().items;
 
-    // Inset físico de la barra de estado / notch. Usamos viewPadding (no
-    // padding) para que siempre refleje el notch real en iOS aunque algún
-    // ancestro haya consumido el SafeArea.
+    // Inset físico de la barra de estado / notch.
     final double topInset = MediaQuery.of(context).viewPadding.top;
 
     return Scaffold(
       backgroundColor: Base().COLOR_BLANCO,
       body: Stack(
         children: [
-          // Fondo azul superior con curva (se extiende bajo la barra de estado)
           ClipPath(
-            clipper: EventosWaveClipper(),
+            clipper: NutrisoftWaveClipper(),
             child: Container(
               height: 120 + topInset,
-              decoration: BoxDecoration(
-                color: Base().COLOR_AZUL_CORP,
-              ),
+              decoration: BoxDecoration(color: Base().COLOR_AZUL_CORP),
             ),
           ),
 
           Column(
             children: [
-              // Header (debajo de la barra de estado en ambas plataformas).
-              // En modo selección se reemplaza por la barra de acciones.
+              // En modo selección el encabezado cede el lugar a la barra de
+              // acciones sobre lo marcado.
               Padding(
                 padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
                 child: _modoSeleccion
@@ -227,7 +207,7 @@ class _EventosPageState extends State<EventosPage> {
                             icon: const Icon(Icons.select_all,
                                 color: Colors.white, size: 24),
                             tooltip: 'Seleccionar todos',
-                            onPressed: () => _seleccionarTodos(eventos),
+                            onPressed: () => _seleccionarTodos(items),
                           ),
                           IconButton(
                             icon: Icon(
@@ -254,7 +234,7 @@ class _EventosPageState extends State<EventosPage> {
                           const SizedBox(width: 8),
                           const Expanded(
                             child: Text(
-                              'EVENTOS CORPORATIVOS',
+                              'NUTRISOFT',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -265,7 +245,7 @@ class _EventosPageState extends State<EventosPage> {
                           ),
                           // Entrada visible al borrado múltiple: el long-press
                           // sobre una tarjeta hace lo mismo, pero no se ve.
-                          if (eventos.isNotEmpty)
+                          if (items.isNotEmpty)
                             IconButton(
                               icon: const Icon(Icons.checklist,
                                   color: Colors.white, size: 26),
@@ -276,10 +256,10 @@ class _EventosPageState extends State<EventosPage> {
                       ),
               ),
 
-                Expanded(
-                  child: SafeArea(
-                    top: false,
-                    child: _cargando
+              Expanded(
+                child: SafeArea(
+                  top: false,
+                  child: _cargando
                       ? Center(
                           child: CircularProgressIndicator(
                             color: Base().COLOR_AZUL_CORP,
@@ -288,14 +268,14 @@ class _EventosPageState extends State<EventosPage> {
                       : RefreshIndicator(
                           onRefresh: () async {
                             await context
-                                .read<EventoService>()
-                                .obtenerEventos(idUsuario: idUsuario);
+                                .read<NutrisoftService>()
+                                .obtenerNutrisoft(idUsuario: idUsuario);
                           },
                           child: SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             child: Column(
                               children: [
-                                // Card con imagen y título
+                                // Encabezado del módulo
                                 Container(
                                   margin: const EdgeInsets.all(16),
                                   padding: const EdgeInsets.all(20),
@@ -304,24 +284,25 @@ class _EventosPageState extends State<EventosPage> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      // Texto a la izquierda
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Eventos Corporativos',
+                                              'Nutrisoft',
                                               style: TextStyle(
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold,
                                                 color: Base().COLOR_AZUL_CORP,
                                               ),
                                             ),
-                                            SizedBox(height: 8),
+                                            const SizedBox(height: 8),
                                             Text(
-                                              'Revisa Todos los Eventos',
+                                              'Comunicados del sistema',
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 color: Base().COLOR_AZUL_CORP,
@@ -331,11 +312,11 @@ class _EventosPageState extends State<EventosPage> {
                                         ),
                                       ),
                                       const SizedBox(width: 16),
-                                      // Imagen a la derecha alineada arriba
                                       ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius:
+                                            BorderRadius.circular(12),
                                         child: Image.asset(
-                                          'assets/icono/detalleevento.jpg',
+                                          'assets/icono/nutri.png',
                                           height: 120,
                                           width: 120,
                                           fit: BoxFit.contain,
@@ -344,13 +325,13 @@ class _EventosPageState extends State<EventosPage> {
                                     ],
                                   ),
                                 ),
-                                
-                                // Título de la sección
+
                                 Container(
-                                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                                  margin:
+                                      const EdgeInsets.fromLTRB(16, 8, 16, 16),
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    'Eventos',
+                                    'Notificaciones',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -358,14 +339,13 @@ class _EventosPageState extends State<EventosPage> {
                                     ),
                                   ),
                                 ),
-                                
-                                // Lista de eventos
-                                eventos.isEmpty
+
+                                items.isEmpty
                                     ? Container(
                                         padding: const EdgeInsets.all(40),
                                         child: Center(
                                           child: Text(
-                                            'No hay eventos disponibles actualmente.',
+                                            'No hay notificaciones de Nutrisoft actualmente.',
                                             style: TextStyle(
                                               fontSize: 15,
                                               color: Base().COLOR_GRIS,
@@ -375,80 +355,72 @@ class _EventosPageState extends State<EventosPage> {
                                         ),
                                       )
                                     : Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16),
                                         child: Column(
-                                          children: eventos.map((evento) {
-                                            return _EventoItem(
-                                              evento: evento,
+                                          children: items.map((item) {
+                                            return _NutrisoftItem(
+                                              item: item,
                                               idUsuario: idUsuario,
                                               modoSeleccion: _modoSeleccion,
                                               seleccionado: _seleccionados
-                                                  .contains(evento.idEvento),
+                                                  .contains(item.idMensaje),
                                               onIniciarSeleccion: () =>
                                                   _iniciarSeleccion(
-                                                      evento.idEvento),
+                                                      item.idMensaje),
                                               onAlternarSeleccion: () =>
                                                   _alternarSeleccion(
-                                                      evento.idEvento),
+                                                      item.idMensaje),
                                             );
                                           }).toList(),
                                         ),
                                       ),
-                                
+
                                 const SizedBox(height: 20),
                               ],
                             ),
                           ),
                         ),
-                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _EventoItem extends StatelessWidget {
-  const _EventoItem({
-    required this.evento,
+class _NutrisoftItem extends StatelessWidget {
+  const _NutrisoftItem({
+    required this.item,
     required this.idUsuario,
     required this.modoSeleccion,
     required this.seleccionado,
     required this.onIniciarSeleccion,
     required this.onAlternarSeleccion,
   });
-  final Evento evento;
+
+  final Nutrisoft item;
   final int idUsuario;
   final bool modoSeleccion;
   final bool seleccionado;
   final VoidCallback onIniciarSeleccion;
   final VoidCallback onAlternarSeleccion;
 
-  IconData _getEventIcon() {
-    if (evento.titulo.toLowerCase().contains('navidad')) {
-      return Icons.card_giftcard;
-    } else if (evento.titulo.toLowerCase().contains('capacitación') ||
-        evento.titulo.toLowerCase().contains('capacitacion')) {
-      return Icons.school;
-    }
-    return Icons.event;
-  }
-
   Future<bool> _confirmarEliminar(BuildContext context) {
     return confirmarEliminacion(
       context,
       titulo: 'Eliminar notificación',
       mensaje:
-          '¿Quieres quitar "${evento.titulo}" de tu lista? No volverá a aparecer en la app.',
+          '¿Quieres quitar "${item.titulo}" de tu lista? No volverá a aparecer en la app.',
     );
   }
 
   /// Pide confirmación y elimina. Se toman el servicio y el messenger antes de
   /// abrir el diálogo porque la tarjeta desaparece del árbol al eliminarse.
   Future<void> _eliminarConConfirmacion(BuildContext context) async {
-    final service = context.read<EventoService>();
+    final service = context.read<NutrisoftService>();
     final messenger = ScaffoldMessenger.of(context);
 
     if (!await _confirmarEliminar(context)) return;
@@ -456,15 +428,13 @@ class _EventoItem extends StatelessWidget {
     await _eliminar(service, messenger);
   }
 
-  /// Envía el POST al backend y avisa el resultado. La tarjeta ya se quitó de
-  /// la lista antes de llegar aquí (borrado optimista en el servicio).
   Future<void> _eliminar(
-    EventoService service,
+    NutrisoftService service,
     ScaffoldMessengerState messenger,
   ) async {
-    final ok = await service.eliminarEvento(
+    final ok = await service.eliminarNutrisoft(
       idUsuario: idUsuario,
-      idEvento: evento.idEvento,
+      idMensaje: item.idMensaje,
     );
 
     messenger.showSnackBar(
@@ -472,7 +442,7 @@ class _EventoItem extends StatelessWidget {
         content: Text(
           ok
               ? 'Notificación eliminada'
-              : 'Se quitó de tu lista, pero no se pudo sincronizar.',
+              : 'No se pudo eliminar la notificación. Intenta de nuevo.',
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -481,17 +451,17 @@ class _EventoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isPendiente = (evento.estado == 0);
+    final bool isPendiente = item.pendiente;
 
     return Dismissible(
-      key: ValueKey('evento_${evento.idEvento}'),
+      key: ValueKey('nutrisoft_${item.idMensaje}'),
       // Con la selección activa el swipe estorba: el gesto lo maneja la lista.
       direction:
           modoSeleccion ? DismissDirection.none : DismissDirection.endToStart,
       background: const FondoEliminar(),
       confirmDismiss: (_) => _confirmarEliminar(context),
       onDismissed: (_) => _eliminar(
-        context.read<EventoService>(),
+        context.read<NutrisoftService>(),
         ScaffoldMessenger.of(context),
       ),
       child: _buildTarjeta(context, isPendiente),
@@ -509,27 +479,26 @@ class _EventoItem extends StatelessWidget {
           return;
         }
 
-        // 1) Abre detalle
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => DetalleEventoScreen(evento: evento),
+            builder: (_) => DetalleNutrisoftScreen(item: item),
           ),
         );
 
-        // 2) Si estaba pendiente, márcalo como visto (backend) y refresca lista
+        if (!context.mounted) return;
+
+        // Si estaba pendiente, se marca como visto y se refresca la lista.
         if (isPendiente) {
           try {
-            // Actualiza backend
-            await context.read<EventoService>().marcarEventoComoVisto(
+            final service = context.read<NutrisoftService>();
+            await service.marcarComoVisto(
               idUsuario: idUsuario,
-              idEvento: evento.idEvento, // revisa: idEvento vs id
+              idMensaje: item.idMensaje,
             );
-
-            // Refresca lista para que cambie el estado en UI
-            await context.read<EventoService>().obtenerEventos(idUsuario: idUsuario);
+            await service.obtenerNutrisoft(idUsuario: idUsuario);
           } catch (e) {
-            debugPrint("Error marcando visto: $e");
+            debugPrint("Error marcando Nutrisoft como visto: $e");
           }
         }
       },
@@ -554,7 +523,7 @@ class _EventoItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icono del evento + badge pendiente
+            // Icono + badge pendiente
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -565,7 +534,7 @@ class _EventoItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    _getEventIcon(),
+                    Icons.campaign_outlined,
                     color: Base().COLOR_AZUL_CORP,
                     size: 32,
                   ),
@@ -589,47 +558,32 @@ class _EventoItem extends StatelessWidget {
 
             const SizedBox(width: 16),
 
-            // Información del evento
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título + chip "Pendiente"
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          evento.titulo,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Base().COLOR_AZUL_CORP,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
                   Text(
-                    evento.fecha,
+                    item.titulo,
                     style: TextStyle(
-                      fontSize: 13,
-                      color: Base().COLOR_GRIS,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Base().COLOR_AZUL_CORP,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
 
-                  if (evento.horaEvento.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                  // Sin fecha ni hora: se adelanta la descripción.
+                  if (item.descripcion.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
                     Text(
-                      evento.horaEvento,
+                      item.descripcion,
                       style: TextStyle(
                         fontSize: 13,
                         color: Base().COLOR_GRIS,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
@@ -648,8 +602,6 @@ class _EventoItem extends StatelessWidget {
                 ),
               )
             else
-              // Eliminar de la lista. Se deja visible (además del swipe) para
-              // que la opción sea evidente.
               IconButton(
                 icon: Icon(
                   Icons.delete_outline,
@@ -666,14 +618,13 @@ class _EventoItem extends StatelessWidget {
   }
 }
 
-
-class EventosWaveClipper extends CustomClipper<Path> {
+class NutrisoftWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    
+
     path.lineTo(0, size.height - 30);
-    
+
     var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
     var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
     path.quadraticBezierTo(
@@ -682,7 +633,7 @@ class EventosWaveClipper extends CustomClipper<Path> {
       firstEndPoint.dx,
       firstEndPoint.dy,
     );
-    
+
     var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
     var secondEndPoint = Offset(size.width, size.height - 30);
     path.quadraticBezierTo(
@@ -691,10 +642,10 @@ class EventosWaveClipper extends CustomClipper<Path> {
       secondEndPoint.dx,
       secondEndPoint.dy,
     );
-    
+
     path.lineTo(size.width, 0);
     path.close();
-    
+
     return path;
   }
 

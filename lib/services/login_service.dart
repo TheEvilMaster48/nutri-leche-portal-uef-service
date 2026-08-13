@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
+import '../base/base.dart';
 import '../models/usuario.dart';
 
 class LoginService {
-  static const String baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
+  static const String baseUrl = "${Base.URL_APP}/loginAPPOficial";
 
   /// 🔐 Realiza login con el backend UEF Service
   Future<Usuario?> loginUEF(String usuario, String password) async {

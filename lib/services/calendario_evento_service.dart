@@ -111,4 +111,11 @@ class CalendarioEventoService extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  /// Descarta la agenda cargada. Se llama al cerrar sesión.
+  void limpiar() {
+    _eventos.clear();
+    _cumpleanios.clear();
+    notifyListeners();
+  }
 }

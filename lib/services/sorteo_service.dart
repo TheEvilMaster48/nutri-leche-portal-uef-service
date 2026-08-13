@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../base/base.dart';
 import '../models/sorteo.dart';
 
 class SorteoService extends ChangeNotifier {
   final List<Sorteo> _sorteos = [];
   List<Sorteo> get sorteos => List.unmodifiable(_sorteos);
 
-  static const String baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1";
+  static const String baseUrl = Base.URL_APPOFICIAL;
 
   Future<void> obtenerSorteos({required int idUsuario}) async {
     final url = Uri.parse("$baseUrl/ObtenerSorteo");

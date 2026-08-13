@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../base/base.dart';
 import '../models/sugerencia.dart';
 import '../services/sugerencia_service.dart';
 import '../core/notification_banner.dart';
@@ -107,9 +108,7 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
     try {
       // HTTP al Webservice
       final response = await http.post(
-        Uri.parse(
-          "https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/insertar_sugerencia",
-        ),
+        Uri.parse("${Base.URL_APPOFICIAL}/insertar_sugerencia"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(map),
       );

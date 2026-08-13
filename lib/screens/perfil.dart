@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/perfil_service.dart';
 import '../models/usuario.dart';
 
 class PerfilScreen extends StatefulWidget {
@@ -12,6 +13,19 @@ class PerfilScreen extends StatefulWidget {
 
 class _PerfilScreenState extends State<PerfilScreen> {
   int _selectedIndex = 2;  // Perfil debe estar seleccionado por defecto
+
+  @override
+  void initState() {
+    super.initState();
+    // Al entrar a Perfil se releen los datos del usuario desde el WS. Si la
+    // consulta falla, la pantalla sigue mostrando la sesión guardada.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recargar());
+  }
+
+  Future<void> _recargar() async {
+    if (!mounted) return;
+    await context.read<PerfilService>().obtenerPerfil();
+  }
 
   Widget _buildBottomNavItem({
     required IconData icon,
@@ -72,7 +86,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
-    final Usuario? usuario = auth.currentUser;
+    final perfilService = context.watch<PerfilService>();
+
+    // Se prefieren los datos frescos del WS; si todavía no llegaron (o la ruta
+    // no existe), se usa la sesión guardada del último login.
+    final Usuario? usuario = perfilService.perfil ?? auth.currentUser;
 
     // Inset inferior (home indicator de iPhone). La barra inferior debe
     // reservar este espacio extra, si no se desborda en iOS.
@@ -116,8 +134,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
             child: Column(
               children: [
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                  // Arrastrar hacia abajo vuelve a consultar los datos.
+                  child: RefreshIndicator(
+                    onRefresh: _recargar,
+                    color: const Color(0xFF0052A3),
+                    child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                     child: Column(
                       children: [
@@ -186,11 +210,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           ),
                           child: Column(
                             children: [
-                              // ID (con imagen)
+                              // CÓDIGO SAP (con imagen)
+                              // Se muestra el código SAP en vez del id interno;
+                              // el id se sigue usando en toda la funcionalidad.
                               _buildInfoItemWithImage(
                                 imagePath: 'assets/icono/id.jpg',
-                                label: 'ID',
-                                value: usuario.id.toString(),
+                                label: 'Código SAP',
+                                value: usuario.codigoSap.isNotEmpty
+                                    ? usuario.codigoSap
+                                    : 'No registrado',
                               ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
@@ -200,7 +228,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 imagePath: 'assets/icono/correo.jpg',
                                 label: 'Correo',
                                 value: usuario.correo,
-                              ),
+                                ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
@@ -213,11 +241,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
                               
-                              // ÁREA (con imagen)
+                              // DEPARTAMENTO (con imagen)
                               _buildInfoItemWithImage(
                                 imagePath: 'assets/icono/area.jpg',
-                                label: 'Área',
-                                value: usuario.areaUsuario.isNotEmpty ? usuario.areaUsuario : 'Administración',
+                                label: 'Departamento',
+                                value: usuario.departamento.isNotEmpty
+                                    ? usuario.departamento
+                                    : 'No registrado',
                               ),
                               
                               const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
@@ -246,6 +276,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         const SizedBox(height: 20),
                       ],
                     ),
+                  ),
                   ),
                 ),
               ],

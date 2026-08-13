@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nutri/base/base.dart';
 import '../models/evento.dart';
+import 'ocultos_store.dart';
 
 class EventoService extends ChangeNotifier {
   final List<Evento> _eventos = [];
   List<Evento> get eventos => List.unmodifiable(_eventos);
+
+  /// Estado con el que el backend marca un evento eliminado por el usuario.
+  static const int estadoEliminado = 2;
+
+  static const String _grupoOcultos = 'eventos';
 
   late String baseUrl = Base().BASE_URL_APPOFICIAL;
 
@@ -29,14 +35,36 @@ class EventoService extends ChangeNotifier {
 
           final List<dynamic> lista = map["appEventoList"];
 
+          // El push identifica el evento con `idCabecera`. Este log dice, corto
+          // y sin que logcat lo trunque, si el WS manda ese campo.
+          final primero = lista.first;
+          if (primero is Map) {
+            debugPrint('EVENTOS: llaves del WS = ${primero.keys.toList()}');
+          }
+          debugPrint('EVENTOS: ids (idEvento/idCabecera) = '
+              '${lista.whereType<Map>().map((e) => "${e['idEvento']}/${e['idCabecera']}").toList()}');
+
+          // Se descartan los eliminados: por estado (si el backend ya lo
+          // marca) y por la lista local de ocultos.
+          final ocultos = await OcultosStore.leer(_grupoOcultos, idUsuario);
+
           _eventos
             ..clear()
-            ..addAll(lista.map((e) => Evento.fromJson(e)));
+            ..addAll(lista
+                .map((e) => Evento.fromJson(e))
+                .where((e) =>
+                    e.estado != estadoEliminado &&
+                    !ocultos.contains(e.idEvento)));
 
           notifyListeners();
           debugPrint("EVENTOS RECIBIDOS (${_eventos.length})");
+        } else {
+          // La lista se deja como está (comportamiento previo), pero se avisa:
+          // un listado vacío explica por sí solo que el deep-link del push no
+          // encuentre el evento.
+          debugPrint('EVENTOS: el WS no devolvió eventos para idUsuario='
+              '$idUsuario → ${map["mensaje"]}');
         }
-        // SI ESTÁ VACÍO → SILENCIO TOTAL
       } else {
         debugPrint("ERROR HTTP: ${response.statusCode}");
       }
@@ -71,6 +99,52 @@ class EventoService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint("ERROR HTTP AL MARCAR EVENTO COMO VISTO: $e");
+    }
+  }
+
+  /// Elimina el evento de la lista de notificaciones del usuario.
+  ///
+  /// Endpoint pendiente en el backend: `eliminar_evento`, con el mismo
+  /// contrato que `evento_id_visto`, cambiando el estado del registro a
+  /// [estadoEliminado] para ese usuario.
+  ///
+  /// Se quita de la lista de inmediato (optimista) y se guarda en los ocultos
+  /// locales; si el POST falla devuelve `false` para que la pantalla avise que
+  /// no se pudo sincronizar, pero la tarjeta no reaparece.
+  Future<bool> eliminarEvento({
+    required int idUsuario,
+    required int idEvento,
+  }) async {
+    final index = _eventos.indexWhere((e) => e.idEvento == idEvento);
+    if (index != -1) {
+      _eventos.removeAt(index);
+      notifyListeners();
+    }
+
+    await OcultosStore.agregar(_grupoOcultos, idUsuario, idEvento);
+
+    final url = Uri.parse("$baseUrl/eliminar_evento");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "idUsuario": idUsuario,
+          "idEvento": idEvento,
+          "estado": estadoEliminado,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint("ELIMINAR EVENTO: HTTP ${response.statusCode}");
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint("ERROR HTTP AL ELIMINAR EVENTO: $e");
+      return false;
     }
   }
 

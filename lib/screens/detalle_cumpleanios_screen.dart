@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../models/cumpleanios.dart';
+import '../models/reaccion.dart';
+import '../widget/barra_reacciones.dart';
+import '../widget/texto_con_enlaces.dart';
 
 class DetalleCumpleaniosScreen extends StatelessWidget {
   final Cumpleanios cumple;
@@ -40,91 +41,6 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
     if (!(uri.isScheme('http') || uri.isScheme('https'))) return '';
 
     return cleaned;
-  }
-
-  Future<void> _openUrl(BuildContext context, String url) async {
-    final cleaned = url
-        .trim()
-        .replaceAll('"', '')
-        .replaceAll("'", '')
-        .replaceAll(RegExp(r'[\r\n]+'), '')
-        .replaceAll(RegExp(r'[)\].,;]+$'), '');
-
-    final uri = Uri.tryParse(cleaned);
-
-    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("URL inválida: $cleaned")),
-      );
-      return;
-    }
-
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No se pudo abrir el enlace")),
-      );
-    }
-  }
-
-  Widget _buildTextWithLinks(BuildContext context, String text) {
-    final RegExp urlRegex =
-    RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
-
-    final spans = <TextSpan>[];
-    int start = 0;
-
-    final matches = urlRegex.allMatches(text);
-
-    for (final match in matches) {
-      if (match.start > start) {
-        spans.add(
-          TextSpan(
-            text: text.substring(start, match.start),
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF333333),
-              height: 1.4,
-            ),
-          ),
-        );
-      }
-
-      final url = match.group(0)!;
-
-      spans.add(
-        TextSpan(
-          text: url,
-          style: const TextStyle(
-            fontSize: 15,
-            color: Color(0xFF0052A3),
-            decoration: TextDecoration.underline,
-            fontWeight: FontWeight.w600,
-            height: 1.4,
-          ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => _openUrl(context, url),
-        ),
-      );
-
-      start = match.end;
-    }
-
-    if (start < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(start),
-          style: const TextStyle(
-            fontSize: 15,
-            color: Color(0xFF333333),
-            height: 1.4,
-          ),
-        ),
-      );
-    }
-
-    return RichText(text: TextSpan(children: spans));
   }
 
   @override
@@ -272,10 +188,30 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                                       _buildInfoRow(
                                         icon: Icons.description,
                                         label: 'Descripción',
-                                        valueWidget: _buildTextWithLinks(
-                                          context,
-                                          descripcionFiltrada,
+                                        valueWidget: TextoConEnlaces(
+                                          texto: descripcionFiltrada,
+                                          estilo: const TextStyle(
+                                            fontSize: 15,
+                                            color: Color(0xFF333333),
+                                            height: 1.4,
+                                          ),
+                                          estiloEnlace: const TextStyle(
+                                            fontSize: 15,
+                                            color: Color(0xFF0052A3),
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor: Color(0xFF0052A3),
+                                            fontWeight: FontWeight.w600,
+                                            height: 1.4,
+                                          ),
                                         ),
+                                      ),
+
+                                      const SizedBox(height: 16),
+                                      BarraReacciones(
+                                        origen: OrigenReaccion.cumpleanios,
+                                        idContenido: cumple.idCumpleanios,
+                                        titulo: '¡Envía tu saludo!',
                                       ),
 
                                       // (Opcional) Si quieres mostrar el link de la imagen para abrirlo

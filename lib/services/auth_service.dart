@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
 import 'package:universal_html/js.dart' as js;
+import '../base/base.dart';
 import '../models/usuario.dart';
 import 'push_service.dart';
 
@@ -16,11 +17,13 @@ class AuthService extends ChangeNotifier {
   Usuario? get currentUser => _currentUser;
   Map<String, dynamic>? get currentNotification => _currentNotification;
 
-  static const String baseUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1";
+  static const String baseUrl = Base.URL_APP;
 
-  static const String loginUrl =
-      "https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/loginAPPOficial";
+  static const String loginUrl = "${Base.URL_APP}/loginAPPOficial";
+
+  static const String tokenUrl = "${Base.URL_APPOFICIAL}/ActualizarToken";
+
+  static const String eliminarTokenUrl = "${Base.URL_APPOFICIAL}/EliminarToken";
 
   // MÉTODO PARA OBTENER EL GÉNERO DESDE EL BACKEND
   Future<String> obtenerGenero(String userId) async {
@@ -163,7 +166,7 @@ class AuthService extends ChangeNotifier {
       if (kIsWeb) {
         js.context.callMethod('console.log', ['🌍 Enviando token en Web: $token']);
         final response = await http.post(
-          Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          Uri.parse(tokenUrl),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
@@ -177,7 +180,7 @@ class AuthService extends ChangeNotifier {
 
       else if (Platform.isAndroid || Platform.isIOS) {
         final response = await http.post(
-          Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/ActualizarToken"),
+          Uri.parse(tokenUrl),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(map),
         );
@@ -205,7 +208,7 @@ class AuthService extends ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse("https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/EliminarToken"),
+        Uri.parse(eliminarTokenUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(map),
       );

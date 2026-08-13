@@ -4,17 +4,19 @@ import 'package:provider/provider.dart';
 import '../base/base.dart';
 import '../services/auth_service.dart';
 import '../services/evento_service.dart';
-import '../services/mensaje_service.dart';
 import '../services/cumpleanios_service.dart';
+import '../services/nutrisoft_service.dart';
 import '../models/usuario.dart';
 import '../services/push_service.dart';
 import '../services/badge_service.dart';
+import '../services/reaccion_service.dart';
+import '../services/notification_bus.dart';
+import '../services/sorteo_service.dart';
+import '../services/calendario_evento_service.dart';
+import '../services/sugerencia_service.dart';
+import '../services/usuario_service.dart';
 
-class FirebaseNotificationBus {
-  static final _controller = StreamController<Map<String, dynamic>>.broadcast();
-  static Stream<Map<String, dynamic>> get stream => _controller.stream;
-  static void add(Map<String, dynamic> data) => _controller.add(data);
-}
+export '../services/notification_bus.dart' show FirebaseNotificationBus;
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -28,14 +30,13 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
 
   final Map<String, int> _notificaciones = {
     'eventos': 0,
-    'mensajes': 0,
     'cumpleanios': 0,
     'calendario': 0,
+    'nutrisoft': 0,
   };
 
   bool useLocalGif = true;
-  String url =
-      "https://servicioslsa.nutri.com.ec/resources/output-onlinegiftools.gif";
+  String url = "${Base.URL_RECURSOS}/output-onlinegiftools.gif";
 
   @override
   void initState() {
@@ -47,6 +48,11 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     // Inicializar PushService PRIMERO
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializePushService();
+      // Si la app se abrió tocando una notificación (o se tocó una sin sesión),
+      // ahora que el menú está montado se salta al detalle correspondiente.
+      // Un frame de gracia para que el Navigator del menú quede asentado.
+      await Future.delayed(const Duration(milliseconds: 300));
+      await PushService.instance.procesarPendiente();
     });
 
     // Escuchar notificaciones
@@ -56,14 +62,15 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
         final tipo = data['tipo'] ?? '';
         if (tipo == 'evento') {
           _notificaciones['eventos'] = (_notificaciones['eventos'] ?? 0) + 1;
-        } else if (tipo == 'mensaje') {
-          _notificaciones['mensajes'] = (_notificaciones['mensajes'] ?? 0) + 1;
         } else if (tipo == 'cumpleanios') {
           _notificaciones['cumpleanios'] =
               (_notificaciones['cumpleanios'] ?? 0) + 1;
         } else if (tipo == 'calendario') {
           _notificaciones['calendario'] =
               (_notificaciones['calendario'] ?? 0) + 1;
+        } else if (tipo == 'nutrisoft') {
+          _notificaciones['nutrisoft'] =
+              (_notificaciones['nutrisoft'] ?? 0) + 1;
         }
       });
       // Refleja el nuevo total en el ícono de la app.
@@ -109,8 +116,8 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     try {
       final eventoService = context.read<EventoService>();
-      final mensajeService = context.read<MensajeService>();
       final cumpleService = context.read<CumpleaniosService>();
+      final nutrisoftService = context.read<NutrisoftService>();
       final auth = context.read<AuthService>();
       final usuario = auth.currentUser;
       if (usuario == null) return;
@@ -119,19 +126,19 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
       final eventos = eventoService.eventos;
       final pendientesEventos = eventos.where((e) => e.estado == 0).length;
 
-      await mensajeService.obtenerMensajes(idUsuario: usuario.id);
-      final mensajes = mensajeService.mensajes;
-      final pendientesMensajes = mensajes.where((m) => m.visto == 0).length;
-
       await cumpleService.obtenerCumpleanios(idUsuario: usuario.id);
       final cumpleanios = cumpleService.cumpleanios;
       final pendientesCumples = cumpleanios.where((c) => c.estado == 0).length;
 
+      await nutrisoftService.obtenerNutrisoft(idUsuario: usuario.id);
+      final pendientesNutrisoft =
+          nutrisoftService.items.where((n) => n.pendiente).length;
+
       if (mounted) {
         setState(() {
           _notificaciones['eventos'] = pendientesEventos;
-          _notificaciones['mensajes'] = pendientesMensajes;
           _notificaciones['cumpleanios'] = pendientesCumples;
+          _notificaciones['nutrisoft'] = pendientesNutrisoft;
         });
         // Sincroniza el badge del ícono con el total real de pendientes.
         await BadgeService.actualizar(_totalNotificaciones);
@@ -153,6 +160,23 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
 
   Future<void> _cerrarSesion() async {
     final auth = context.read<AuthService>();
+    final reacciones = context.read<ReaccionService>();
+
+    // Los providers viven por encima de MaterialApp y sobreviven al logout, así
+    // que hay que vaciarlos a mano: si no, el siguiente usuario que entre ve por
+    // un instante los datos del anterior. Se leen ANTES del await para no tocar
+    // el context después del gap asíncrono.
+    final eventos = context.read<EventoService>();
+    final cumpleanios = context.read<CumpleaniosService>();
+    final nutrisoft = context.read<NutrisoftService>();
+    final sorteos = context.read<SorteoService>();
+    final calendario = context.read<CalendarioEventoService>();
+    final sugerencias = context.read<SugerenciaService>();
+    final usuarios = context.read<UsuarioService>();
+    // PerfilService NO se captura: es un ChangeNotifierProxyProvider sobre
+    // AuthService, así que `logout()` (que notifica) lo reconstruye desde cero
+    // y descarta esta instancia. Usarla después del await explota con
+    // "used after being disposed", y limpiarla no haría falta igual.
 
     final confirmLogout = await showDialog<bool>(
       context: context,
@@ -193,6 +217,26 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
       await auth.logout();
       await PushService.instance.stopCompletely();
       await BadgeService.limpiar();
+      // La caché de reacciones es por usuario: se descarta al salir.
+      await reacciones.limpiar();
+
+      // Resto de datos de la sesión que quedaban en memoria.
+      eventos.limpiar();
+      cumpleanios.limpiar();
+      nutrisoft.limpiar();
+      sorteos.limpiar();
+      calendario.limpiar();
+      sugerencias.limpiar();
+      usuarios.cerrarSesion();
+
+      // Imágenes descargadas (fotos de perfil, adjuntos de eventos): son del
+      // usuario que sale y no deben reaparecer en la sesión siguiente.
+      imageCache.clear();
+      imageCache.clearLiveImages();
+
+      // Los contadores del menú se reinician para que el badge no arrastre
+      // pendientes del usuario anterior.
+      _notificaciones.updateAll((clave, cantidad) => 0);
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -239,6 +283,14 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
         'imagen': 'assets/icono/cumpleanos.jpg',
         'ruta': '/cumpleanios',
         'tipo': 'cumpleanios',
+      },
+      {
+        'titulo': 'Nutrisoft',
+        'subtitulo': 'Comunicados del sistema',
+        // Ícono en vez de imagen: el logo no decía nada del módulo.
+        'icono': Icons.work_outline,
+        'ruta': '/nutrisoft',
+        'tipo': 'nutrisoft',
       },
       {
         'titulo': 'Calendario',
@@ -334,10 +386,11 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
                         context,
                         menus[index]['titulo'],
                         menus[index]['subtitulo'],
-                        menus[index]['imagen'],
+                        menus[index]['imagen'] as String?,
                         menus[index]['ruta'],
                         tipo: tipo,
                         badge: badge,
+                        icono: menus[index]['icono'] as IconData?,
                       );
                     },
                   ),
@@ -500,16 +553,19 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     BuildContext context,
     String title,
     String subtitle,
-    String imagePath,
+    String? imagePath,
     String route, {
     String? tipo,
     int badge = 0,
+    IconData? icono,
   }) {
     double iconWidth = 60;
     double iconHeight = 60;
     BoxFit iconFit = BoxFit.contain;
 
-    if (imagePath.contains('eventos.jpg')) {
+    if (imagePath == null) {
+      // Entrada dibujada con ícono; los tamaños de imagen no aplican.
+    } else if (imagePath.contains('eventos.jpg')) {
       iconWidth = 80;
       iconHeight = 80;
     } else if (imagePath.contains('cumpleanos.jpg')) {
@@ -518,6 +574,9 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     } else if (imagePath.contains('calendario.jpg')) {
       iconWidth = 80;
       iconHeight = 80;
+    } else if (imagePath.contains('nutri.png')) {
+      iconWidth = 70;
+      iconHeight = 70;
     } else if (imagePath.contains('correo.jpg')) {
       iconWidth = 40;
       iconHeight = 40;
@@ -527,7 +586,9 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     return InkWell(
       onTap: () {
         Navigator.pushNamed(context, route).then((_) async {
-          if (tipo == 'eventos' || tipo == 'mensajes' || tipo == 'cumpleanios') {
+          if (tipo == 'eventos' ||
+              tipo == 'cumpleanios' ||
+              tipo == 'nutrisoft') {
             await _actualizarContadoresPendientes();
           } else if (tipo != null) {
             setState(() => _notificaciones[tipo] = 0);
@@ -557,15 +618,31 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      imagePath,
-                      width: iconWidth,
-                      height: iconHeight,
-                      fit: iconFit,
+                  if (icono != null)
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Base().COLOR_AZUL_CORP.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        icono,
+                        size: 34,
+                        color: Base().COLOR_AZUL_CORP,
+                      ),
+                    )
+                  else
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        imagePath!,
+                        width: iconWidth,
+                        height: iconHeight,
+                        fit: iconFit,
+                      ),
                     ),
-                  ),
 
                   // ✅ BADGE (pendientes)
                   if (badge > 0)

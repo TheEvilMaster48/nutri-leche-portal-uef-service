@@ -8,8 +8,15 @@ class Usuario {
   final String modulos;      
   final String usuario;      
   final String centro;       
-  final String? cedula;  
-  final String? genero;    
+  final String? cedula;
+  final String? genero;
+
+  /// Código SAP del empleado. Es lo que se MUESTRA en el perfil en lugar del
+  /// [id]; el [id] se sigue usando para toda la funcionalidad (requests al WS).
+  final String codigoSap;
+
+  /// Departamento del empleado. Reemplaza a [areaUsuario] en la vista de perfil.
+  final String departamento;
 
   Usuario({
     required this.id,
@@ -22,7 +29,9 @@ class Usuario {
     required this.usuario,
     required this.centro,
     required this.cedula,
-    required this.genero
+    required this.genero,
+    this.codigoSap = '',
+    this.departamento = '',
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -46,6 +55,11 @@ class Usuario {
           json['dni'] ??
           json['ci'],
       genero: json['genero'] ?? '',
+      codigoSap:
+          (json['codigoSap'] ?? json['codigo_sap'] ?? json['codigoSAP'] ?? '')
+              .toString(),
+      departamento:
+          (json['departamento'] ?? json['departamentoNombre'] ?? '').toString(),
     );
   }
 
@@ -62,6 +76,8 @@ class Usuario {
       'centro': centro,
       'cedula': cedula,
       'genero': genero,
+      'codigoSap': codigoSap,
+      'departamento': departamento,
     };
   }
 }

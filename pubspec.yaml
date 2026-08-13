@@ -1,7 +1,7 @@
 name: nutri
 description: Portal de Empleados Nutri Ecuador
 publish_to: 'none'
-version: 2.2.0+8
+version: 3.0.0+9
 
 environment:
   sdk: '>=3.7.0 <4.0.0'

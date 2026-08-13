@@ -50,9 +50,12 @@ class DefaultFirebaseOptions {
     measurementId: 'G-3VYNVSTRCM',
   );
 
+  // App "AppOficialAndroid" del proyecto nutri-lsa → package com.nutrileche.portal
+  // (debe coincidir con el applicationId de android/app/build.gradle.kts; si no,
+  // el token FCM se registra contra otra app y los push no llegan).
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAW-FEPFZS5eu3lYO8Dv51I_aXWyUppY5Q',
-    appId: '1:879259228713:android:ecc5b346fcc5c30527da38',
+    appId: '1:879259228713:android:9547e54ae71ce71627da38',
     messagingSenderId: '879259228713',
     projectId: 'nutri-lsa',
     storageBucket: 'nutri-lsa.firebasestorage.app',

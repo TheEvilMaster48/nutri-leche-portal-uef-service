@@ -1,4 +1,10 @@
+int _aInt(dynamic v) =>
+    v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;
+
 class CalendarioEvento {
+  /// Id del evento corporativo (`idEvento`). Es el mismo que usa `Evento`, así
+  /// que las reacciones hechas desde el calendario y desde la lista de eventos
+  /// caen sobre el mismo registro.
   final int id;
   final String titulo;
   final String descripcion;
@@ -21,9 +27,10 @@ class CalendarioEvento {
 
   factory CalendarioEvento.fromJson(Map<String, dynamic> json) {
     return CalendarioEvento(
-      id: json['id'] is int
-          ? json['id']
-          : int.tryParse(json['id'].toString()) ?? 0,
+      // `ObtenerEventos` (el mismo WS que alimenta EventoService) manda el id
+      // en `idEvento`; leer solo `id` dejaba todo el calendario en 0 y sin
+      // forma de asociarle reacciones. Se aceptan ambos nombres.
+      id: _aInt(json['idEvento'] ?? json['id']),
       titulo: json['titulo']?.toString() ?? '',
       descripcion: json['descripcion']?.toString() ?? '',
       fecha: json['fecha']?.toString() ?? '',

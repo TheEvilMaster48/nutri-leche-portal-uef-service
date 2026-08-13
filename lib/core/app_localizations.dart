@@ -15,7 +15,7 @@ class AppLocalizations {
   static final Map<String, Map<String, String>> _localizedValues = {
     'es': {
       'app_title': 'Nutri',
-      'app_subtitle': 'Ecuador - Portal de Empleados',
+      'app_subtitle': 'Nutri Notificaciones',
       'login': 'Iniciar Sesión',
       'register': 'Registrarse',
       'username': 'Usuario',

@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../base/base.dart';
 import '../core/notification_banner.dart';
 import '../models/sugerencia.dart';
 
 class SugerenciaService with ChangeNotifier {
-  final String baseUrl =
-      'https://servicioslsa.nutri.com.ec/nutrisoft/rest/app/api/v1/sugerencia';
+  final String baseUrl = '${Base.URL_APP}/sugerencia';
 
   List<Sugerencia> _sugerencias = [];
   List<Sugerencia> get sugerencias => _sugerencias;
@@ -93,5 +93,11 @@ class SugerenciaService with ChangeNotifier {
         NotificationType.error,
       );
     }
+  }
+
+  /// Descarta las sugerencias cargadas. Se llama al cerrar sesión.
+  void limpiar() {
+    _sugerencias = [];
+    notifyListeners();
   }
 }

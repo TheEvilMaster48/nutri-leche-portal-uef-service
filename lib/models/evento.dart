@@ -1,5 +1,12 @@
 class Evento {
   final int idEvento;
+
+  /// Id de la cabecera de notificación, si el WS lo manda.
+  ///
+  /// El push de eventos/cumpleaños/sorteos identifica el contenido con
+  /// `idCabecera`, que no necesariamente es el mismo número que [idEvento].
+  /// Queda en 0 si `ObtenerEventos` no lo devuelve.
+  final int idCabecera;
   final String titulo;
   final String descripcion;
   final String tipo;
@@ -16,6 +23,7 @@ class Evento {
 
   Evento({
     required this.idEvento,
+    this.idCabecera = 0,
     required this.titulo,
     required this.descripcion,
     required this.tipo,
@@ -30,6 +38,7 @@ class Evento {
 
   Map<String, dynamic> toJson() => {
         'idEvento': idEvento,
+        'idCabecera': idCabecera,
         'titulo': titulo,
         'descripcion': descripcion,
         'tipo': tipo,
@@ -46,6 +55,7 @@ class Evento {
         idEvento: (json['idEvento'] ?? json['id'] ?? 0) is int
             ? (json['idEvento'] ?? json['id'] ?? 0)
             : int.tryParse(json['idEvento'].toString()) ?? 0,
+        idCabecera: _aInt(json['idCabecera'] ?? json['id_cabecera']),
         titulo: json['titulo']?.toString() ?? '',
         descripcion: json['descripcion']?.toString() ?? '',
         tipo: json['tipo']?.toString() ?? '',
@@ -72,3 +82,6 @@ class Evento {
             : 0,
       );
 }
+
+int _aInt(dynamic v) =>
+    v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;

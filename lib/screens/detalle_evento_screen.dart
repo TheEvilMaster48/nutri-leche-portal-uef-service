@@ -1,9 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:media_store_plus/media_store_plus.dart';
@@ -18,6 +16,9 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import '../models/evento.dart';
 import '../models/calendario_evento.dart';
+import '../models/reaccion.dart';
+import '../widget/barra_reacciones.dart';
+import '../widget/texto_con_enlaces.dart';
 
 class DetalleEventoScreen extends StatefulWidget {
   final dynamic evento;
@@ -41,20 +42,16 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
   bool _isPdf = false;
   bool _isVideo = false;
 
+  /// `true` solo si el evento trae un archivo adjunto usable (URL http/https).
+  /// Si el WS no manda nada — o manda algo que no es una URL — la sección de
+  /// multimedia no se dibuja: nada de recuadro gris con ícono de "sin imagen".
+  bool _tieneArchivo = false;
+
   File? _pdfFile;
 
   double get _mediaHeight => MediaQuery.of(context).size.height * 0.35;
 
   final MediaStore _mediaStore = MediaStore();
-
-  /// Un recognizer por URL detectada en el texto libre. Se reutilizan entre
-  /// builds (no se recrean) y se liberan al destruir la pantalla.
-  final Map<String, TapGestureRecognizer> _linkRecognizers = {};
-
-  /// http/https hasta el primer espacio o carácter de cierre. Se excluyen los
-  /// signos finales de puntuación al momento de limpiar la coincidencia.
-  static final RegExp _urlRegex =
-      RegExp(r'https?:\/\/[^\s<>"\)\]]+', caseSensitive: false);
 
   // -------------------------
   // Helpers URL / Tipo archivo
@@ -66,6 +63,47 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
     return uri != null &&
         uri.hasScheme &&
         (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
+  /// Valores que el WS manda cuando el evento NO tiene adjunto. Llegan como
+  /// texto, así que un simple `isNotEmpty` no alcanza.
+  static const Set<String> _valoresSinArchivo = {
+    'null',
+    'nulo',
+    'undefined',
+    'n/a',
+    'na',
+    'none',
+    'false',
+    '0',
+    '-',
+    '--',
+    'sin imagen',
+    'sin archivo',
+  };
+
+  /// `true` solo si [v] es una URL http/https que apunta a un archivo concreto.
+  ///
+  /// Descarta: vacío, los textos de [_valoresSinArchivo], cualquier cosa que no
+  /// sea URL, y URLs sin nombre de archivo (`https://host/`, `.../uploads/`,
+  /// `.../null`) que es lo que devuelve el backend cuando concatena una ruta
+  /// vacía a la base.
+  bool _urlApuntaAArchivo(String v) {
+    if (v.isEmpty) return false;
+    if (_valoresSinArchivo.contains(v.toLowerCase())) return false;
+    if (!_isHttpUrl(v)) return false;
+
+    final uri = Uri.tryParse(v);
+    if (uri == null) return false;
+
+    final segmentos =
+        uri.pathSegments.where((s) => s.trim().isNotEmpty).toList();
+    if (segmentos.isEmpty) return false;
+
+    final ultimo = segmentos.last.toLowerCase();
+    if (_valoresSinArchivo.contains(ultimo)) return false;
+
+    return true;
   }
 
   String _lowerExtFromUrl(String url) {
@@ -282,109 +320,100 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
             ? evento.imagenBase64
             : (evento.imagenBase64 ?? evento.imagenPath);
 
-    _mediaUrl = url?.trim();
+    final String crudo = (url ?? '').trim();
+    debugPrint('EVENTO ADJUNTO → valor recibido: "$crudo"');
 
-    final hasMedia = _mediaUrl != null && _mediaUrl!.isNotEmpty;
-    if (!hasMedia) return;
-
-    if (!_isHttpUrl(_mediaUrl!)) {
-      // si el WS manda algo raro, no intentamos
-      _mediaError = true;
+    if (!_urlApuntaAArchivo(crudo)) {
+      // El evento no trae adjunto: la sección multimedia no se dibuja.
+      _mediaUrl = null;
+      debugPrint('EVENTO ADJUNTO: sin archivo, no se muestra la sección');
       return;
     }
 
-    _isImage = _looksLikeImageUrl(_mediaUrl!);
-    _isPdf = _looksLikePdfUrl(_mediaUrl!);
-    _isVideo = _looksLikeVideoUrl(_mediaUrl!);
+    _mediaUrl = crudo;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_isPdf) {
-        _initPdfFromUrl(_mediaUrl!);
-      } else if (_isVideo) {
-        _initAndPlayVideoFromUrl(_mediaUrl!);
+    _isImage = _looksLikeImageUrl(crudo);
+    _isPdf = _looksLikePdfUrl(crudo);
+    _isVideo = _looksLikeVideoUrl(crudo);
+
+    if (_isImage || _isPdf || _isVideo) {
+      _tieneArchivo = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_isPdf) {
+          _initPdfFromUrl(crudo);
+        } else if (_isVideo) {
+          _initAndPlayVideoFromUrl(crudo);
+        }
+      });
+      return;
+    }
+
+    // La URL no tiene extensión reconocible (p. ej. links firmados o rutas sin
+    // ".ext"). En vez de pintar un recuadro gris con ícono de archivo, se
+    // pregunta al servidor qué es: si no es imagen/PDF/video —o no existe— la
+    // sección queda oculta. Se mantiene `_tieneArchivo = false` mientras se
+    // resuelve para no mostrar un placeholder que luego desaparece.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _resolverTipoPorContentType(crudo),
+    );
+  }
+
+  /// Averigua el tipo real del adjunto leyendo el `Content-Type`.
+  ///
+  /// Se usa un GET con `Range: bytes=0-0` (en lugar de HEAD) porque varios
+  /// servidores responden 405 al HEAD; el cliente se cierra en cuanto llegan las
+  /// cabeceras, así que no se descarga el archivo completo.
+  Future<void> _resolverTipoPorContentType(String url) async {
+    String contentType = '';
+    final client = http.Client();
+
+    try {
+      final request = http.Request('GET', Uri.parse(url))
+        ..headers['Range'] = 'bytes=0-0';
+      final respuesta = await client.send(request);
+
+      if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
+        contentType = (respuesta.headers['content-type'] ?? '').toLowerCase();
+      } else {
+        debugPrint('EVENTO ADJUNTO: HTTP ${respuesta.statusCode} → se oculta');
       }
+    } catch (e) {
+      debugPrint('EVENTO ADJUNTO: no se pudo verificar el archivo: $e');
+    } finally {
+      client.close();
+    }
+
+    if (!mounted) return;
+
+    final esImagen = contentType.startsWith('image/');
+    final esPdf = contentType.contains('pdf');
+    final esVideo = contentType.startsWith('video/');
+
+    if (!esImagen && !esPdf && !esVideo) {
+      debugPrint('EVENTO ADJUNTO: content-type "$contentType" no mostrable');
+      setState(() => _tieneArchivo = false);
+      return;
+    }
+
+    setState(() {
+      _isImage = esImagen;
+      _isPdf = esPdf;
+      _isVideo = esVideo;
+      _tieneArchivo = true;
     });
+
+    if (esPdf) {
+      await _initPdfFromUrl(url);
+    } else if (esVideo) {
+      await _initAndPlayVideoFromUrl(url);
+    }
   }
 
   @override
   void dispose() {
     _player?.dispose();
-    _limpiarRecognizers();
     super.dispose();
-  }
-
-  void _limpiarRecognizers() {
-    for (final r in _linkRecognizers.values) {
-      r.dispose();
-    }
-    _linkRecognizers.clear();
-  }
-
-  Future<void> _abrirEnlace(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-
-    bool ok = false;
-    try {
-      ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      ok = false;
-    }
-
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el enlace: $url')),
-      );
-    }
-  }
-
-  /// Convierte el texto libre en un `Text.rich` donde las URLs quedan
-  /// subrayadas y se pueden tocar. Sin esto la descripción se pinta como texto
-  /// plano y los enlaces enviados en el evento no son accionables.
-  Widget _textoConEnlaces(String value, TextStyle baseStyle) {
-    final matches = _urlRegex.allMatches(value).toList();
-    if (matches.isEmpty) return Text(value, style: baseStyle);
-
-    final linkStyle = baseStyle.copyWith(
-      color: Base().COLOR_AZUL_CORP,
-      decoration: TextDecoration.underline,
-      decorationColor: Base().COLOR_AZUL_CORP,
-      fontWeight: FontWeight.w600,
-    );
-
-    final spans = <InlineSpan>[];
-    int cursor = 0;
-
-    for (final m in matches) {
-      if (m.start > cursor) {
-        spans.add(TextSpan(text: value.substring(cursor, m.start)));
-      }
-
-      // La puntuación final suele pertenecer a la frase, no a la URL.
-      var url = m.group(0)!;
-      while (url.isNotEmpty && '.,;:!?'.contains(url[url.length - 1])) {
-        url = url.substring(0, url.length - 1);
-      }
-
-      final recognizer = _linkRecognizers.putIfAbsent(
-        url,
-        () => TapGestureRecognizer()..onTap = () => _abrirEnlace(url),
-      );
-
-      spans.add(TextSpan(
-        text: url,
-        style: linkStyle,
-        recognizer: recognizer,
-      ));
-
-      cursor = m.start + url.length;
-    }
-
-    if (cursor < value.length) {
-      spans.add(TextSpan(text: value.substring(cursor)));
-    }
-
-    return Text.rich(TextSpan(style: baseStyle, children: spans));
   }
 
   // -------------------------
@@ -405,12 +434,20 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
         ? (evento.horaEvento.isNotEmpty ? evento.horaEvento : '')
         : (evento.hora ?? '');
 
-    Widget buildMedia() {
-      final hasMedia = _mediaUrl != null && _mediaUrl!.trim().isNotEmpty;
+    // Las reacciones se guardan contra el id del evento corporativo.
+    //
+    // Esta pantalla se reutiliza para el calendario (CalendarioEvento), y esos
+    // registros salen del MISMO `ObtenerEventos`: su `id` es el `idEvento`. Por
+    // eso ambos casos reaccionan sobre el mismo contenido y lo que se marque
+    // desde el calendario se ve también en la lista de eventos.
+    final int idParaReacciones = (evento is Evento)
+        ? evento.idEvento
+        : (evento is CalendarioEvento ? evento.id : 0);
 
-      if (!hasMedia) {
-        return _placeholder(Icons.image_not_supported);
-      }
+    Widget buildMedia() {
+      // Sin adjunto no se dibuja nada (la sección ya viene filtrada desde el
+      // build, esto es solo una red de seguridad).
+      if (!_tieneArchivo) return const SizedBox.shrink();
 
       // ✅ 1) Imagen por URL (incluye GIF)
       if (_isImage) {
@@ -588,8 +625,9 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
         );
       }
 
-      // Desconocido
-      return _placeholder(Icons.insert_drive_file);
+      // Tipo no mostrable: no se pinta nada (lo resuelve
+      // `_resolverTipoPorContentType`, que oculta la sección).
+      return const SizedBox.shrink();
     }
 
     // Inset físico de la barra de estado / notch (consistente iOS/Android).
@@ -706,13 +744,27 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
                                 ],
                               ),
                             ),
-                            ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(20),
-                                topRight: Radius.circular(20),
+                            // Solo se muestra el bloque multimedia si el evento
+                            // realmente trae un archivo.
+                            if (_tieneArchivo)
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(20),
+                                  topRight: Radius.circular(20),
+                                ),
+                                child: buildMedia(),
                               ),
-                              child: buildMedia(),
-                            ),
+                            // id 0 = registro sin identificar: no hay contra qué
+                            // guardar la reacción.
+                            if (idParaReacciones > 0)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                    24, 20, 24, 24),
+                                child: BarraReacciones(
+                                  origen: OrigenReaccion.evento,
+                                  idContenido: idParaReacciones,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -790,7 +842,7 @@ class _DetalleEventoScreenState extends State<DetalleEventoScreen> {
                     height: 1.4,
                   );
                   return detectarEnlaces
-                      ? _textoConEnlaces(value, estilo)
+                      ? TextoConEnlaces(texto: value, estilo: estilo)
                       : Text(value, style: estilo);
                 }),
               ],

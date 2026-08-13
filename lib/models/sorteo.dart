@@ -1,5 +1,8 @@
 class Sorteo {
   final int id;
+
+  /// Id de la cabecera de notificación, si el WS lo manda (ver [Evento]).
+  final int idCabecera;
   final String titulo;
   final String descripcion;
   final String fecha;
@@ -12,6 +15,7 @@ class Sorteo {
 
   Sorteo({
     required this.id,
+    this.idCabecera = 0,
     required this.titulo,
     required this.descripcion,
     required this.fecha,
@@ -37,6 +41,7 @@ class Sorteo {
 
   factory Sorteo.fromJson(Map<String, dynamic> json) => Sorteo(
         id: json['id'] ?? 0,
+        idCabecera: _aIntSorteo(json['idCabecera'] ?? json['id_cabecera']),
         titulo: json['titulo'] ?? '',
         descripcion: json['descripcion'] ?? '',
         fecha: json['fecha'] ?? '',
@@ -49,3 +54,6 @@ class Sorteo {
             : 0,
       );
 }
+
+int _aIntSorteo(dynamic v) =>
+    v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;

@@ -13,7 +13,7 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:label="Portal Nutri"
+        android:label="Nutri Notificaciones"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
@@ -21,7 +21,6 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -38,7 +37,24 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- ✅ El push manda click_action=FLUTTER_NOTIFICATION_CLICK. FCM
+                 arma el intent del tap con esa acción, así que MainActivity
+                 tiene que declararla: sin este filtro Android no encuentra a
+                 quién entregar el intent y tocar la notificación no hace nada
+                 (ni siquiera abre la app). -->
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
+        <!-- ✅ Canal por defecto de las notificaciones que dibuja FCM cuando la
+             app está en segundo plano o cerrada. Sin esto, Android 8+ las manda
+             al canal fallback y pierden la importancia/sonido del canal propio. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

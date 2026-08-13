@@ -9,7 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
-import '../base/Base.dart'; // <-- AJUSTA la ruta según tu proyecto
+import '../base/base.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   final _cedulaRecController = TextEditingController();
+  final _cedulaRecUsuarioController = TextEditingController();
 
 
   bool _obscurePassword = true;
@@ -116,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Texto Portal de Empleados
                       Text(
-                        'PORTAL DE EMPLEADOS',
+                        'NUTRI NOTIFICACIONES',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -498,21 +499,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 2),
 
-                      // Botón Recuperar Contraseña (NUEVO)
-                      TextButton(
-                        onPressed: _mostrarDialogRecuperarClave,
-                        style: TextButton.styleFrom(
-                          foregroundColor: base.COLOR_BLANCO,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
-                        child: Text(
-                          'Recuperar contraseña',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: base.COLOR_BLANCO,
+                      // Botones Recuperar Usuario / Recuperar Contraseña
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: _mostrarDialogRecuperarUsuario,
+                            style: TextButton.styleFrom(
+                              foregroundColor: base.COLOR_BLANCO,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: Text(
+                              'Recuperar usuario',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: base.COLOR_BLANCO,
+                              ),
+                            ),
                           ),
-                        ),
+                          Text(
+                            '|',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: base.COLOR_BLANCO.withOpacity(0.6),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _mostrarDialogRecuperarClave,
+                            style: TextButton.styleFrom(
+                              foregroundColor: base.COLOR_BLANCO,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: Text(
+                              'Recuperar contraseña',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: base.COLOR_BLANCO,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 10),
@@ -667,13 +702,170 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
 
+  // =========================
+  //  DIALOG RECUPERAR USUARIO
+  // =========================
+  Future<void> _mostrarDialogRecuperarUsuario() async {
+    final parentContext = context;
+
+    _cedulaRecUsuarioController.clear();
+
+    bool enviando = false;
+
+    await showDialog(
+      context: parentContext,
+      barrierDismissible: !enviando,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setStateDialog) {
+            return AlertDialog(
+              scrollable: true,
+              backgroundColor: base.COLOR_BLANCO,
+              title: Text(
+                'Recuperar usuario',
+                style: TextStyle(color: base.COLOR_AZUL_CORP),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Ingrese su número de cédula. Le enviaremos su usuario '
+                    'al correo registrado.',
+                    style: TextStyle(color: base.COLOR_AZUL_CORP, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _cedulaRecUsuarioController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Cédula',
+                      labelStyle: TextStyle(color: base.COLOR_AZUL_CORP),
+                      prefixIcon: Icon(Icons.badge_outlined,
+                          color: base.COLOR_AZUL_CORP),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: base.COLOR_AZUL_CORP),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: enviando
+                      ? null
+                      : () {
+                    FocusScope.of(dialogContext).unfocus();
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: base.COLOR_AZUL_CORP,
+                    foregroundColor: base.COLOR_BLANCO,
+                  ),
+                  onPressed: enviando
+                      ? null
+                      : () async {
+                    final cedula = _cedulaRecUsuarioController.text.trim();
+
+                    if (cedula.isEmpty) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ingrese su número de cédula.'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+
+                    setStateDialog(() => enviando = true);
+
+                    final correo = await _enviarRecuperacionUsuario(
+                      cedula: cedula,
+                    );
+
+                    if (!mounted) return;
+
+                    setStateDialog(() => enviando = false);
+
+                    if (correo != null && correo.isNotEmpty) {
+                      FocusScope.of(dialogContext).unfocus();
+                      Navigator.of(dialogContext).pop();
+
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Se ha enviado su usuario al correo '
+                            '${_enmascararCorreo(correo)}',
+                          ),
+                          backgroundColor: base.COLOR_AZUL_VERDE,
+                          duration: const Duration(seconds: 5),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('⚠️ No se pudo enviar la solicitud.'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  },
+                  child: enviando
+                      ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : Text('Enviar',
+                          style: TextStyle(color: base.COLOR_BLANCO)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Solicita el envío del usuario por cédula.
+  /// Devuelve el correo al que se envió el mensaje, o null si falló.
+  Future<String?> _enviarRecuperacionUsuario({
+    required String cedula,
+  }) async {
+    const url = '${Base.URL_APPOFICIAL}/recuperar_usuario';
+
+    try {
+      final resp = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'cedula': cedula}),
+      );
+
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        return _extraerCorreo(resp.body);
+      }
+
+      debugPrint(
+        '❌ recuperarUsuario status=${resp.statusCode} body=${resp.body}',
+      );
+      return null;
+    } catch (e) {
+      debugPrint('⚠️ Error llamar recuperarUsuario: $e');
+      return null;
+    }
+  }
+
   /// Solicita el cambio de contraseña por cédula.
   /// Devuelve el correo al que se envió el mensaje, o null si falló.
   Future<String?> _enviarRecuperacionClave({
     required String cedula,
   }) async {
-    const url =
-        'https://servicioslsa.nutri.com.ec/nutrisoft/rest/appOficial/api/v1/cambiar_contraseña';
+    const url = '${Base.URL_APPOFICIAL}/cambiar_contraseña';
 
     try {
       final resp = await http.post(
@@ -740,6 +932,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
 
     _cedulaRecController.dispose();
+    _cedulaRecUsuarioController.dispose();
 
     _timer?.cancel();
     super.dispose();
