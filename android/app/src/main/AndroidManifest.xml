@@ -5,6 +5,14 @@
     <!-- ✅ NOTIFICACIONES PUSH (Android 13+ requiere permiso en runtime) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- ✅ UBICACIÓN PUNTUAL — MÓDULO RUTAS (geolocator)
+         Sella lat/lon al abrir y al cerrar cada evento de un viaje. Es solo en
+         primer plano: NO se declara ACCESS_BACKGROUND_LOCATION ni un foreground
+         service de ubicación, así que no hay que re-justificar permisos de
+         ubicación en segundo plano ante Play Store. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <!-- ✅ PERMISOS PARA GUARDAR PDFs EN DESCARGAS (media_store_plus) -->
     <!-- Android <= 9 (API 28): requiere permiso para escribir en almacenamiento compartido -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"

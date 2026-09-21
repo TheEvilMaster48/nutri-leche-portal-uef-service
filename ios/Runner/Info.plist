@@ -30,6 +30,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Esta app usa la cámara para que puedas adjuntar fotos a tus sugerencias.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Esta app usa tu ubicación para registrar dónde inicias y finalizas cada evento de tu ruta.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Esta app accede a tus fotos para que puedas adjuntar imágenes a tus sugerencias.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

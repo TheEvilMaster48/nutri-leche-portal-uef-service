@@ -21,6 +21,12 @@ dependencies:
   # INFORMACIÓN DEL DISPOSITIVO
   device_info_plus: ^12.2.0
 
+  # GEOLOCALIZACIÓN (módulo Rutas)
+  # Solo posición puntual en primer plano: sella lat/lon al abrir y cerrar cada
+  # evento de un viaje. NO se usa tracking en background, así que la app no
+  # declara ACCESS_BACKGROUND_LOCATION ni foreground service.
+  geolocator: ^14.0.2
+
   # SELECCIÓN DE ARCHIVOS
   file_picker: ^10.3.6
 
@@ -63,6 +69,7 @@ dependencies:
 
   # BADGE EN EL ÍCONO DE LA APP (pendientes en springboard iOS / launcher Android)
   app_badge_plus: ^1.2.2
+  timezone: ^0.10.1
 
   # OVERRIDE — FORZAR LA NUEVA VERSIÓN DEL PLUGIN
 dependency_overrides:
@@ -91,6 +98,8 @@ flutter:
     - assets/icono/masculino.jpg
     - assets/icono/nutri.gif
     - assets/icono/nutri.png
+    - assets/icono/logo_blanco.png
+    - assets/icono/logo_azul.png
     - assets/icono/nutrileche.png
     - assets/icono/id.jpg
     - assets/icono/correo.jpg

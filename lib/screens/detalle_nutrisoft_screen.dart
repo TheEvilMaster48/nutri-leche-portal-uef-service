@@ -9,9 +9,22 @@ import '../widget/texto_con_enlaces.dart';
 /// No hay imágenes, videos ni PDFs (a diferencia de [DetalleEventoScreen]), así
 /// que la pantalla es puramente texto y no necesita estado.
 class DetalleNutrisoftScreen extends StatelessWidget {
-  const DetalleNutrisoftScreen({super.key, required this.item});
+  const DetalleNutrisoftScreen({
+    super.key,
+    required this.item,
+    this.esDeViaje = false,
+  });
 
   final Nutrisoft item;
+
+  /// Fuerza el botón "Ver Viaje" aunque el texto no lo delate.
+  ///
+  /// Lo pone `PushService` cuando el `data` del push dice que el aviso es del
+  /// módulo de rutas. Abierto desde el listado no hay push que consultar, así
+  /// que ahí manda [Nutrisoft.esDeViaje].
+  final bool esDeViaje;
+
+  bool get _mostrarBotonViaje => esDeViaje || item.esDeViaje;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +112,10 @@ class DetalleNutrisoftScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 20),
                               _buildDescripcion(),
+                              if (_mostrarBotonViaje) ...[
+                                const SizedBox(height: 20),
+                                _buildBotonViaje(context),
+                              ],
                             ],
                           ),
                         ),
@@ -110,6 +127,37 @@ class DetalleNutrisoftScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Atajo al módulo de rutas para los avisos de viaje.
+  ///
+  /// Se empuja la pantalla encima del detalle (no se reemplaza) para que al
+  /// volver el chofer siga viendo el comunicado que estaba leyendo.
+  Widget _buildBotonViaje(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.pushNamed(context, '/rutas'),
+        icon: const Icon(Icons.local_shipping_outlined, size: 20),
+        label: const Text(
+          'Ver Viaje',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Base().COLOR_AZUL_CORP,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
       ),
     );
   }

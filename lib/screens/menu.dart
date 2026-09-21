@@ -246,6 +246,19 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Si el usuario ve el módulo Rutas.
+  ///
+  /// Se filtra por `accesos`, el campo del perfil donde el backend manda los
+  /// permisos (`perfil.put("accesos", ...)`). La etiqueta del módulo es `APPKM`.
+  ///
+  /// Llega como una lista en texto ("[APPKM, EVENTOS]"), así que se compara
+  /// token a token en vez de con `contains`: ni los corchetes ni una etiqueta
+  /// parecida (`APPKM2`, `NOAPPKM`) deben decidir si se abre la pantalla.
+  bool _tieneModuloRutas(Usuario? usuario) {
+    final accesos = usuario?.accesos.toUpperCase() ?? '';
+    return accesos.split(RegExp(r'[^A-Z0-9]+')).contains('APPKM');
+  }
+
   String _obtenerImagenPorGenero(Usuario? usuario) {
     if (usuario == null) return 'assets/icono/masculino.jpg';
     final genero = usuario.genero?.toLowerCase().trim() ?? '';
@@ -305,6 +318,14 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
         'imagen': 'assets/icono/correo.jpg',
         'ruta': '/buzon',
       },
+      // Solo para choferes: ver [_tieneModuloRutas].
+      if (_tieneModuloRutas(usuario))
+        {
+          'titulo': 'Rutas',
+          'subtitulo': 'Viajes y registro de eventos',
+          'icono': Icons.local_shipping_outlined,
+          'ruta': '/rutas',
+        },
     ];
 
     return Scaffold(
@@ -574,7 +595,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     } else if (imagePath.contains('calendario.jpg')) {
       iconWidth = 80;
       iconHeight = 80;
-    } else if (imagePath.contains('nutri.png')) {
+    } else if (imagePath.contains('logo_azul.png')) {
       iconWidth = 70;
       iconHeight = 70;
     } else if (imagePath.contains('correo.jpg')) {

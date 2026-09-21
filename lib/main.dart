@@ -23,6 +23,8 @@ import 'services/calendario_evento_service.dart';
 import 'services/perfil_service.dart';
 import 'services/push_service.dart';
 import 'services/sorteo_service.dart';
+import 'services/catalogo_evento_service.dart';
+import 'services/viaje_chofer_service.dart';
 
 import 'screens/login.dart';
 import 'screens/menu.dart';
@@ -33,6 +35,7 @@ import 'screens/cumpleanios_screen.dart';
 import 'screens/sugerencia_screen.dart';
 import 'screens/calendario_evento_screen.dart';
 import 'screens/perfil.dart';
+import 'screens/viajes_pendientes_screen.dart';
 import 'firebase_options.dart';
 
 class MyHttpOverrides extends HttpOverrides {
@@ -93,6 +96,8 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CalendarioEventoService()),
         ChangeNotifierProvider(create: (_) => SugerenciaService()),
         ChangeNotifierProvider(create: (_) => SorteoService()),
+        ChangeNotifierProvider(create: (_) => CatalogoEventoService()),
+        ChangeNotifierProvider(create: (_) => ViajeChoferService()),
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
           update: (context, auth, previous) => PerfilService(auth),
@@ -136,6 +141,7 @@ class MyApp extends StatelessWidget {
             '/calendario_eventos': (context) => const CalendarioEventosScreen(),
             '/perfil': (context) => const PerfilScreen(),
             '/sorteos': (context) => const SorteoScreen(),
+            '/rutas': (context) => const ViajesPendientesScreen(),
           },
         );
       },

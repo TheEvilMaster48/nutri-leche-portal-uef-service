@@ -18,6 +18,12 @@ class Usuario {
   /// Departamento del empleado. Reemplaza a [areaUsuario] en la vista de perfil.
   final String departamento;
 
+  /// Permisos del usuario, tal como los entrega el WS en `accesos`
+  /// (el backend arma ahí `usuario.getModulos().toString()`, así que llega como
+  /// texto tipo "[APPKM, EVENTOS]"). Es el campo con el que se decide si se ve
+  /// el módulo de Rutas; [modulos] queda para los permisos que ya lo usaban.
+  final String accesos;
+
   Usuario({
     required this.id,
     required this.nombre,
@@ -32,6 +38,7 @@ class Usuario {
     required this.genero,
     this.codigoSap = '',
     this.departamento = '',
+    this.accesos = '',
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -60,6 +67,9 @@ class Usuario {
               .toString(),
       departamento:
           (json['departamento'] ?? json['departamentoNombre'] ?? '').toString(),
+      // Se cae a `modulos` para las sesiones guardadas antes de que el WS
+      // empezara a mandar `accesos`.
+      accesos: (json['accesos'] ?? json['modulos'] ?? '').toString(),
     );
   }
 
@@ -78,6 +88,7 @@ class Usuario {
       'genero': genero,
       'codigoSap': codigoSap,
       'departamento': departamento,
+      'accesos': accesos,
     };
   }
 }

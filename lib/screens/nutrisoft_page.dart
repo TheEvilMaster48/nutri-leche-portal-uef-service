@@ -316,7 +316,7 @@ class _NutrisoftPageState extends State<NutrisoftPage> {
                                         borderRadius:
                                             BorderRadius.circular(12),
                                         child: Image.asset(
-                                          'assets/icono/nutri.png',
+                                          'assets/icono/logo_azul.png',
                                           height: 120,
                                           width: 120,
                                           fit: BoxFit.contain,

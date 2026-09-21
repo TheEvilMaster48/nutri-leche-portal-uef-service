@@ -501,7 +501,14 @@ class PushService {
 
     if (valor.contains('cumplea')) return 'cumpleanios';
     if (valor.contains('sorteo')) return 'sorteo';
-    if (valor.contains('mensaje') || valor.contains('nutrisoft')) {
+    // Los avisos de viaje del módulo de rutas se envían como mensajes de
+    // Nutrisoft (mismo REST `appMensaje`, mismo `idMensaje`), así que el tap
+    // abre el detalle del comunicado. Desde ahí el botón "Ver Viaje" lleva al
+    // módulo de rutas: ver [DetalleNutrisoftScreen].
+    if (valor.contains('mensaje') ||
+        valor.contains('nutrisoft') ||
+        valor.contains('viaje') ||
+        valor.contains('ruta')) {
       return 'nutrisoft';
     }
     if (valor.contains('calendario')) return 'calendario';
@@ -529,6 +536,39 @@ class PushService {
       }
     }
     return null;
+  }
+
+  /// Si el push corresponde a un aviso de viaje del módulo de rutas.
+  ///
+  /// El backend los manda como mensajes de Nutrisoft, así que el `tipo` ya
+  /// resolvió a `nutrisoft`; esto solo distingue, dentro de ese módulo, cuáles
+  /// merecen el botón "Ver Viaje" en el detalle. Se mira `pantalla`/`tipo` y,
+  /// como respaldo, la presencia de un id de viaje en el payload.
+  static bool _esDeViaje(Map<String, dynamic> data) {
+    String limpiar(dynamic v) => (v ?? '').toString().trim().toLowerCase();
+
+    final etiquetas = [
+      data['pantalla'],
+      data['screen'],
+      data['tipo'],
+      data['modulo'],
+      data['origen'],
+      data['type'],
+      data['categoria'],
+      data['seccion'],
+    ].map(limpiar);
+
+    for (final etiqueta in etiquetas) {
+      if (etiqueta.contains('viaje') || etiqueta.contains('ruta')) return true;
+    }
+
+    return _buscar(data, const [
+          'idViaje',
+          'id_viaje',
+          'idViajeChofer',
+          'id_viaje_chofer',
+        ]) !=
+        null;
   }
 
   /// Id del contenido dentro del módulo.
@@ -758,7 +798,10 @@ class PushService {
 
             await navigatorKey.currentState?.push(
               MaterialPageRoute(
-                builder: (_) => DetalleNutrisoftScreen(item: item),
+                builder: (_) => DetalleNutrisoftScreen(
+                  item: item,
+                  esDeViaje: _esDeViaje(data),
+                ),
               ),
             );
 
