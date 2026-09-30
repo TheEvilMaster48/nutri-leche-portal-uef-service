@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../base/base.dart';
 import '../services/auth_service.dart';
+import '../services/cierre_sesion.dart';
+import '../services/perfil_service.dart';
 import '../services/evento_service.dart';
 import '../services/cumpleanios_service.dart';
 import '../services/nutrisoft_service.dart';
@@ -78,6 +80,10 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     _actualizarContadoresPendientes();
     _descargarParaTrabajoSinConexion();
 
+    // Al entrar a Inicio se relee el perfil: si el WS dice que el usuario está
+    // inactivo, se cierra la sesión. Va en paralelo para no demorar el push.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _validarUsuarioActivo());
+
     // Mostrar bienvenida después de inicializar
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
@@ -99,6 +105,14 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _actualizarContadoresPendientes();
       _descargarParaTrabajoSinConexion();
+    }
+  }
+
+  Future<void> _validarUsuarioActivo() async {
+    if (!mounted) return;
+    final activo = await context.read<PerfilService>().obtenerPerfil();
+    if (!activo && mounted) {
+      await cerrarSesion(context, motivo: PerfilService.mensajeInactivo);
     }
   }
 

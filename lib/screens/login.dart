@@ -531,7 +531,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (!success) {
-        _mostrarMensaje('Usuario o contraseña incorrectos.');
+        _mostrarMensaje(
+          authService.motivoRechazo ?? 'Usuario o contraseña incorrectos.',
+        );
         return;
       }
 

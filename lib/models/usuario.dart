@@ -41,6 +41,17 @@ class Usuario {
     this.accesos = '',
   });
 
+  /// `true` si el WS marca al usuario como dado de baja (`estado` = 1).
+  ///
+  /// Puede llegar como número o como texto. Si el campo no viene, o trae
+  /// cualquier otro valor, el usuario se considera activo. La usan el login y
+  /// la relectura del perfil, así las dos aplican la misma regla.
+  static bool estadoInactivo(dynamic estado) {
+    if (estado == null) return false;
+    if (estado is num) return estado == 1;
+    return estado.toString().trim() == '1';
+  }
+
   factory Usuario.fromJson(Map<String, dynamic> json) {
     return Usuario(
       id: json['id'] ?? 0,

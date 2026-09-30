@@ -15,6 +15,20 @@ class AuthService extends ChangeNotifier {
   Map<String, dynamic>? _currentNotification;
 
   Usuario? get currentUser => _currentUser;
+
+  /// Por qué falló el último [login] cuando no fue por credenciales: hoy solo
+  /// se usa para el usuario inactivo. `null` si no hay un motivo especial.
+  String? _motivoRechazo;
+  String? get motivoRechazo => _motivoRechazo;
+
+  /// Mensaje para el usuario dado de baja (`estado` = 1), en el login y al
+  /// releer el perfil.
+  static const String mensajeInactivo =
+      'Tu usuario se encuentra inactivo. Se cerrará la sesión.';
+
+  /// Lo mismo, dicho en el login, donde todavía no hay sesión que cerrar.
+  static const String mensajeLoginInactivo =
+      'Tu usuario se encuentra inactivo. No es posible iniciar sesión.';
   Map<String, dynamic>? get currentNotification => _currentNotification;
 
   static const String baseUrl = Base.URL_APP;
@@ -50,6 +64,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> login(String usuario, String password) async {
+    _motivoRechazo = null;
     String? token;
 
     // Obtener Token FCM solo donde es seguro
@@ -123,6 +138,13 @@ class AuthService extends ChangeNotifier {
           }
 
           developer.log("✅ Datos decodificados correctamente: $data");
+
+          // Usuario dado de baja: no se abre la sesión ni se guarda nada.
+          if (data is Map && Usuario.estadoInactivo(data['estado'])) {
+            developer.log("❌ Login rechazado: usuario inactivo (estado 1)");
+            _motivoRechazo = mensajeLoginInactivo;
+            return false;
+          }
 
           try {
             final user = Usuario.fromJson(data);

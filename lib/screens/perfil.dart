@@ -27,7 +27,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Future<void> _recargar() async {
     if (!mounted) return;
-    await context.read<PerfilService>().obtenerPerfil();
+    final activo = await context.read<PerfilService>().obtenerPerfil();
+    if (!activo && mounted) {
+      await cerrarSesion(context, motivo: PerfilService.mensajeInactivo);
+    }
   }
 
   @override

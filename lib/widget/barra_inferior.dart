@@ -57,9 +57,6 @@ class BarraInferior extends StatelessWidget {
               icono: Icons.apps_rounded,
               etiqueta: 'Utilitarios',
               activa: activa == PestanaInferior.utilitarios,
-              // Chip lleno: es el acceso a los módulos de uso ocasional y se
-              // destaca a propósito del resto de la barra.
-              destacada: true,
               alTocar: () => _ir(context, PestanaInferior.utilitarios),
             ),
             _Pestana(
@@ -99,18 +96,16 @@ class _Pestana extends StatelessWidget {
     required this.etiqueta,
     required this.activa,
     required this.alTocar,
-    this.destacada = false,
   });
 
   final IconData icono;
   final String etiqueta;
   final bool activa;
-  final bool destacada;
   final VoidCallback alTocar;
 
   @override
   Widget build(BuildContext context) {
-    final Color color = activa || destacada ? PaletaMenu.cabecera : Colors.grey;
+    final Color color = activa ? PaletaMenu.cabecera : Colors.grey;
 
     return Expanded(
       child: InkWell(
@@ -121,18 +116,21 @@ class _Pestana extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (destacada)
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    color: PaletaMenu.cabecera,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icono, color: Colors.white, size: 21),
-                )
-              else
-                Icon(icono, color: color, size: 24),
+              // La pestaña seleccionada va dentro del círculo. Todas reservan el
+              // mismo alto para que las etiquetas no salten al cambiar.
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: activa ? PaletaMenu.cabecera : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icono,
+                  color: activa ? Colors.white : color,
+                  size: activa ? 21 : 24,
+                ),
+              ),
               const SizedBox(height: 3),
               Text(
                 etiqueta,
@@ -143,15 +141,6 @@ class _Pestana extends StatelessWidget {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: activa ? PaletaMenu.cabecera : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
               ),
             ],
           ),

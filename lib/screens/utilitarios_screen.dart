@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/usuario.dart';
 import '../services/auth_service.dart';
+import '../services/cierre_sesion.dart';
 import '../services/perfil_service.dart';
 import '../widget/barra_inferior.dart';
 import '../widget/logo_nutri.dart';
@@ -56,9 +57,13 @@ class _UtilitariosScreenState extends State<UtilitariosScreen> {
     // Cada vez que se entra se releen los permisos del servidor: si a alguien
     // le acaban de dar acceso a Rutas o Rebranding, lo ve sin cerrar sesión.
     // Mientras tanto se muestra lo que ya había; sin conexión se queda así.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Si el WS dice que el usuario está inactivo, se cierra la sesión.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      context.read<PerfilService>().obtenerPerfil();
+      final activo = await context.read<PerfilService>().obtenerPerfil();
+      if (!activo && mounted) {
+        await cerrarSesion(context, motivo: PerfilService.mensajeInactivo);
+      }
     });
   }
 

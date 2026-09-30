@@ -17,6 +17,7 @@ class Base {
 
   /// Solo el host (sin esquema). Lo usa el override de certificados en main.dart.
   static const String HOST_SERVICIOS = "servicioslsa.nutri.com.ec";
+  // static const String HOST_SERVICIOS = "10.170.4.15:8080";
 
   static const String ORIGEN_SERVICIOS = "https://$HOST_SERVICIOS";
 

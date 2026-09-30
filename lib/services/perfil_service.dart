@@ -23,6 +23,9 @@ import '../services/auth_service.dart';
 /// `loginAPPOficial` en la misma base responde 200. Hasta que se publique, la
 /// pantalla usa el fallback.
 class PerfilService with ChangeNotifier {
+  /// Mensaje que se muestra al cerrar la sesión de un usuario inactivo.
+  static const String mensajeInactivo = AuthService.mensajeInactivo;
+
   /// Ruta de lectura de los datos del usuario conectado.
   static const String rutaDatos = 'perfilAPPOficial';
 
@@ -131,13 +134,18 @@ class PerfilService with ChangeNotifier {
   /// Se llama al entrar a Perfil y en el pull-to-refresh. Si no hay conexión, o
   /// si la consulta falla, no se borra nada: la pantalla sigue mostrando la
   /// sesión guardada del último login.
-  Future<void> obtenerPerfil() async {
+  ///
+  /// Devuelve `false` solo cuando el WS responde que el usuario está inactivo
+  /// (`estado` = 1): quien llama debe cerrar la sesión (ver `cerrarSesion` con
+  /// `motivo`). Sin conexión o con error devuelve `true`, porque no hay
+  /// evidencia de que el usuario haya sido dado de baja.
+  Future<bool> obtenerPerfil() async {
     final usuario = _authService.currentUser;
-    if (usuario == null || usuario.id <= 0) return;
+    if (usuario == null || usuario.id <= 0) return true;
 
     if (!await hayConexion()) {
       debugPrint('PERFIL: sin conexión, se muestran los datos guardados');
-      return;
+      return true;
     }
 
     _cargando = true;
@@ -171,6 +179,11 @@ class PerfilService with ChangeNotifier {
       } else if (response.statusCode == 200) {
         final data = _extraerDatos(response.body);
 
+        if (data != null && Usuario.estadoInactivo(data['estado'])) {
+          debugPrint('PERFIL: usuario inactivo (estado 1), se cierra sesión');
+          return false;
+        }
+
         if (data != null) {
           final fresco = Usuario.fromJson(data);
           _perfil = fresco;
@@ -185,6 +198,7 @@ class PerfilService with ChangeNotifier {
       _cargando = false;
       _avisar();
     }
+    return true;
   }
 
   /// Actualiza Perfil
@@ -216,7 +230,7 @@ class PerfilService with ChangeNotifier {
   }
 
   /// Recargar Perfil
-  Future<void> recargarPerfil() async {
-    await obtenerPerfil();
+  Future<bool> recargarPerfil() async {
+    return obtenerPerfil();
   }
 }

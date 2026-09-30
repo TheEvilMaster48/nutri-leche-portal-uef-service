@@ -23,8 +23,12 @@ import 'usuario_service.dart';
 /// a mano o el siguiente usuario que entre ve por un instante los datos del
 /// anterior.
 ///
+/// Con [motivo] el cierre es forzado (por ejemplo, el WS dice que el usuario
+/// está inactivo): en lugar de preguntar se muestra [motivo] y, al aceptar, se
+/// cierra la sesión sin opción de cancelar.
+///
 /// No lanza: si el usuario cancela, no pasa nada.
-Future<void> cerrarSesion(BuildContext context) async {
+Future<void> cerrarSesion(BuildContext context, {String? motivo}) async {
   final auth = context.read<AuthService>();
   final reacciones = context.read<ReaccionService>();
 
@@ -43,34 +47,11 @@ Future<void> cerrarSesion(BuildContext context) async {
 
   final navegador = Navigator.of(context);
 
-  final confirmado = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogo) {
-      return AlertDialog(
-        backgroundColor: Base().COLOR_BLANCO,
-        title: Text(
-          'Cerrar Sesión',
-          style: TextStyle(color: Base().COLOR_AZUL_CORP),
-        ),
-        content: const Text('¿Estás seguro que deseas cerrar sesión?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogo).pop(false),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: Base().COLOR_AZUL_CORP),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogo).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Cerrar Sesión'),
-          ),
-        ],
-      );
-    },
-  );
+  final Future<bool?> dialogo =
+      motivo != null
+          ? _avisarCierreForzado(context, motivo)
+          : _confirmarCierre(context);
+  final confirmado = await dialogo;
 
   if (confirmado != true) return;
   if (!context.mounted) return;
@@ -108,4 +89,67 @@ Future<void> cerrarSesion(BuildContext context) async {
   // pantalla de la sesión que acaba de cerrarse.
   navegador.pop();
   navegador.pushNamedAndRemoveUntil('/', (_) => false);
+}
+
+/// Aviso del cierre forzado: un solo botón, así que siempre termina en `true`.
+Future<bool> _avisarCierreForzado(BuildContext context, String motivo) async {
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogo) {
+      return PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: Base().COLOR_BLANCO,
+          title: Text(
+            'Sesión finalizada',
+            style: TextStyle(color: Base().COLOR_AZUL_CORP),
+          ),
+          content: Text(motivo),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogo).pop(),
+              child: Text(
+                'Aceptar',
+                style: TextStyle(color: Base().COLOR_AZUL_CORP),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+  return true;
+}
+
+/// Pregunta antes de cerrar la sesión a pedido del usuario.
+Future<bool?> _confirmarCierre(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogo) {
+      return AlertDialog(
+        backgroundColor: Base().COLOR_BLANCO,
+        title: Text(
+          'Cerrar Sesión',
+          style: TextStyle(color: Base().COLOR_AZUL_CORP),
+        ),
+        content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogo).pop(false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: Base().COLOR_AZUL_CORP),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogo).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      );
+    },
+  );
 }
