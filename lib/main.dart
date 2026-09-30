@@ -61,6 +61,12 @@ Future<void> main() async {
   // el Info.plist, que rigen antes de que arranque Flutter (splash).
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+  // Borde a borde en todas las versiones de Android, no solo desde la 15
+  // (donde el sistema ya lo impone al apuntar a SDK 35+). Así la app se ve
+  // igual en todos los teléfonos y Play deja de advertirlo. Las pantallas ya
+  // respetan los insets (SafeArea, `viewPadding` en la barra inferior).
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
   // Inicializa media_kit (reproductor de video con fallback a software)
   MediaKit.ensureInitialized();
 

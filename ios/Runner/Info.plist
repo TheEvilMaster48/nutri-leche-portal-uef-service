@@ -30,6 +30,11 @@
 		<true/>
 		<key>NSCameraUsageDescription</key>
 		<string>Esta app usa la cámara para que puedas adjuntar fotos a tus sugerencias y tomar la evidencia de los registros de Logo Nutri.</string>
+		<!-- La app solo pide ubicación mientras se usa. Esta cadena la exige App
+		     Store porque geolocator trae compilado el pedido de ubicación
+		     «siempre» (advertencia 90683), aunque la app nunca lo llama. -->
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Esta app usa tu ubicación para registrar dónde inicias y finalizas cada evento de tu ruta y dónde se captura cada registro de Logo Nutri. Solo se usa mientras la app está abierta.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Esta app usa tu ubicación para registrar dónde inicias y finalizas cada evento de tu ruta y dónde se captura cada registro de Logo Nutri.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
