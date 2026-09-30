@@ -27,15 +27,18 @@ class AuthService extends ChangeNotifier {
 
   // MÉTODO PARA OBTENER EL GÉNERO DESDE EL BACKEND
   Future<String> obtenerGenero(String userId) async {
-    final url = Uri.parse("$baseUrl/obtenerGenero/$userId"); // Ajusta la URL de acuerdo al backend
+    final url = Uri.parse(
+      "$baseUrl/obtenerGenero/$userId",
+    ); // Ajusta la URL de acuerdo al backend
 
     try {
       final response = await http.get(url);
-      
+
       if (response.statusCode == 200) {
         // Si la respuesta es exitosa, obtenemos el género
         final data = json.decode(response.body);
-        return data['genero'] ?? 'masculino';  // Default 'masculino' si no hay género
+        return data['genero'] ??
+            'masculino'; // Default 'masculino' si no hay género
       } else {
         // Si la respuesta no es exitosa, devolver un valor por defecto
         return 'masculino';
@@ -60,7 +63,8 @@ class AuthService extends ChangeNotifier {
       } else if (Platform.isIOS) {
         // iOS: NO pedimos FCM token aquí para evitar apns-token-not-set
         debugPrint(
-            'iOS: no se solicita FCM token en login; se gestionará en PushService.init()');
+          'iOS: no se solicita FCM token en login; se gestionará en PushService.init()',
+        );
       } else {
         debugPrint('Plataforma no soportada para FCM en login');
       }
@@ -85,7 +89,9 @@ class AuthService extends ChangeNotifier {
         }),
       );
 
-      developer.log("📩 Respuesta Login (${response.statusCode}): ${response.body}");
+      developer.log(
+        "📩 Respuesta Login (${response.statusCode}): ${response.body}",
+      );
 
       if (response.statusCode == 200) {
         if (response.body.isEmpty) {
@@ -157,14 +163,13 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> EnviarToken(String token, int idUsuario) async {
-    var map = <String, dynamic>{
-      'token': token,
-      'idUsuario': idUsuario,
-    };
+    var map = <String, dynamic>{'token': token, 'idUsuario': idUsuario};
 
     try {
       if (kIsWeb) {
-        js.context.callMethod('console.log', ['🌍 Enviando token en Web: $token']);
+        js.context.callMethod('console.log', [
+          '🌍 Enviando token en Web: $token',
+        ]);
         final response = await http.post(
           Uri.parse(tokenUrl),
           headers: {'Content-Type': 'application/json'},
@@ -172,13 +177,15 @@ class AuthService extends ChangeNotifier {
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          js.context.callMethod('console.log', ['✅ Token actualizado correctamente en Web']);
+          js.context.callMethod('console.log', [
+            '✅ Token actualizado correctamente en Web',
+          ]);
         } else {
-          js.context.callMethod('console.error', ['⚠️ Error al actualizar token en Web: ${response.statusCode}']);
+          js.context.callMethod('console.error', [
+            '⚠️ Error al actualizar token en Web: ${response.statusCode}',
+          ]);
         }
-      }
-
-      else if (Platform.isAndroid || Platform.isIOS) {
+      } else if (Platform.isAndroid || Platform.isIOS) {
         final response = await http.post(
           Uri.parse(tokenUrl),
           headers: {'Content-Type': 'application/json'},
@@ -186,13 +193,13 @@ class AuthService extends ChangeNotifier {
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          debugPrint('✅ Token actualizado correctamente en el servidor (Android/iOS).');
+          debugPrint(
+            '✅ Token actualizado correctamente en el servidor (Android/iOS).',
+          );
         } else {
           debugPrint('⚠️ Error al actualizar token: ${response.statusCode}');
         }
-      }
-
-      else {
+      } else {
         debugPrint('❌ Plataforma no soportada para envío de token.');
       }
     } catch (e) {
@@ -202,9 +209,7 @@ class AuthService extends ChangeNotifier {
 
   // ELIMINAR TOKEN
   Future<void> EliminarToken(int idUsuario) async {
-    var map = <String, dynamic>{
-      'idUsuario': idUsuario,
-    };
+    var map = <String, dynamic>{'idUsuario': idUsuario};
 
     try {
       final response = await http.post(

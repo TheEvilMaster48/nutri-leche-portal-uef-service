@@ -22,7 +22,8 @@ class SugerenciaService with ChangeNotifier {
         return _sugerencias;
       } else {
         throw Exception(
-            'Error al obtener sugerencias (${response.statusCode})');
+          'Error al obtener sugerencias (${response.statusCode})',
+        );
       }
     } catch (e) {
       NotificationBanner.show(

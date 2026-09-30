@@ -90,7 +90,8 @@ class CalendarioEventoService extends ChangeNotifier {
             ..addAll(lista.map((e) => Cumpleanios.fromJson(e)).toList());
 
           debugPrint(
-              '🎂 CUMPLEAÑOS CARGADOS ($idUsuario): ${_cumpleanios.length}');
+            '🎂 CUMPLEAÑOS CARGADOS ($idUsuario): ${_cumpleanios.length}',
+          );
         } else {
           debugPrint('⚠️ SIN CUMPLEAÑOS PARA ESTE USUARIO');
         }
@@ -104,10 +105,7 @@ class CalendarioEventoService extends ChangeNotifier {
 
   // CARGAR TODO
   Future<void> cargarTodo(BuildContext context) async {
-    await Future.wait([
-      obtenerEventos(context),
-      obtenerCumpleanos(context),
-    ]);
+    await Future.wait([obtenerEventos(context), obtenerCumpleanos(context)]);
 
     notifyListeners();
   }

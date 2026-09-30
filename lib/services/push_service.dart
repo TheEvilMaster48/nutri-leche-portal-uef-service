@@ -74,9 +74,11 @@ Future<void> _dibujarEnBackground(RemoteMessage message) async {
   if (!Platform.isAndroid) return;
 
   if (message.notification != null) {
-    print('PUSH BG: el push trae bloque "notification", la dibuja el sistema. '
-        'Para que el tap use el camino de la notificación local, el back debe '
-        'mandar el push de Android como data-only.');
+    print(
+      'PUSH BG: el push trae bloque "notification", la dibuja el sistema. '
+      'Para que el tap use el camino de la notificación local, el back debe '
+      'mandar el push de Android como data-only.',
+    );
     return;
   }
 
@@ -84,8 +86,8 @@ Future<void> _dibujarEnBackground(RemoteMessage message) async {
 
   final data = message.data;
   final titulo = (data['title'] ?? data['titulo'] ?? '').toString();
-  final cuerpo = (data['body'] ?? data['mensaje'] ?? data['cuerpo'] ?? '')
-      .toString();
+  final cuerpo =
+      (data['body'] ?? data['mensaje'] ?? data['cuerpo'] ?? '').toString();
 
   if (titulo.isEmpty && cuerpo.isEmpty) {
     print('PUSH BG: data-only sin title/body, no hay nada que mostrar.');
@@ -101,7 +103,8 @@ Future<void> _dibujarEnBackground(RemoteMessage message) async {
   );
   await plugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.createNotificationChannel(highImportanceChannel);
 
   await plugin.show(
@@ -126,11 +129,11 @@ Future<void> _dibujarEnBackground(RemoteMessage message) async {
 
 const AndroidNotificationChannel highImportanceChannel =
     AndroidNotificationChannel(
-  'high_importance_channel',
-  'Notificaciones importantes',
-  description: 'Canal para notificaciones importantes',
-  importance: Importance.max,
-);
+      'high_importance_channel',
+      'Notificaciones importantes',
+      description: 'Canal para notificaciones importantes',
+      importance: Importance.max,
+    );
 
 class PushService {
   PushService._();
@@ -157,7 +160,8 @@ class PushService {
       try {
         await localNotifications
             .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
+              AndroidFlutterLocalNotificationsPlugin
+            >()
             ?.createNotificationChannel(highImportanceChannel);
       } catch (e) {
         debugPrint('PUSH: no se pudo crear el canal en el arranque: $e');
@@ -228,11 +232,12 @@ class PushService {
     const AndroidInitializationSettings initSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initSettingsIOS = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    const DarwinInitializationSettings initSettingsIOS =
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initSettings = InitializationSettings(
       android: initSettingsAndroid,
@@ -259,7 +264,9 @@ class PushService {
 
     if (Platform.isAndroid) {
       await localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(highImportanceChannel);
     }
 
@@ -286,7 +293,8 @@ class PushService {
           final decoded = json.decode(payload);
           if (decoded is Map) {
             debugPrint(
-                'PUSH: arranque desde notificación local. Data: $decoded');
+              'PUSH: arranque desde notificación local. Data: $decoded',
+            );
             _pendiente ??= Map<String, dynamic>.from(decoded);
           }
         }
@@ -297,11 +305,7 @@ class PushService {
 
     final messaging = FirebaseMessaging.instance;
 
-    await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
 
     // iOS no muestra nada en primer plano salvo que se le pida explícitamente.
     //
@@ -333,8 +337,9 @@ class PushService {
       print('TOKEN REFRESH = $newToken');
     });
 
-    _listener =
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    _listener = FirebaseMessaging.onMessage.listen((
+      RemoteMessage message,
+    ) async {
       print('NOTIFICACIÓN EN FOREGROUND - 1 SOLO LISTENER');
       debugPrint('Data: ${message.data}');
 
@@ -348,16 +353,18 @@ class PushService {
 
       // Con el back mandando data-only (ver [_dibujarEnBackground]) no hay
       // bloque `notification`: el título y el cuerpo se leen del `data`.
-      final titulo = notification?.title ??
+      final titulo =
+          notification?.title ??
           (message.data['title'] ?? message.data['titulo'])?.toString();
-      final cuerpo = notification?.body ??
+      final cuerpo =
+          notification?.body ??
           (message.data['body'] ??
                   message.data['mensaje'] ??
                   message.data['cuerpo'])
               ?.toString();
       final hayAlgoQueMostrar =
           (titulo != null && titulo.isNotEmpty) ||
-              (cuerpo != null && cuerpo.isNotEmpty);
+          (cuerpo != null && cuerpo.isNotEmpty);
       final idNotificacion = notification?.hashCode ?? message.hashCode;
 
       if (hayAlgoQueMostrar && Platform.isAndroid) {
@@ -469,12 +476,14 @@ class PushService {
     if (porPantalla.isNotEmpty) return porPantalla;
 
     // 2) `tipo` (tipoevento de la cabecera) u otros alias.
-    final tipo = limpiar(data['tipo'] ??
-        data['modulo'] ??
-        data['origen'] ??
-        data['type'] ??
-        data['categoria'] ??
-        data['seccion']);
+    final tipo = limpiar(
+      data['tipo'] ??
+          data['modulo'] ??
+          data['origen'] ??
+          data['type'] ??
+          data['categoria'] ??
+          data['seccion'],
+    );
     final porTipo = _porNombre(tipo);
     if (porTipo.isNotEmpty) return porTipo;
 
@@ -583,39 +592,47 @@ class PushService {
   static int _idDe(Map<String, dynamic> data, String tipo) {
     switch (tipo) {
       case 'cumpleanios':
-        return _aInt(_buscar(data, const [
-          'idCumpleanios',
-          'id_cumpleanios',
-          'idCabecera',
-          'id_cabecera',
-          'idEvento',
-          'id_evento',
-          'id',
-        ]));
+        return _aInt(
+          _buscar(data, const [
+            'idCumpleanios',
+            'id_cumpleanios',
+            'idCabecera',
+            'id_cabecera',
+            'idEvento',
+            'id_evento',
+            'id',
+          ]),
+        );
       case 'sorteo':
-        return _aInt(_buscar(data, const [
-          'idSorteo',
-          'id_sorteo',
-          'idCabecera',
-          'id_cabecera',
-          'id',
-        ]));
+        return _aInt(
+          _buscar(data, const [
+            'idSorteo',
+            'id_sorteo',
+            'idCabecera',
+            'id_cabecera',
+            'id',
+          ]),
+        );
       case 'nutrisoft':
-        return _aInt(_buscar(data, const [
-          'idMensaje',
-          'id_mensaje',
-          'idNutrisoft',
-          'idCabecera',
-          'id',
-        ]));
+        return _aInt(
+          _buscar(data, const [
+            'idMensaje',
+            'id_mensaje',
+            'idNutrisoft',
+            'idCabecera',
+            'id',
+          ]),
+        );
       default:
-        return _aInt(_buscar(data, const [
-          'idEvento',
-          'id_evento',
-          'idCabecera',
-          'id_cabecera',
-          'id',
-        ]));
+        return _aInt(
+          _buscar(data, const [
+            'idEvento',
+            'id_evento',
+            'idCabecera',
+            'id_cabecera',
+            'id',
+          ]),
+        );
     }
   }
 
@@ -637,9 +654,11 @@ class PushService {
     debugPrint('PUSH TAP: tipo="$tipo"  id=$id');
 
     if (tipo.isEmpty) {
-      debugPrint('PUSH TAP: ❌ el push no trae "pantalla" ni "tipo" ni un id '
-          'reconocible. Se espera pantalla=eventos|cumpleanos|sorteos|mensajes '
-          'con idCabecera, o pantalla=mensajes con idMensaje.');
+      debugPrint(
+        'PUSH TAP: ❌ el push no trae "pantalla" ni "tipo" ni un id '
+        'reconocible. Se espera pantalla=eventos|cumpleanos|sorteos|mensajes '
+        'con idCabecera, o pantalla=mensajes con idMensaje.',
+      );
       return;
     }
 
@@ -659,8 +678,7 @@ class PushService {
 
     // El calendario no tiene detalle por id: se abre la agenda.
     if (tipo == 'calendario') {
-      await navigatorKey.currentState
-          ?.pushNamed('/calendario_eventos');
+      await navigatorKey.currentState?.pushNamed('/calendario_eventos');
       return;
     }
 
@@ -714,8 +732,9 @@ class PushService {
             '/eventos_page',
             () => servicio.obtenerEventos(idUsuario: usuario.id),
             () => servicio.eventos.cast<Evento?>().firstWhere(
-                (e) => e?.idEvento == id || e?.idCabecera == id,
-                orElse: () => null),
+              (e) => e?.idEvento == id || e?.idCabecera == id,
+              orElse: () => null,
+            ),
           );
 
           if (evento != null) {
@@ -737,12 +756,16 @@ class PushService {
               await servicio.obtenerEventos(idUsuario: usuario.id);
             }
           } else {
-            debugPrint('PUSH TAP: ⚠️ evento id=$id NO está en la lista ni tras '
-                'abrir la pestaña. ids disponibles (idEvento/idCabecera) = '
-                '${servicio.eventos.map((e) => "${e.idEvento}/${e.idCabecera}").toList()}');
-            debugPrint('PUSH TAP: el push manda idCabecera, que es otra '
-                'secuencia distinta de idEvento y que ObtenerEventos no '
-                'devuelve. Queda abierto el listado.');
+            debugPrint(
+              'PUSH TAP: ⚠️ evento id=$id NO está en la lista ni tras '
+              'abrir la pestaña. ids disponibles (idEvento/idCabecera) = '
+              '${servicio.eventos.map((e) => "${e.idEvento}/${e.idCabecera}").toList()}',
+            );
+            debugPrint(
+              'PUSH TAP: el push manda idCabecera, que es otra '
+              'secuencia distinta de idEvento y que ObtenerEventos no '
+              'devuelve. Queda abierto el listado.',
+            );
           }
           break;
 
@@ -754,8 +777,9 @@ class PushService {
             '/cumpleanios',
             () => servicio.obtenerCumpleanios(idUsuario: usuario.id),
             () => servicio.cumpleanios.cast<Cumpleanios?>().firstWhere(
-                (c) => c?.idCumpleanios == id || c?.idCabecera == id,
-                orElse: () => null),
+              (c) => c?.idCumpleanios == id || c?.idCabecera == id,
+              orElse: () => null,
+            ),
           );
 
           if (cumple != null) {
@@ -775,9 +799,11 @@ class PushService {
               await servicio.obtenerCumpleanios(idUsuario: usuario.id);
             }
           } else {
-            debugPrint('PUSH TAP: ⚠️ cumpleaños id=$id NO está en la lista ni '
-                'tras abrir la pestaña. ids (idCumpleanios/idCabecera) = '
-                '${servicio.cumpleanios.map((c) => "${c.idCumpleanios}/${c.idCabecera}").toList()}');
+            debugPrint(
+              'PUSH TAP: ⚠️ cumpleaños id=$id NO está en la lista ni '
+              'tras abrir la pestaña. ids (idCumpleanios/idCabecera) = '
+              '${servicio.cumpleanios.map((c) => "${c.idCumpleanios}/${c.idCabecera}").toList()}',
+            );
           }
           break;
 
@@ -788,9 +814,10 @@ class PushService {
           final Nutrisoft? item = await localizar<Nutrisoft>(
             '/nutrisoft',
             () => servicio.obtenerNutrisoft(idUsuario: usuario.id),
-            () => servicio.items
-                .cast<Nutrisoft?>()
-                .firstWhere((n) => n?.idMensaje == id, orElse: () => null),
+            () => servicio.items.cast<Nutrisoft?>().firstWhere(
+              (n) => n?.idMensaje == id,
+              orElse: () => null,
+            ),
           );
 
           if (item != null) {
@@ -798,10 +825,11 @@ class PushService {
 
             await navigatorKey.currentState?.push(
               MaterialPageRoute(
-                builder: (_) => DetalleNutrisoftScreen(
-                  item: item,
-                  esDeViaje: _esDeViaje(data),
-                ),
+                builder:
+                    (_) => DetalleNutrisoftScreen(
+                      item: item,
+                      esDeViaje: _esDeViaje(data),
+                    ),
               ),
             );
 
@@ -813,9 +841,11 @@ class PushService {
               await servicio.obtenerNutrisoft(idUsuario: usuario.id);
             }
           } else {
-            debugPrint('PUSH TAP: ⚠️ mensaje id=$id NO está en la lista ni tras '
-                'abrir la pestaña. ids disponibles = '
-                '${servicio.items.map((n) => n.idMensaje).toList()}');
+            debugPrint(
+              'PUSH TAP: ⚠️ mensaje id=$id NO está en la lista ni tras '
+              'abrir la pestaña. ids disponibles = '
+              '${servicio.items.map((n) => n.idMensaje).toList()}',
+            );
           }
           break;
 
@@ -827,8 +857,9 @@ class PushService {
             '/sorteos',
             () => servicio.obtenerSorteos(idUsuario: usuario.id),
             () => servicio.sorteos.cast<Sorteo?>().firstWhere(
-                (s) => s?.id == id || s?.idCabecera == id,
-                orElse: () => null),
+              (s) => s?.id == id || s?.idCabecera == id,
+              orElse: () => null,
+            ),
           );
 
           if (sorteo != null) {
@@ -838,9 +869,11 @@ class PushService {
               ),
             );
           } else {
-            debugPrint('PUSH TAP: ⚠️ sorteo id=$id NO está en la lista ni tras '
-                'abrir la pestaña. ids (id/idCabecera) = '
-                '${servicio.sorteos.map((s) => "${s.id}/${s.idCabecera}").toList()}');
+            debugPrint(
+              'PUSH TAP: ⚠️ sorteo id=$id NO está en la lista ni tras '
+              'abrir la pestaña. ids (id/idCabecera) = '
+              '${servicio.sorteos.map((s) => "${s.id}/${s.idCabecera}").toList()}',
+            );
           }
           break;
       }

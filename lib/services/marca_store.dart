@@ -33,13 +33,14 @@ class MarcaStore {
       final decodificado = json.decode(crudo);
       if (decodificado is! List) return const [];
 
-      final marcas = decodificado
-          .whereType<Map>()
-          .map((e) => MarcaRuta.fromJson(e.cast<String, dynamic>()))
-          .toList()
-        // Se reordena al leer, no se confía en el orden del archivo: el id es
-        // correlativo y es la única garantía de secuencia que hay.
-        ..sort((a, b) => a.id.compareTo(b.id));
+      final marcas =
+          decodificado
+              .whereType<Map>()
+              .map((e) => MarcaRuta.fromJson(e.cast<String, dynamic>()))
+              .toList()
+            // Se reordena al leer, no se confía en el orden del archivo: el id es
+            // correlativo y es la única garantía de secuencia que hay.
+            ..sort((a, b) => a.id.compareTo(b.id));
 
       return marcas;
     } catch (e) {
@@ -66,10 +67,7 @@ class MarcaStore {
   }
 
   /// Encola una marca al final y devuelve la cola resultante.
-  static Future<List<MarcaRuta>> encolar(
-    int idUsuario,
-    MarcaRuta marca,
-  ) async {
+  static Future<List<MarcaRuta>> encolar(int idUsuario, MarcaRuta marca) async {
     final marcas = [...await leer(idUsuario), marca];
     await guardar(idUsuario, marcas);
     debugPrint('MARCAS: encolada $marca (${marcas.length} en cola)');

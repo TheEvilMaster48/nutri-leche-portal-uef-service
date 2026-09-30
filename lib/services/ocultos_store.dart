@@ -21,10 +21,7 @@ class OcultosStore {
     try {
       final prefs = await SharedPreferences.getInstance();
       final lista = prefs.getStringList(_clave(grupo, idUsuario)) ?? const [];
-      return lista
-          .map((e) => int.tryParse(e) ?? 0)
-          .where((e) => e > 0)
-          .toSet();
+      return lista.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
     } catch (e) {
       debugPrint('⚠️ No se pudieron leer los ocultos de $grupo: $e');
       return <int>{};

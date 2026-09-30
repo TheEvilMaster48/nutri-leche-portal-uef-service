@@ -40,11 +40,9 @@ class UsuarioService extends ChangeNotifier {
 
     if (usuariosJson != null) {
       final List<dynamic> decoded = json.decode(usuariosJson);
-      List<Usuario> usuarios =
-          decoded.map((e) => Usuario.fromJson(e)).toList();
+      List<Usuario> usuarios = decoded.map((e) => Usuario.fromJson(e)).toList();
 
-      final index = usuarios.indexWhere(
-          (u) => u.id == usuarioActualizado.id);
+      final index = usuarios.indexWhere((u) => u.id == usuarioActualizado.id);
 
       if (index != -1) {
         usuarios[index] = usuarioActualizado;
@@ -63,7 +61,7 @@ class UsuarioService extends ChangeNotifier {
     }
   }
 
-  // Cerrar Sesión 
+  // Cerrar Sesión
   void cerrarSesion() {
     _usuarioActual = null;
     notifyListeners();

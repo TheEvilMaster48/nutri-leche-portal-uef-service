@@ -49,12 +49,19 @@ class Base {
   /// SQL. Ver [[WmsApi]], que distingue el 404 de «este chofer no tiene viajes».
   static const String URL_WMS = "$ORIGEN_SERVICIOS/nutrisoft/rest/wms/api/v1";
 
+  /// Raíz del REST "logo" (módulo Logo Nutri: parámetros de los desplegables y
+  /// registros de captura). Verificado: `GET /parametros` responde el sobre
+  /// estándar `{mensaje, correcto, data}` del portal.
+  static const String URL_LOGO =
+      "$ORIGEN_SERVICIOS/nutrisoft/rest/logo/api/v1";
+
   // Se conservan los nombres de instancia que ya usa el resto de la app.
   final String BASE_URL_APPOFICIAL = URL_APPOFICIAL;
   final String BASE_URL_APPMENSAJE = URL_APPMENSAJE;
   final String BASE_URL_APP = URL_APP;
   final String BASE_URL_RUTAS = URL_RUTAS;
   final String BASE_URL_WMS = URL_WMS;
+  final String BASE_URL_LOGO = URL_LOGO;
   final String BASE_URL_RECURSOS = URL_RECURSOS;
   final String BASE_URL = "$ORIGEN_SERVICIOS/nutrisoft/rest/";
 
@@ -65,7 +72,7 @@ class Base {
   final String BASE_URL_ARCHIVOS_ENCUESTA =
       "https://servicioslsa.nutri.com.ec/encuesta/upload.php";
   final String BASE_URL_ARCHIVOS_IMAGEN_NUTRI =
-      "https://servicioslsa.nutri.com.ec/logoNutri/upload.php";
+      "https://servicioslsa.nutri.com.ec/logo/upload.php";
   // Evidencia fotográfica de los registros de ruta. La app Android subía a
   // este mismo PHP pero en el host QAS; se apunta a producción por coherencia
   // con los tres de arriba. Confirmar con una subida real antes de liberar.

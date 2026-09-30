@@ -34,7 +34,10 @@ class RutasApi {
   /// [cuerpo] se serializa con `jsonEncode` sin envolver, de modo que un `int`
   /// viaja como `5` y un `String` vacío como `""`. Para los endpoints que sí
   /// esperan un objeto, se pasa un `Map`.
-  static Future<RespuestaRutas> postRutas(String recurso, Object? cuerpo) async {
+  static Future<RespuestaRutas> postRutas(
+    String recurso,
+    Object? cuerpo,
+  ) async {
     final uri = Uri.parse('$_raiz/$recurso');
 
     try {
@@ -54,10 +57,14 @@ class RutasApi {
       }
 
       if (respuesta.body.trim().isEmpty) {
-        return RespuestaRutas.fallo('El servidor devolvió una respuesta vacía.');
+        return RespuestaRutas.fallo(
+          'El servidor devolvió una respuesta vacía.',
+        );
       }
 
-      final dynamic decodificado = json.decode(utf8.decode(respuesta.bodyBytes));
+      final dynamic decodificado = json.decode(
+        utf8.decode(respuesta.bodyBytes),
+      );
 
       // Aquí está la trampa: con HTTP 200, un String es el mensaje de error del
       // WS ("Chofer no encontrado"), no un dato. Una List o un Map sí son datos.

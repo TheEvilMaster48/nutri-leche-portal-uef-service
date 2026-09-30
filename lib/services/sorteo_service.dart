@@ -57,10 +57,7 @@ class SorteoService extends ChangeNotifier {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "idUsuario": idUsuario,
-          "idSorteo": idSorteo,
-        }),
+        body: jsonEncode({"idUsuario": idUsuario, "idSorteo": idSorteo}),
       );
 
       if (response.statusCode == 200) {

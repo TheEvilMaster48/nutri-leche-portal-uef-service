@@ -6,15 +6,15 @@ import '../services/auth_service.dart';
 import '../services/evento_service.dart';
 import '../services/cumpleanios_service.dart';
 import '../services/nutrisoft_service.dart';
+import '../services/parametro_service.dart';
 import '../models/usuario.dart';
 import '../services/push_service.dart';
 import '../services/badge_service.dart';
-import '../services/reaccion_service.dart';
 import '../services/notification_bus.dart';
-import '../services/sorteo_service.dart';
-import '../services/calendario_evento_service.dart';
-import '../services/sugerencia_service.dart';
-import '../services/usuario_service.dart';
+import '../widget/logo_nutri.dart';
+import '../widget/barra_inferior.dart';
+import '../widget/tarjeta_menu.dart';
+import '../widget/saludo_usuario.dart';
 
 export '../services/notification_bus.dart' show FirebaseNotificationBus;
 
@@ -26,8 +26,6 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
-  int _selectedIndex = 0;
-
   final Map<String, int> _notificaciones = {
     'eventos': 0,
     'cumpleanios': 0,
@@ -78,6 +76,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     });
 
     _actualizarContadoresPendientes();
+    _descargarParaTrabajoSinConexion();
 
     // Mostrar bienvenida después de inicializar
     Future.delayed(const Duration(seconds: 2), () {
@@ -99,6 +98,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       _actualizarContadoresPendientes();
+      _descargarParaTrabajoSinConexion();
     }
   }
 
@@ -110,6 +110,17 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('❌ Error inicializando PushService: $e');
     }
+  }
+
+  /// Baja lo que los módulos de campo necesitan sin señal y lo guarda en el
+  /// teléfono. Hoy son los parámetros de Logo Nutri.
+  ///
+  /// Va aparte de los contadores: si el catálogo falla, los badges igual se
+  /// actualizan, y al revés. No se espera: el menú no tiene que demorarse por
+  /// esto.
+  void _descargarParaTrabajoSinConexion() {
+    if (!mounted) return;
+    unawaited(context.read<ParametroService>().iniciar());
   }
 
   Future<void> _actualizarContadoresPendientes() async {
@@ -158,187 +169,61 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     return _notificaciones.values.fold(0, (sum, count) => sum + count);
   }
 
-  Future<void> _cerrarSesion() async {
-    final auth = context.read<AuthService>();
-    final reacciones = context.read<ReaccionService>();
-
-    // Los providers viven por encima de MaterialApp y sobreviven al logout, así
-    // que hay que vaciarlos a mano: si no, el siguiente usuario que entre ve por
-    // un instante los datos del anterior. Se leen ANTES del await para no tocar
-    // el context después del gap asíncrono.
-    final eventos = context.read<EventoService>();
-    final cumpleanios = context.read<CumpleaniosService>();
-    final nutrisoft = context.read<NutrisoftService>();
-    final sorteos = context.read<SorteoService>();
-    final calendario = context.read<CalendarioEventoService>();
-    final sugerencias = context.read<SugerenciaService>();
-    final usuarios = context.read<UsuarioService>();
-    // PerfilService NO se captura: es un ChangeNotifierProxyProvider sobre
-    // AuthService, así que `logout()` (que notifica) lo reconstruye desde cero
-    // y descarta esta instancia. Usarla después del await explota con
-    // "used after being disposed", y limpiarla no haría falta igual.
-
-    final confirmLogout = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: Base().COLOR_BLANCO,
-          title: Text('Cerrar Sesión', style: TextStyle(color: Base().COLOR_AZUL_CORP)),
-          content: Text('¿Estás seguro que deseas cerrar sesión?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(
-                'Cancelar',
-                style: TextStyle(color: Base().COLOR_AZUL_CORP),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Cerrar Sesión'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmLogout == true) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext dialogContext) {
-          return const Center(child: CircularProgressIndicator());
-        },
-      );
-
-      await auth.logout();
-      await PushService.instance.stopCompletely();
-      await BadgeService.limpiar();
-      // La caché de reacciones es por usuario: se descarta al salir.
-      await reacciones.limpiar();
-
-      // Resto de datos de la sesión que quedaban en memoria.
-      eventos.limpiar();
-      cumpleanios.limpiar();
-      nutrisoft.limpiar();
-      sorteos.limpiar();
-      calendario.limpiar();
-      sugerencias.limpiar();
-      usuarios.cerrarSesion();
-
-      // Imágenes descargadas (fotos de perfil, adjuntos de eventos): son del
-      // usuario que sale y no deben reaparecer en la sesión siguiente.
-      imageCache.clear();
-      imageCache.clearLiveImages();
-
-      // Los contadores del menú se reinician para que el badge no arrastre
-      // pendientes del usuario anterior.
-      _notificaciones.updateAll((clave, cantidad) => 0);
-
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
-    }
-  }
-
-  /// Si el usuario ve el módulo Rutas.
-  ///
-  /// Se filtra por `accesos`, el campo del perfil donde el backend manda los
-  /// permisos (`perfil.put("accesos", ...)`). La etiqueta del módulo es `APPKM`.
-  ///
-  /// Llega como una lista en texto ("[APPKM, EVENTOS]"), así que se compara
-  /// token a token en vez de con `contains`: ni los corchetes ni una etiqueta
-  /// parecida (`APPKM2`, `NOAPPKM`) deben decidir si se abre la pantalla.
-  bool _tieneModuloRutas(Usuario? usuario) {
-    final accesos = usuario?.accesos.toUpperCase() ?? '';
-    return accesos.split(RegExp(r'[^A-Z0-9]+')).contains('APPKM');
-  }
-
-  String _obtenerImagenPorGenero(Usuario? usuario) {
-    if (usuario == null) return 'assets/icono/masculino.jpg';
-    final genero = usuario.genero?.toLowerCase().trim() ?? '';
-    if (genero == 'femenino' || genero == 'f' || genero == 'mujer') {
-      return 'assets/icono/femenino.jpg';
-    } else {
-      return 'assets/icono/masculino.jpg';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final Usuario? usuario = auth.currentUser;
 
-    // Inset inferior (home indicator de iPhone). La barra inferior debe
-    // reservar este espacio extra, si no se desborda en iOS.
-    final double bottomInset = MediaQuery.of(context).viewPadding.bottom;
-
-    // Inset superior (barra de estado / notch). El fondo azul debe crecer con
-    // él para que el nombre y el subtítulo no caigan sobre la curva blanca.
-    final double topInset = MediaQuery.of(context).viewPadding.top;
-
+    // Un solo formato para todos: ícono vectorial + color del módulo. Antes
+    // convivían .jpg con fondo propio y iconos sueltos, y la lista se veía
+    // como piezas de dos juegos distintos. Los colores salen de la paleta
+    // corporativa de [Base] para que el conjunto siga leyéndose como uno solo.
+    //
+    // Los del día a día quedan en la cuadrícula; los de uso ocasional pasaron
+    // a «Utilitarios», en la barra de abajo, para que la pantalla de inicio no
+    // crezca cada vez que aparece un módulo nuevo.
     final List<Map<String, dynamic>> menus = [
       {
         'titulo': 'Gestión de Eventos',
-        'subtitulo': 'Eventos y Notificaciones',
-        'imagen': 'assets/icono/eventos.jpg',
+        'subtitulo': 'Eventos y notificaciones',
+        'icono': Icons.campaign_outlined,
+        'color': PaletaMenu.azulCorp,
         'ruta': '/eventos_page',
         'tipo': 'eventos',
       },
       {
         'titulo': 'Cumpleaños',
-        'subtitulo': 'Notificacion de cumpleañeros',
-        'imagen': 'assets/icono/cumpleanos.jpg',
+        'subtitulo': 'Notificación de cumpleañeros',
+        'icono': Icons.cake_outlined,
+        'color': PaletaMenu.azulCorp,
         'ruta': '/cumpleanios',
         'tipo': 'cumpleanios',
       },
       {
         'titulo': 'Nutrisoft',
         'subtitulo': 'Comunicados del sistema',
-        // Ícono en vez de imagen: el logo no decía nada del módulo.
         'icono': Icons.work_outline,
+        'color': PaletaMenu.azulCorp,
         'ruta': '/nutrisoft',
         'tipo': 'nutrisoft',
       },
       {
         'titulo': 'Calendario',
         'subtitulo': 'Agenda de actividades',
-        'imagen': 'assets/icono/calendario.jpg',
+        'icono': Icons.calendar_month_outlined,
+        'color': PaletaMenu.azulCorp,
         'ruta': '/calendario_eventos',
         'tipo': 'calendario',
       },
-      {
-        'titulo': 'Buzón de Sugerencias',
-        'subtitulo': 'Nueva Sugerencia',
-        'imagen': 'assets/icono/correo.jpg',
-        'ruta': '/buzon',
-      },
-      // Solo para choferes: ver [_tieneModuloRutas].
-      if (_tieneModuloRutas(usuario))
-        {
-          'titulo': 'Rutas',
-          'subtitulo': 'Viajes y registro de eventos',
-          'icono': Icons.local_shipping_outlined,
-          'ruta': '/rutas',
-        },
     ];
 
     return Scaffold(
+      // Todo el fondo azul: las tarjetas blancas sobre él resaltan, que era lo
+      // que la mitad blanca de antes les quitaba. Lo único claro es la barra
+      // de abajo.
+      backgroundColor: PaletaMenu.cabecera,
       body: Stack(
         children: [
-          Container(color: Colors.white),
-          ClipPath(
-            clipper: MenuWaveClipper(),
-            child: Container(
-              height: 320 + topInset,
-              decoration: const BoxDecoration(color: Color(0xFF0052A3)),
-            ),
-          ),
           SafeArea(
             child: Column(
               children: [
@@ -349,69 +234,40 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            _obtenerImagenPorGenero(usuario),
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                      // El logotipo reemplaza a la foto genérica por género:
+                      // decía menos del usuario que su propio nombre y metía
+                      // una foto de archivo donde va la marca. Sobre el azul
+                      // de la cabecera corresponde la versión blanca.
+                      const LogoNutri.claro(alto: 72),
                       const SizedBox(height: 16),
-                      Text(
-                        usuario?.nombre.toUpperCase() ?? '',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _obtenerDescripcionUsuario(usuario),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      SaludoUsuario(nombre: usuario?.nombre ?? ''),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
+                  child: GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      // Algo más alta que ancha: deja sitio al subtítulo en dos
+                      // líneas sin que la tarjeta se estire en pantallas anchas.
+                      childAspectRatio: 0.85,
+                    ),
                     itemCount: menus.length,
                     itemBuilder: (context, index) {
-                      final tipo = menus[index]['tipo'] as String?;
-                      final badge =
-                          (tipo != null) ? (_notificaciones[tipo] ?? 0) : 0;
+                      final menu = menus[index];
+                      final tipo = menu['tipo'] as String?;
 
-                      return _buildMenuButton(
-                        context,
-                        menus[index]['titulo'],
-                        menus[index]['subtitulo'],
-                        menus[index]['imagen'] as String?,
-                        menus[index]['ruta'],
-                        tipo: tipo,
-                        badge: badge,
-                        icono: menus[index]['icono'] as IconData?,
+                      return TarjetaMenu(
+                        titulo: menu['titulo'] as String,
+                        subtitulo: menu['subtitulo'] as String,
+                        icono: menu['icono'] as IconData,
+                        color: menu['color'] as Color,
+                        badge: tipo != null ? (_notificaciones[tipo] ?? 0) : 0,
+                        alTocar:
+                            () => _abrirModulo(menu['ruta'] as String, tipo),
                       );
                     },
                   ),
@@ -419,344 +275,31 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
               ],
             ),
           ),
-          Positioned(
-            right: 10,
-            top: MediaQuery.of(context).viewPadding.top + 6,
-            child: IconButton(
-              icon: const Icon(
-                Icons.exit_to_app,
-                color: Colors.white,
-                size: 30,
-              ),
-              onPressed: _cerrarSesion,
-              tooltip: 'Cerrar Sesión',
-            ),
-          ),
-          Positioned(
+          const Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: Container(
-              height: 65 + bottomInset,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildBottomNavItem(
-                      icon: Icons.home_outlined,
-                      label: 'Inicio',
-                      index: 0,
-                    ),
-                    _buildBottomNavItem(
-                      icon: Icons.person_outline,
-                      label: 'Perfil',
-                      index: 2,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: BarraInferior(activa: PestanaInferior.inicio),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-    int? badge,
-  }) {
-    final isSelected = _selectedIndex == index;
+  /// Abre un módulo y, al volver, pone al día sus pendientes.
+  ///
+  /// Los tres módulos con contador se releen del servidor porque el usuario
+  /// pudo haber atendido pendientes adentro; para el resto alcanza con apagar
+  /// el badge local.
+  Future<void> _abrirModulo(String ruta, String? tipo) async {
+    await Navigator.pushNamed(context, ruta);
+    if (!mounted) return;
 
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          if (index == 2) {
-            // Perfil es otra pantalla: al volver, "Inicio" queda seleccionado.
-            Navigator.pushNamed(context, '/perfil').then((_) {
-              if (mounted) setState(() => _selectedIndex = 0);
-            });
-          } else {
-            setState(() => _selectedIndex = index);
-          }
-        },
-        child: SizedBox(
-          height: 65,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    icon,
-                    color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
-                    size: 24,
-                  ),
-                  if (badge != null)
-                    Positioned(
-                      right: -6,
-                      top: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          badge > 9 ? '9+' : badge.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color:
-                      isSelected ? const Color(0xFF0052A3) : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _obtenerDescripcionUsuario(Usuario? usuario) {
-    if (usuario == null) return 'Sin datos de usuario';
-    if (usuario.areaUsuario.isNotEmpty) return 'Área Administrativa';
-    if (usuario.cargo.isNotEmpty) return 'Cargo: ${usuario.cargo}';
-    return 'Empleado Nutri';
-  }
-
-  Widget _buildMenuButton(
-    BuildContext context,
-    String title,
-    String subtitle,
-    String? imagePath,
-    String route, {
-    String? tipo,
-    int badge = 0,
-    IconData? icono,
-  }) {
-    double iconWidth = 60;
-    double iconHeight = 60;
-    BoxFit iconFit = BoxFit.contain;
-
-    if (imagePath == null) {
-      // Entrada dibujada con ícono; los tamaños de imagen no aplican.
-    } else if (imagePath.contains('eventos.jpg')) {
-      iconWidth = 80;
-      iconHeight = 80;
-    } else if (imagePath.contains('cumpleanos.jpg')) {
-      iconWidth = 80;
-      iconHeight = 80;
-    } else if (imagePath.contains('calendario.jpg')) {
-      iconWidth = 80;
-      iconHeight = 80;
-    } else if (imagePath.contains('logo_azul.png')) {
-      iconWidth = 70;
-      iconHeight = 70;
-    } else if (imagePath.contains('correo.jpg')) {
-      iconWidth = 40;
-      iconHeight = 40;
-      iconFit = BoxFit.scaleDown;
+    if (tipo == 'eventos' || tipo == 'cumpleanios' || tipo == 'nutrisoft') {
+      await _actualizarContadoresPendientes();
+    } else if (tipo != null) {
+      setState(() => _notificaciones[tipo] = 0);
+      await BadgeService.actualizar(_totalNotificaciones);
     }
-
-    return InkWell(
-      onTap: () {
-        Navigator.pushNamed(context, route).then((_) async {
-          if (tipo == 'eventos' ||
-              tipo == 'cumpleanios' ||
-              tipo == 'nutrisoft') {
-            await _actualizarContadoresPendientes();
-          } else if (tipo != null) {
-            setState(() => _notificaciones[tipo] = 0);
-            await BadgeService.actualizar(_totalNotificaciones);
-          }
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              alignment: Alignment.center,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  if (icono != null)
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Base().COLOR_AZUL_CORP.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        icono,
-                        size: 34,
-                        color: Base().COLOR_AZUL_CORP,
-                      ),
-                    )
-                  else
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        imagePath!,
-                        width: iconWidth,
-                        height: iconHeight,
-                        fit: iconFit,
-                      ),
-                    ),
-
-                  // ✅ BADGE (pendientes)
-                  if (badge > 0)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          badge > 99 ? '99+' : badge.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFF0052A3),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
-}
-
-class MenuWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    var path = Path();
-    path.lineTo(0, size.height - 50);
-    var firstControlPoint = Offset(size.width * 0.25, size.height - 70);
-    var firstEndPoint = Offset(size.width * 0.5, size.height - 50);
-    path.quadraticBezierTo(
-      firstControlPoint.dx,
-      firstControlPoint.dy,
-      firstEndPoint.dx,
-      firstEndPoint.dy,
-    );
-    var secondControlPoint = Offset(size.width * 0.75, size.height - 30);
-    var secondEndPoint = Offset(size.width, size.height - 50);
-    path.quadraticBezierTo(
-      secondControlPoint.dx,
-      secondControlPoint.dy,
-      secondEndPoint.dx,
-      secondEndPoint.dy,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

@@ -24,7 +24,8 @@ import 'wms_api.dart';
 /// primero que necesita y lo último que debería depender de la cobertura.
 class ViajeChoferService extends ChangeNotifier {
   static String _claveCache(int idUsuario) => 'wms_viajes_$idUsuario';
-  static String _claveCacheFecha(int idUsuario) => 'wms_viajes_fecha_$idUsuario';
+  static String _claveCacheFecha(int idUsuario) =>
+      'wms_viajes_fecha_$idUsuario';
   static String _claveMarca(int idUsuario) => 'wms_sync_marca_$idUsuario';
 
   /// Tope de páginas por sincronización.
@@ -69,8 +70,7 @@ class ViajeChoferService extends ChangeNotifier {
       _viajes.where((v) => !_finalizado(v) || v.tieneEventoAbierto).toList();
 
   /// Si el chofer ya cerró su recorrido, esté o no confirmado por el servidor.
-  bool _finalizado(ViajeChofer v) =>
-      v.volvioAPlanta || retornoPendiente(v.id);
+  bool _finalizado(ViajeChofer v) => v.volvioAPlanta || retornoPendiente(v.id);
 
   /// Si no queda nada que mostrar pero sí hubo viajes: se terminó el día.
   bool get todoFinalizado => _viajes.isNotEmpty && visibles.isEmpty;
@@ -131,8 +131,9 @@ class ViajeChoferService extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final respuesta =
-        await WmsApi.post('mis_viajes', {'usuario_id': idUsuario});
+    final respuesta = await WmsApi.post('mis_viajes', {
+      'usuario_id': idUsuario,
+    });
 
     _cargando = false;
 
@@ -148,11 +149,15 @@ class ViajeChoferService extends ChangeNotifier {
     // llegan `salidaEn`, `retornoEn`, `accionesDisponibles` o los incidentes —y
     // de eso depende qué botones se ofrecen.
     if (respuesta.lista.isNotEmpty) {
-      debugPrint('VIAJES: llaves del WS = ${respuesta.lista.first.keys.toList()}');
-      debugPrint('VIAJES: salidaEn=${respuesta.lista.first['salidaEn']} '
-          'retornoEn=${respuesta.lista.first['retornoEn']} '
-          'siguienteAccion=${respuesta.lista.first['siguienteAccion']} '
-          'accionesDisponibles=${respuesta.lista.first['accionesDisponibles']}');
+      debugPrint(
+        'VIAJES: llaves del WS = ${respuesta.lista.first.keys.toList()}',
+      );
+      debugPrint(
+        'VIAJES: salidaEn=${respuesta.lista.first['salidaEn']} '
+        'retornoEn=${respuesta.lista.first['retornoEn']} '
+        'siguienteAccion=${respuesta.lista.first['siguienteAccion']} '
+        'accionesDisponibles=${respuesta.lista.first['accionesDisponibles']}',
+      );
     }
 
     // Una lista vacía sí se respeta: acá significa de verdad que el chofer no
@@ -622,7 +627,9 @@ class ViajeChoferService extends ChangeNotifier {
     final ubicacion = await UbicacionService.obtener();
     if (ubicacion.ok) return ubicacion.posicion;
 
-    debugPrint('MARCAS: sin ubicación (${ubicacion.mensaje}); se registra igual');
+    debugPrint(
+      'MARCAS: sin ubicación (${ubicacion.mensaje}); se registra igual',
+    );
     return null;
   }
 
@@ -632,8 +639,10 @@ class ViajeChoferService extends ChangeNotifier {
     MarcaRuta marca, {
     required bool encolarSiFalla,
   }) async {
-    final respuesta =
-        await WmsApi.post(marca.recurso, marca.aPeticion(idUsuario));
+    final respuesta = await WmsApi.post(
+      marca.recurso,
+      marca.aPeticion(idUsuario),
+    );
 
     if (respuesta.ok) {
       // Devuelve el viaje entero ya recalculado, justamente para repintar sin
@@ -687,8 +696,7 @@ class ViajeChoferService extends ChangeNotifier {
 
     // Copia: la lista viva se modifica dentro del bucle.
     for (final marca in [..._pendientesEnvio]) {
-      final resultado =
-          await _enviar(idUsuario, marca, encolarSiFalla: false);
+      final resultado = await _enviar(idUsuario, marca, encolarSiFalla: false);
 
       if (resultado.estado == EstadoMarca.enviada) {
         await _quitarDeCola(idUsuario, marca.id);
@@ -714,8 +722,10 @@ class ViajeChoferService extends ChangeNotifier {
       break;
     }
 
-    debugPrint('MARCAS: drenaje → $enviadas enviadas, $descartadas descartadas, '
-        '${_pendientesEnvio.length} en cola');
+    debugPrint(
+      'MARCAS: drenaje → $enviadas enviadas, $descartadas descartadas, '
+      '${_pendientesEnvio.length} en cola',
+    );
 
     return ResultadoDrenaje(
       enviadas: enviadas,
@@ -756,10 +766,12 @@ class ViajeChoferService extends ChangeNotifier {
   ) async {
     _pendientesEnvio
       ..clear()
-      ..addAll(await MarcaStore.actualizar(
-        idUsuario,
-        marca.copyWith(intentos: marca.intentos + 1, ultimoError: error),
-      ));
+      ..addAll(
+        await MarcaStore.actualizar(
+          idUsuario,
+          marca.copyWith(intentos: marca.intentos + 1, ultimoError: error),
+        ),
+      );
     notifyListeners();
   }
 
@@ -791,9 +803,11 @@ class ViajeChoferService extends ChangeNotifier {
 
       _viajes
         ..clear()
-        ..addAll(decodificado
-            .whereType<Map>()
-            .map((e) => ViajeChofer.fromJson(e.cast<String, dynamic>())));
+        ..addAll(
+          decodificado.whereType<Map>().map(
+            (e) => ViajeChofer.fromJson(e.cast<String, dynamic>()),
+          ),
+        );
       _ordenar();
 
       final fecha = prefs.getString(_claveCacheFecha(idUsuario));
@@ -891,19 +905,19 @@ class ResultadoMarca {
   final int pendientes;
 
   const ResultadoMarca.enviada(this.mensaje)
-      : estado = EstadoMarca.enviada,
-        pendientes = 0;
+    : estado = EstadoMarca.enviada,
+      pendientes = 0;
 
   const ResultadoMarca.encolada(this.mensaje, {this.pendientes = 0})
-      : estado = EstadoMarca.encolada;
+    : estado = EstadoMarca.encolada;
 
   const ResultadoMarca.rechazada(this.mensaje)
-      : estado = EstadoMarca.rechazada,
-        pendientes = 0;
+    : estado = EstadoMarca.rechazada,
+      pendientes = 0;
 
   const ResultadoMarca.sinRed(this.mensaje)
-      : estado = EstadoMarca.sinRed,
-        pendientes = 0;
+    : estado = EstadoMarca.sinRed,
+      pendientes = 0;
 
   bool get ok => estado != EstadoMarca.rechazada;
 }

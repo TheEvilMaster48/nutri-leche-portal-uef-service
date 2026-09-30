@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/cierre_sesion.dart';
 import '../services/perfil_service.dart';
 import '../models/usuario.dart';
+import '../widget/barra_inferior.dart';
+import '../widget/tarjeta_menu.dart';
+import '../widget/logo_nutri.dart';
+import '../widget/saludo_usuario.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -12,8 +17,6 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
-  int _selectedIndex = 2;  // Perfil debe estar seleccionado por defecto
-
   @override
   void initState() {
     super.initState();
@@ -27,62 +30,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     await context.read<PerfilService>().obtenerPerfil();
   }
 
-  Widget _buildBottomNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final bool isSelected = _selectedIndex == index;
-
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          // Ya estamos en Perfil: no recargar la página.
-          if (index == _selectedIndex) return;
-
-          setState(() {
-            _selectedIndex = index;
-          });
-          if (index == 0) {
-            // El menú ya está debajo en el stack: volvemos a él sin recrearlo.
-            Navigator.pop(context);
-          }
-        },
-        child: SizedBox(
-          height: 65,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF0052A3) : Colors.grey,
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF0052A3) : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -92,19 +39,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
     // no existe), se usa la sesión guardada del último login.
     final Usuario? usuario = perfilService.perfil ?? auth.currentUser;
 
-    // Inset inferior (home indicator de iPhone). La barra inferior debe
-    // reservar este espacio extra, si no se desborda en iOS.
-    final double bottomInset = MediaQuery.of(context).viewPadding.bottom;
-
-    // Inset superior (barra de estado / notch). El fondo azul debe crecer con
-    // él para que el nombre y el cargo no caigan sobre la curva blanca.
-    final double topInset = MediaQuery.of(context).viewPadding.top;
-
     if (usuario == null) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Perfil'),
-          backgroundColor: const Color(0xFF0052A3),
+          backgroundColor: PaletaMenu.cabecera,
         ),
         body: const Center(
           child: Text(
@@ -116,20 +55,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      // Todo el fondo azul, como el inicio y utilitarios: antes la onda partía
+      // la pantalla y la tarjeta de datos quedaba sobre blanco.
+      backgroundColor: PaletaMenu.cabecera,
       body: Stack(
         children: [
-          // FONDO AZUL CON CURVA
-          ClipPath(
-            clipper: PerfilWaveClipper(),
-            child: Container(
-              height: 340 + topInset,
-              decoration: const BoxDecoration(
-                color: Color(0xFF0052A3),
-              ),
-            ),
-          ),
-
           SafeArea(
             child: Column(
               children: [
@@ -139,186 +69,181 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     onRefresh: _recargar,
                     color: const Color(0xFF0052A3),
                     child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                    child: Column(
-                      children: [
-                        // FOTO DE PERFIL USUARIO
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              usuario.genero == 'femenino'
-                                  ? 'assets/icono/femenino.jpg'
-                                  : 'assets/icono/masculino.jpg',
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                      child: Column(
+                        children: [
+                          // El logotipo, igual que en el menú, en lugar de la
+                          // foto de archivo por género: no decía nada del
+                          // usuario que su propio nombre no diga mejor. Sobre el
+                          // azul de la cabecera va la versión blanca.
+                          const LogoNutri.claro(alto: 72),
+
+                          const SizedBox(height: 16),
+
+                          // Mismo saludo que en Inicio.
+                          SaludoUsuario(nombre: usuario.nombre),
+
+                          const SizedBox(height: 28),
+
+                          // CARD CONTENEDOR DE TODA LA INFORMACIÓN
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              // Blanca, como las tarjetas del menú: el gris
+                              // sobre el azul se veía apagado y desentonaba
+                              // con el resto de la app.
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.12),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                // CÓDIGO SAP (con imagen)
+                                // Se muestra el código SAP en vez del id interno;
+                                // el id se sigue usando en toda la funcionalidad.
+                                _buildInfoItemWithImage(
+                                  imagePath: 'assets/icono/id.jpg',
+                                  label: 'Código SAP',
+                                  value:
+                                      usuario.codigoSap.isNotEmpty
+                                          ? usuario.codigoSap
+                                          : 'No registrado',
+                                ),
+
+                                const Divider(
+                                  height: 32,
+                                  thickness: 1,
+                                  color: Color(0xFFE6E9EF),
+                                ),
+
+                                // CORREO (con imagen)
+                                _buildInfoItemWithImage(
+                                  imagePath: 'assets/icono/correo.jpg',
+                                  label: 'Correo',
+                                  value: usuario.correo,
+                                ),
+
+                                const Divider(
+                                  height: 32,
+                                  thickness: 1,
+                                  color: Color(0xFFE6E9EF),
+                                ),
+
+                                // TELÉFONO (con imagen)
+                                _buildInfoItemWithImage(
+                                  imagePath: 'assets/icono/telefono.jpg',
+                                  label: 'Teléfono',
+                                  value: usuario.telefono,
+                                ),
+
+                                const Divider(
+                                  height: 32,
+                                  thickness: 1,
+                                  color: Color(0xFFE6E9EF),
+                                ),
+
+                                // DEPARTAMENTO (con imagen)
+                                _buildInfoItemWithImage(
+                                  imagePath: 'assets/icono/area.jpg',
+                                  label: 'Departamento',
+                                  value:
+                                      usuario.departamento.isNotEmpty
+                                          ? usuario.departamento
+                                          : 'No registrado',
+                                ),
+
+                                const Divider(
+                                  height: 32,
+                                  thickness: 1,
+                                  color: Color(0xFFE6E9EF),
+                                ),
+
+                                // GÉNERO (con icono)
+                                _buildInfoItemWithIcon(
+                                  icon: Icons.wc,
+                                  label: 'Género',
+                                  value:
+                                      usuario.genero == 'femenino'
+                                          ? 'Femenino'
+                                          : 'Masculino',
+                                ),
+
+                                const Divider(
+                                  height: 32,
+                                  thickness: 1,
+                                  color: Color(0xFFE6E9EF),
+                                ),
+
+                                // MÓDULOS (con imagen)
+                                _buildInfoItemWithImage(
+                                  imagePath: 'assets/icono/modulos.jpg',
+                                  label: 'Módulos',
+                                  value:
+                                      usuario.modulos.isNotEmpty
+                                          ? usuario.modulos
+                                          : 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrudliquip ex ea',
+                                ),
+                              ],
                             ),
                           ),
-                        ),
 
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 24),
 
-                        // NOMBRE DEL USUARIO
-                        Text(
-                          usuario.nombre.toUpperCase(),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // CARGO O ÁREA
-                        Text(
-                          usuario.cargo.isNotEmpty ? usuario.cargo : 'Área Administrativa',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        // CARD CONTENEDOR DE TODA LA INFORMACIÓN
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE0E0E0),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            children: [
-                              // CÓDIGO SAP (con imagen)
-                              // Se muestra el código SAP en vez del id interno;
-                              // el id se sigue usando en toda la funcionalidad.
-                              _buildInfoItemWithImage(
-                                imagePath: 'assets/icono/id.jpg',
-                                label: 'Código SAP',
-                                value: usuario.codigoSap.isNotEmpty
-                                    ? usuario.codigoSap
-                                    : 'No registrado',
-                              ),
-                              
-                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
-                              
-                              // CORREO (con imagen)
-                              _buildInfoItemWithImage(
-                                imagePath: 'assets/icono/correo.jpg',
-                                label: 'Correo',
-                                value: usuario.correo,
+                          // CERRAR SESIÓN
+                          //
+                          // Vive solo acá: antes estaba en un ícono de la
+                          // esquina del menú, donde se tocaba sin querer y no
+                          // se entendía qué hacía.
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: OutlinedButton.icon(
+                              onPressed: () => cerrarSesion(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(
+                                  color: Colors.white70,
+                                  width: 1.4,
                                 ),
-                              
-                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
-                              
-                              // TELÉFONO (con imagen)
-                              _buildInfoItemWithImage(
-                                imagePath: 'assets/icono/telefono.jpg',
-                                label: 'Teléfono',
-                                value: usuario.telefono,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                              
-                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
-                              
-                              // DEPARTAMENTO (con imagen)
-                              _buildInfoItemWithImage(
-                                imagePath: 'assets/icono/area.jpg',
-                                label: 'Departamento',
-                                value: usuario.departamento.isNotEmpty
-                                    ? usuario.departamento
-                                    : 'No registrado',
+                              icon: const Icon(Icons.exit_to_app),
+                              label: const Text(
+                                'Cerrar Sesión',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              
-                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
-                              
-                              // GÉNERO (con icono)
-                              _buildInfoItemWithIcon(
-                                icon: Icons.wc,
-                                label: 'Género',
-                                value: usuario.genero == 'femenino' ? 'Femenino' : 'Masculino',
-                              ),
-                              
-                              const Divider(height: 32, thickness: 1, color: Color(0xFFD0D0D0)),
-                              
-                              // MÓDULOS (con imagen)
-                              _buildInfoItemWithImage(
-                                imagePath: 'assets/icono/modulos.jpg',
-                                label: 'Módulos',
-                                value: usuario.modulos.isNotEmpty 
-                                    ? usuario.modulos 
-                                    : 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrudliquip ex ea',
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 20),
-                      ],
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
-                  ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // MENÚ INFERIOR
-          Positioned(
+          const Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: Container(
-              height: 65 + bottomInset,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildBottomNavItem(
-                      icon: Icons.home_outlined,
-                      label: 'Inicio',
-                      index: 0,
-                    ),
-                    _buildBottomNavItem(
-                      icon: Icons.person_outline,
-                      label: 'Perfil',
-                      index: 2,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: BarraInferior(activa: PestanaInferior.perfil),
           ),
         ],
       ),
@@ -335,7 +260,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     double iconWidth = 60;
     double iconHeight = 60;
     BoxFit iconFit = BoxFit.contain;
-    
+
     // ICONO DE ID: 60 X 60
     if (imagePath.contains('id.jpg')) {
       iconWidth = 60;
@@ -366,7 +291,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       iconHeight = 40;
       iconFit = BoxFit.scaleDown;
     }
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -441,11 +366,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           width: 60,
           height: 40,
           alignment: Alignment.center,
-          child: Icon(
-            icon,
-            color: const Color(0xFF0052A3),
-            size: 30,
-          ),
+          child: Icon(icon, color: const Color(0xFF0052A3), size: 30),
         ),
         const SizedBox(width: 16),
         // CONTENIDO
@@ -476,39 +397,4 @@ class _PerfilScreenState extends State<PerfilScreen> {
       ],
     );
   }
-}
-
-class PerfilWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    var path = Path();
-
-    path.lineTo(0, size.height - 30);
-
-    var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
-    var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
-    path.quadraticBezierTo(
-      firstControlPoint.dx,
-      firstControlPoint.dy,
-      firstEndPoint.dx,
-      firstEndPoint.dy,
-    );
-
-    var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
-    var secondEndPoint = Offset(size.width, size.height - 30);
-    path.quadraticBezierTo(
-      secondControlPoint.dx,
-      secondControlPoint.dy,
-      secondEndPoint.dx,
-      secondEndPoint.dy,
-    );
-
-    path.lineTo(size.width, 0);
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

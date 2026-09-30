@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_store_plus/media_store_plus.dart';
@@ -25,6 +26,8 @@ import 'services/push_service.dart';
 import 'services/sorteo_service.dart';
 import 'services/catalogo_evento_service.dart';
 import 'services/viaje_chofer_service.dart';
+import 'services/parametro_service.dart';
+import 'services/registro_logo_service.dart';
 
 import 'screens/login.dart';
 import 'screens/menu.dart';
@@ -36,14 +39,15 @@ import 'screens/sugerencia_screen.dart';
 import 'screens/calendario_evento_screen.dart';
 import 'screens/perfil.dart';
 import 'screens/viajes_pendientes_screen.dart';
+import 'screens/logo_nutri_screen.dart';
+import 'screens/utilitarios_screen.dart';
 import 'firebase_options.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) {
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
         return host.contains(Base.HOST_SERVICIOS) ||
             host.contains("10.170.4.15");
       };
@@ -53,14 +57,16 @@ class MyHttpOverrides extends HttpOverrides {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Toda la app en vertical. También está fijado en el AndroidManifest y en
+  // el Info.plist, que rigen antes de que arranque Flutter (splash).
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   // Inicializa media_kit (reproductor de video con fallback a software)
   MediaKit.ensureInitialized();
 
   HttpOverrides.global = MyHttpOverrides();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // El handler de background y el canal de Android deben quedar listos antes de
   // runApp: el tap sobre una notificación con la app cerrada depende de esto.
@@ -98,9 +104,17 @@ class NutriLechePortalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SorteoService()),
         ChangeNotifierProvider(create: (_) => CatalogoEventoService()),
         ChangeNotifierProvider(create: (_) => ViajeChoferService()),
+        ChangeNotifierProvider(create: (_) => ParametroService()),
+        ChangeNotifierProvider(create: (_) => RegistroLogoService()),
         ChangeNotifierProxyProvider<AuthService, PerfilService>(
           create: (context) => PerfilService(context.read<AuthService>()),
-          update: (context, auth, previous) => PerfilService(auth),
+          // Se reutiliza la instancia: crear una nueva en cada aviso de
+          // AuthService destruía la anterior mientras Perfil todavía la usaba
+          // («PerfilService was used after being disposed»), porque el propio
+          // obtenerPerfil() actualiza el usuario y dispara ese aviso.
+          update:
+              (context, auth, previous) =>
+                  (previous ?? PerfilService(auth))..alCambiarSesion(),
         ),
       ],
       child: const MyApp(),
@@ -125,10 +139,7 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('es', 'ES'),
-            Locale('en', 'US'),
-          ],
+          supportedLocales: const [Locale('es', 'ES'), Locale('en', 'US')],
           initialRoute: '/',
           routes: {
             '/': (context) => const LoginScreen(),
@@ -142,6 +153,8 @@ class MyApp extends StatelessWidget {
             '/perfil': (context) => const PerfilScreen(),
             '/sorteos': (context) => const SorteoScreen(),
             '/rutas': (context) => const ViajesPendientesScreen(),
+            '/logo_nutri': (context) => const LogoNutriScreen(),
+            '/utilitarios': (context) => const UtilitariosScreen(),
           },
         );
       },

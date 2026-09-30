@@ -36,6 +36,29 @@ class PerfilService with ChangeNotifier {
 
   Usuario? _perfil;
   bool _cargando = false;
+  bool _descartado = false;
+
+  /// Se llama cada vez que cambia la sesión (ver el proxy en `main.dart`).
+  /// Si se cerró sesión o entró otro usuario, los datos frescos del anterior
+  /// no deben seguir mostrándose.
+  void alCambiarSesion() {
+    final actual = _authService.currentUser;
+    if (_perfil != null && (actual == null || actual.id != _perfil!.id)) {
+      _perfil = null;
+    }
+  }
+
+  /// Una consulta puede terminar después de que el proveedor se descartó (por
+  /// ejemplo, al cerrar la app a mitad de la petición): avisar ahí revienta.
+  void _avisar() {
+    if (!_descartado) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _descartado = true;
+    super.dispose();
+  }
 
   /// Datos frescos del servidor. `null` mientras no haya una respuesta válida:
   /// la pantalla debe caer en `AuthService.currentUser` en ese caso.
@@ -118,7 +141,7 @@ class PerfilService with ChangeNotifier {
     }
 
     _cargando = true;
-    notifyListeners();
+    _avisar();
 
     final url = Uri.parse('$_baseUrl/$rutaDatos');
     debugPrint('PERFIL → POST $url  {idUsuario: ${usuario.id}}');
@@ -141,8 +164,10 @@ class PerfilService with ChangeNotifier {
       debugPrint('PERFIL ← HTTP ${response.statusCode} ${response.body}');
 
       if (response.statusCode == 404) {
-        debugPrint('PERFIL: $rutaDatos no existe en el WS; '
-            'se mantienen los datos del último login');
+        debugPrint(
+          'PERFIL: $rutaDatos no existe en el WS; '
+          'se mantienen los datos del último login',
+        );
       } else if (response.statusCode == 200) {
         final data = _extraerDatos(response.body);
 
@@ -158,7 +183,7 @@ class PerfilService with ChangeNotifier {
       debugPrint('PERFIL: error al consultar: $e');
     } finally {
       _cargando = false;
-      notifyListeners();
+      _avisar();
     }
   }
 
@@ -174,7 +199,7 @@ class PerfilService with ChangeNotifier {
       if (response.statusCode == 200) {
         _perfil = perfilActualizado;
         _authService.actualizarUsuario(perfilActualizado);
-        notifyListeners();
+        _avisar();
         return true;
       } else {
         if (kDebugMode) {

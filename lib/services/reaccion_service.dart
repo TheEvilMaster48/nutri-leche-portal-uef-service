@@ -69,8 +69,9 @@ class ReaccionService extends ChangeNotifier {
 
       map.forEach((clave, valor) {
         if (valor is Map) {
-          _resumenes[clave.toString()] =
-              ResumenReacciones.fromJson(Map<String, dynamic>.from(valor));
+          _resumenes[clave.toString()] = ResumenReacciones.fromJson(
+            Map<String, dynamic>.from(valor),
+          );
         }
       });
     } catch (e) {
@@ -207,8 +208,10 @@ class ReaccionService extends ChangeNotifier {
     await _guardarCacheLocal();
 
     if (idContenido <= 0 || idUsuario <= 0) {
-      debugPrint('REACCIÓN: NO se envía — '
-          'idUsuario=$idUsuario idContenido=$idContenido (ambos deben ser > 0)');
+      debugPrint(
+        'REACCIÓN: NO se envía — '
+        'idUsuario=$idUsuario idContenido=$idContenido (ambos deben ser > 0)',
+      );
       return false;
     }
 
@@ -226,15 +229,16 @@ class ReaccionService extends ChangeNotifier {
     // Ambas rutas devuelven el resumen completo del evento
     // ({total, reacciones:[...], miReaccion, miEmoji}), así que se usa tal cual
     // y no hace falta un segundo request.
-    final delServidor =
-        ResumenReacciones.desdeRespuesta(data, idUsuario: idUsuario);
+    final delServidor = ResumenReacciones.desdeRespuesta(
+      data,
+      idUsuario: idUsuario,
+    );
 
     if (delServidor.conteos.isNotEmpty || delServidor.miReaccion != null) {
       // El gesto manda sobre lo que diga la respuesta: al quitar, la reacción
       // propia queda en null aunque el WS la siga reportando.
-      delServidor.miReaccion = quedaActiva
-          ? (delServidor.miReaccion ?? tipo)
-          : null;
+      delServidor.miReaccion =
+          quedaActiva ? (delServidor.miReaccion ?? tipo) : null;
 
       _resumenes[clave] = delServidor;
       notifyListeners();

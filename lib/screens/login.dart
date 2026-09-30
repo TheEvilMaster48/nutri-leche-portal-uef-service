@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 
 import '../services/auth_service.dart';
 import '../base/base.dart';
+import '../widget/logo_nutri.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,13 +31,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final _cedulaRecController = TextEditingController();
   final _cedulaRecUsuarioController = TextEditingController();
 
-
   bool _obscurePassword = true;
   bool _rememberPassword = false;
   String _mensajeError = '';
   Timer? _timer;
 
   bool _checkingSession = true;
+
+  /// Hay un login en curso: bloquea el formulario y muestra el progreso en
+  /// el botón.
+  bool _cargando = false;
 
   @override
   void initState() {
@@ -72,494 +76,530 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     if (_checkingSession) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      // Mientras se revisa si hay sesión guardada: el mismo azul de la onda
+      // con la marca, para que el paso al login o al menú no sea un destello
+      // blanco con un spinner suelto.
+      return Scaffold(
+        backgroundColor: base.COLOR_AZUL_CORP,
+        body: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LogoNutri.claro(alto: 64),
+              SizedBox(height: 28),
+              SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(
+      // Toda la pantalla en el azul corporativo, sin onda: el logo y el
+      // formulario quedan centrados como un solo bloque.
+      backgroundColor: base.COLOR_AZUL_CORP,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Stack(
           children: [
-            // Fondo
-            Container(color: base.COLOR_BLANCO),
-
-            // Fondo azul con curva
-            ClipPath(
-              clipper: WaveClipper(),
-              child: Container(
-                height: MediaQuery.of(context).size.height,
-                decoration: BoxDecoration(color: base.COLOR_AZUL_CORP),
-              ),
-            ),
-
             SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 40),
-
-                      // Logo
-                      Container(
-                        width: 200,
-                        height: 110,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/icono/logo_blanco.png'),
-                            fit: BoxFit.contain,
-                          ),
+              child: LayoutBuilder(
+                builder:
+                    (context, constraints) => SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
                         ),
-                      ),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            children: [
+                              const Spacer(),
+                              const SizedBox(height: 24),
 
-                      const SizedBox(height: 8),
-
-                      // Texto Portal de Empleados
-                      Text(
-                        'NUTRI NOTIFICACIONES',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: base.COLOR_AZUL_CORP,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-
-                      const SizedBox(height: 60),
-
-                      // Título
-                      Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w600,
-                          color: base.COLOR_BLANCO,
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Contenedor blanco con formulario
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 380),
-                        padding: const EdgeInsets.fromLTRB(28, 32, 28, 32),
-                        decoration: BoxDecoration(
-                          color: base.COLOR_BLANCO,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            // Usuario
-                            Container(
-                              decoration: BoxDecoration(
-                                color: base.COLOR_BLANCO,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: base.COLOR_GRIS.withOpacity(0.35),
-                                ),
-                              ),
-                              child: TextField(
-                                controller: _usernameController,
+                              // Sobre el azul corresponde el arte blanco.
+                              const LogoNutri.claro(alto: 100),
+                              const SizedBox(height: 12),
+                              Text(
+                                'NUTRI NOTIFICACIONES',
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  color: base.COLOR_NEGRO_OSCURO,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Usuario',
-                                  hintStyle: TextStyle(
-                                    color: base.COLOR_GRIS,
-                                    fontSize: 15,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.person_outline,
-                                    color: base.COLOR_GRIS,
-                                    size: 22,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.transparent,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(
-                                      color: base.COLOR_AZUL_CORP,
-                                      width: 2,
-                                    ),
-                                  ),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withOpacity(0.8),
+                                  letterSpacing: 2.2,
                                 ),
                               ),
-                            ),
 
-                            const SizedBox(height: 18),
+                              const SizedBox(height: 40),
 
-                            // Contraseña
-                            Container(
-                              decoration: BoxDecoration(
-                                color: base.COLOR_BLANCO,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: base.COLOR_GRIS.withOpacity(0.35),
+                              // Tarjeta del formulario, en blanco puro y con sombra.
+                              Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 400,
                                 ),
-                              ),
-                              child: TextField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: base.COLOR_NEGRO_OSCURO,
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  28,
+                                  24,
+                                  24,
                                 ),
-                                decoration: InputDecoration(
-                                  hintText: 'Contraseña',
-                                  hintStyle: TextStyle(
-                                    color: base.COLOR_GRIS,
-                                    fontSize: 15,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.lock_outline,
-                                    color: base.COLOR_GRIS,
-                                    size: 22,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: base.COLOR_GRIS,
-                                      size: 22,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.18),
+                                      blurRadius: 24,
+                                      offset: const Offset(0, 10),
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.transparent,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(
-                                      color: base.COLOR_AZUL_CORP,
-                                      width: 2,
-                                    ),
-                                  ),
+                                  ],
                                 ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Checkbox Recordar contraseña
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: Checkbox(
-                                    value: _rememberPassword,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _rememberPassword = value ?? false;
-                                      });
-                                    },
-                                    activeColor: base.COLOR_AZUL_CORP,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    side: BorderSide(
-                                      color: base.COLOR_GRIS.withOpacity(0.7),
-                                      width: 1.5,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Recordar contraseña',
-                                  style: TextStyle(
-                                    color: base.COLOR_NEGRO_OSCURO,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Botón Ingresar
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  final username =
-                                      _usernameController.text.trim();
-                                  final password =
-                                      _passwordController.text.trim();
-
-                                  if (username.isEmpty || password.isEmpty) {
-                                    _mostrarMensaje(
-                                      'Por favor, ingrese su usuario y contraseña.',
-                                    );
-                                    return;
-                                  }
-
-                                  final authService =
-                                      context.read<AuthService>();
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text(
-                                        "🔄 Iniciando sesión...",
-                                      ),
-                                      backgroundColor: base.COLOR_AZUL_CLARO,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-
-                                  final success = await authService.login(
-                                    username,
-                                    password,
-                                  );
-
-                                  if (!mounted) return;
-
-                                  if (success) {
-                                    final prefs =
-                                        await SharedPreferences.getInstance();
-                                    if (_rememberPassword) {
-                                      await prefs.setString(
-                                        'saved_username',
-                                        username,
-                                      );
-                                      await prefs.setString(
-                                        'saved_password',
-                                        password,
-                                      );
-                                      await prefs.setBool(
-                                        'remember_password',
-                                        true,
-                                      );
-                                    } else {
-                                      await prefs.remove('saved_username');
-                                      await prefs.remove('saved_password');
-                                      await prefs.remove('remember_password');
-                                    }
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text(
-                                          "✅ Sesión iniciada",
+                                child: AutofillGroup(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        'Iniciar sesión',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                          color: base.COLOR_AZUL_CORP,
                                         ),
-                                        backgroundColor: base.COLOR_AZUL_VERDE,
-                                        duration: const Duration(seconds: 2),
                                       ),
-                                    );
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Ingresa con tu usuario de Nutrisoft',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
 
-                                    String? fcmToken;
+                                      const SizedBox(height: 24),
 
-                                    try {
-                                      final messaging =
-                                          FirebaseMessaging.instance;
+                                      _campo(
+                                        controller: _usernameController,
+                                        hint: 'Usuario',
+                                        icono: Icons.person_outline,
+                                        accion: TextInputAction.next,
+                                        autofill: const [
+                                          AutofillHints.username,
+                                        ],
+                                      ),
 
-                                      if (defaultTargetPlatform ==
-                                          TargetPlatform.iOS) {
-                                        // Asegura el permiso antes de pedir el APNs token.
-                                        await messaging.requestPermission(
-                                          alert: true,
-                                          badge: true,
-                                          sound: true,
-                                        );
+                                      const SizedBox(height: 14),
 
-                                        // El APNs token puede tardar unos segundos
-                                        // en estar disponible tras conceder permisos.
-                                        // Reintentamos hasta 5 veces (~5s).
-                                        String? apnsToken;
-                                        for (int intento = 1;
-                                            intento <= 5;
-                                            intento++) {
-                                          apnsToken =
-                                              await messaging.getAPNSToken();
-                                          if (apnsToken != null) break;
-                                          debugPrint(
-                                            '⏳ APNs token no listo (intento $intento/5)...',
-                                          );
-                                          await Future.delayed(
-                                            const Duration(seconds: 1),
-                                          );
-                                        }
-                                        debugPrint(
-                                          '🍏 APNS TOKEN = $apnsToken',
-                                        );
+                                      _campo(
+                                        controller: _passwordController,
+                                        hint: 'Contraseña',
+                                        icono: Icons.lock_outline,
+                                        oculto: _obscurePassword,
+                                        accion: TextInputAction.done,
+                                        autofill: const [
+                                          AutofillHints.password,
+                                        ],
+                                        alEnviar: (_) => _iniciarSesion(),
+                                        sufijo: IconButton(
+                                          tooltip:
+                                              _obscurePassword
+                                                  ? 'Mostrar contraseña'
+                                                  : 'Ocultar contraseña',
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                            color: Colors.black45,
+                                            size: 22,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              _obscurePassword =
+                                                  !_obscurePassword;
+                                            });
+                                          },
+                                        ),
+                                      ),
 
-                                        if (apnsToken == null) {
-                                          debugPrint(
-                                            '⚠️ APNs token no disponible tras 5 intentos.',
-                                          );
-                                        } else {
-                                          fcmToken = await messaging.getToken();
-                                          debugPrint(
-                                            '📲 FCM TOKEN (iOS) = $fcmToken',
-                                          );
-                                        }
-                                      } else {
-                                        fcmToken = await messaging.getToken();
-                                        debugPrint('📲 FCM TOKEN = $fcmToken');
-                                      }
-                                    } catch (e) {
-                                      debugPrint(
-                                        '⚠️ Error obteniendo FCM token: $e',
-                                      );
-                                    }
+                                      const SizedBox(height: 6),
 
-                                    if (fcmToken != null &&
-                                        authService.currentUser != null) {
-                                      await authService.EnviarToken(
-                                        fcmToken,
-                                        authService.currentUser!.id,
-                                      );
-                                    }
+                                      // Toda la fila responde al toque, no solo el
+                                      // cuadrito de 20 px.
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(8),
+                                        onTap:
+                                            _cargando
+                                                ? null
+                                                : () => setState(
+                                                  () =>
+                                                      _rememberPassword =
+                                                          !_rememberPassword,
+                                                ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: Checkbox(
+                                                  value: _rememberPassword,
+                                                  onChanged:
+                                                      _cargando
+                                                          ? null
+                                                          : (value) => setState(
+                                                            () =>
+                                                                _rememberPassword =
+                                                                    value ??
+                                                                    false,
+                                                          ),
+                                                  activeColor:
+                                                      base.COLOR_AZUL_CORP,
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  side: const BorderSide(
+                                                    color: Colors.black38,
+                                                    width: 1.5,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              const Text(
+                                                'Recordar contraseña',
+                                                style: TextStyle(
+                                                  color: Colors.black87,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
 
-                                    if (!mounted) return;
+                                      // Mensaje de error: solo ocupa lugar cuando hay
+                                      // algo que decir.
+                                      AnimatedSize(
+                                        duration: const Duration(
+                                          milliseconds: 250,
+                                        ),
+                                        child:
+                                            _mensajeError.isEmpty
+                                                ? const SizedBox(
+                                                  width: double.infinity,
+                                                )
+                                                : Container(
+                                                  margin: const EdgeInsets.only(
+                                                    top: 4,
+                                                    bottom: 4,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 10,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red
+                                                        .withOpacity(0.08),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.error_outline,
+                                                        color: Colors.redAccent,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: Text(
+                                                          _mensajeError,
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Color(
+                                                                  0xFFC62828,
+                                                                ),
+                                                                fontSize: 13,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                      ),
 
-                                    Navigator.pushReplacementNamed(
-                                      context,
-                                      '/menu',
-                                    );
-                                  } else {
-                                    _mostrarMensaje(
-                                      'Usuario o contraseña incorrectos.',
-                                    );
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: base.COLOR_AZUL_CORP,
-                                  foregroundColor: base.COLOR_BLANCO,
-                                  elevation: 0,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Ingresar',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                    color: base.COLOR_BLANCO,
+                                      const SizedBox(height: 14),
+
+                                      // Botón Ingresar. Mientras se valida muestra el
+                                      // progreso adentro y no admite otro toque: antes
+                                      // un doble toque disparaba dos logins.
+                                      SizedBox(
+                                        height: 52,
+                                        child: ElevatedButton(
+                                          onPressed:
+                                              _cargando ? null : _iniciarSesion,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                base.COLOR_AZUL_CORP,
+                                            foregroundColor: Colors.white,
+                                            disabledBackgroundColor: base
+                                                .COLOR_AZUL_CORP
+                                                .withOpacity(0.7),
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          child:
+                                              _cargando
+                                                  ? const SizedBox(
+                                                    width: 22,
+                                                    height: 22,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2.5,
+                                                          color: Colors.white,
+                                                        ),
+                                                  )
+                                                  : const Text(
+                                                    'Ingresar',
+                                                    style: TextStyle(
+                                                      fontSize: 17,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ),
 
-                            // Mensaje de error
-                            AnimatedOpacity(
-                              opacity: _mensajeError.isNotEmpty ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 400),
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: Text(
-                                  _mensajeError,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.redAccent,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                              const SizedBox(height: 12),
+
+                              // Botones Recuperar Usuario / Recuperar Contraseña
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _enlace(
+                                    'Recuperar usuario',
+                                    _mostrarDialogRecuperarUsuario,
                                   ),
-                                ),
+                                  Text(
+                                    '·',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white.withOpacity(0.6),
+                                    ),
+                                  ),
+                                  _enlace(
+                                    'Recuperar contraseña',
+                                    _mostrarDialogRecuperarClave,
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+
+                              const SizedBox(height: 8),
+                              const Spacer(),
+                            ],
+                          ),
                         ),
                       ),
-
-                      const SizedBox(height: 2),
-
-                      // Botones Recuperar Usuario / Recuperar Contraseña
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: _mostrarDialogRecuperarUsuario,
-                            style: TextButton.styleFrom(
-                              foregroundColor: base.COLOR_BLANCO,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 8,
-                              ),
-                            ),
-                            child: Text(
-                              'Recuperar usuario',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: base.COLOR_BLANCO,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '|',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: base.COLOR_BLANCO.withOpacity(0.6),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _mostrarDialogRecuperarClave,
-                            style: TextButton.styleFrom(
-                              foregroundColor: base.COLOR_BLANCO,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 8,
-                              ),
-                            ),
-                            child: Text(
-                              'Recuperar contraseña',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: base.COLOR_BLANCO,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
-                    ],
-                  ),
-                ),
+                    ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Campo del formulario: fondo gris muy claro, sin borde en reposo y azul
+  /// al enfocar.
+  Widget _campo({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icono,
+    required TextInputAction accion,
+    required List<String> autofill,
+    bool oculto = false,
+    Widget? sufijo,
+    ValueChanged<String>? alEnviar,
+  }) {
+    final borde = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Colors.black.withOpacity(0.08)),
+    );
+
+    return TextField(
+      controller: controller,
+      obscureText: oculto,
+      enabled: !_cargando,
+      textInputAction: accion,
+      autofillHints: autofill,
+      autocorrect: false,
+      enableSuggestions: !oculto,
+      onSubmitted: alEnviar,
+      style: const TextStyle(fontSize: 15, color: Colors.black87),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.black38, fontSize: 15),
+        prefixIcon: Icon(icono, color: Colors.black45, size: 22),
+        suffixIcon: sufijo,
+        filled: true,
+        fillColor: const Color(0xFFF4F6FA),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: borde,
+        enabledBorder: borde,
+        disabledBorder: borde,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: base.COLOR_AZUL_CORP, width: 1.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _enlace(String texto, VoidCallback alTocar) {
+    return TextButton(
+      onPressed: _cargando ? null : alTocar,
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      ),
+      child: Text(
+        texto,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _iniciarSesion() async {
+    if (_cargando) return;
+    FocusScope.of(context).unfocus();
+
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      _mostrarMensaje('Por favor, ingrese su usuario y contraseña.');
+      return;
+    }
+
+    final authService = context.read<AuthService>();
+
+    setState(() {
+      _cargando = true;
+      _mensajeError = '';
+    });
+
+    try {
+      final success = await authService.login(username, password);
+
+      if (!mounted) return;
+
+      if (!success) {
+        _mostrarMensaje('Usuario o contraseña incorrectos.');
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberPassword) {
+        await prefs.setString('saved_username', username);
+        await prefs.setString('saved_password', password);
+        await prefs.setBool('remember_password', true);
+      } else {
+        await prefs.remove('saved_username');
+        await prefs.remove('saved_password');
+        await prefs.remove('remember_password');
+      }
+
+      String? fcmToken;
+
+      try {
+        final messaging = FirebaseMessaging.instance;
+
+        if (defaultTargetPlatform == TargetPlatform.iOS) {
+          // Asegura el permiso antes de pedir el APNs token.
+          await messaging.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+
+          // El APNs token puede tardar unos segundos
+          // en estar disponible tras conceder permisos.
+          // Reintentamos hasta 5 veces (~5s).
+          String? apnsToken;
+          for (int intento = 1; intento <= 5; intento++) {
+            apnsToken = await messaging.getAPNSToken();
+            if (apnsToken != null) break;
+            debugPrint('⏳ APNs token no listo (intento $intento/5)...');
+            await Future.delayed(const Duration(seconds: 1));
+          }
+          debugPrint('🍏 APNS TOKEN = $apnsToken');
+
+          if (apnsToken == null) {
+            debugPrint('⚠️ APNs token no disponible tras 5 intentos.');
+          } else {
+            fcmToken = await messaging.getToken();
+            debugPrint('📲 FCM TOKEN (iOS) = $fcmToken');
+          }
+        } else {
+          fcmToken = await messaging.getToken();
+          debugPrint('📲 FCM TOKEN = $fcmToken');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error obteniendo FCM token: $e');
+      }
+
+      if (fcmToken != null && authService.currentUser != null) {
+        await authService.EnviarToken(fcmToken, authService.currentUser!.id);
+      }
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, '/menu');
+    } catch (e) {
+      debugPrint('Error al iniciar sesión: $e');
+      if (mounted) {
+        _mostrarMensaje('No se pudo iniciar sesión. Revise su conexión.');
+      }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
   }
 
   void _mostrarMensaje(String mensaje) {
@@ -572,60 +612,177 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // =========================
-  //  DIALOG RECUPERAR CLAVE
+  //  RECUPERAR USUARIO / CLAVE
   // =========================
-  Future<void> _mostrarDialogRecuperarClave() async {
-    final parentContext = context;
+  Future<void> _mostrarDialogRecuperarClave() => _mostrarDialogRecuperacion(
+    titulo: 'Recuperar contraseña',
+    descripcion:
+        'Ingrese su número de cédula. Le enviaremos las instrucciones al '
+        'correo registrado.',
+    controller: _cedulaRecController,
+    endpoint: 'cambiar_contraseña',
+    exito:
+        (correo) =>
+            correo == null
+                ? 'Se enviaron las instrucciones a su correo registrado.'
+                : 'Se enviaron las instrucciones a su correo '
+                    '${_enmascararCorreo(correo)}',
+  );
 
-    // Limpia campos cada vez que abras el dialog (opcional)
-    _cedulaRecController.clear();
+  Future<void> _mostrarDialogRecuperarUsuario() => _mostrarDialogRecuperacion(
+    titulo: 'Recuperar usuario',
+    descripcion:
+        'Ingrese su número de cédula. Le enviaremos su usuario al correo '
+        'registrado.',
+    controller: _cedulaRecUsuarioController,
+    endpoint: 'recuperar_usuario',
+    exito:
+        (correo) =>
+            correo == null
+                ? 'Se envió su usuario a su correo registrado.'
+                : 'Se envió su usuario al correo ${_enmascararCorreo(correo)}',
+  );
+
+  /// Diálogo común de recuperación por cédula.
+  ///
+  /// Los errores se muestran dentro del diálogo, con el mensaje que devuelve
+  /// el servidor («No se ha encontrado el usuario», etc.). Antes salían en un
+  /// SnackBar detrás de la capa oscura del diálogo y siempre con el mismo
+  /// «No se pudo enviar la solicitud», así que parecía que el botón no hacía
+  /// nada.
+  Future<void> _mostrarDialogRecuperacion({
+    required String titulo,
+    required String descripcion,
+    required TextEditingController controller,
+    required String endpoint,
+    required String Function(String? correo) exito,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    controller.clear();
 
     bool enviando = false;
+    String error = '';
 
     await showDialog(
-      context: parentContext,
-      barrierDismissible: !enviando,
+      context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
-            builder: (dialogContext, setStateDialog) {
-              return AlertDialog(
+          builder: (dialogContext, setStateDialog) {
+            Future<void> enviar() async {
+              final cedula = controller.text.trim();
+              if (cedula.isEmpty) {
+                setStateDialog(() => error = 'Ingrese su número de cédula.');
+                return;
+              }
+
+              setStateDialog(() {
+                enviando = true;
+                error = '';
+              });
+
+              final resultado = await _solicitarRecuperacion(
+                endpoint: endpoint,
+                cedula: cedula,
+              );
+
+              if (!dialogContext.mounted) return;
+
+              if (!resultado.correcto) {
+                setStateDialog(() {
+                  enviando = false;
+                  error = resultado.mensaje;
+                });
+                return;
+              }
+
+              Navigator.of(dialogContext).pop();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(exito(resultado.correo)),
+                  backgroundColor: base.COLOR_AZUL_VERDE,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+
+            return PopScope(
+              // Mientras se envía no se cierra ni con atrás ni tocando afuera.
+              canPop: !enviando,
+              child: AlertDialog(
                 scrollable: true,
-                backgroundColor: base.COLOR_BLANCO,
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 title: Text(
-                  'Recuperar contraseña',
-                  style: TextStyle(color: base.COLOR_AZUL_CORP),
+                  titulo,
+                  style: TextStyle(
+                    color: base.COLOR_AZUL_CORP,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Ingrese su número de cédula. Le enviaremos las '
-                        'instrucciones al correo registrado.',
-                        style: TextStyle(color: base.COLOR_AZUL_CORP, fontSize: 13),
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      descripcion,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 13,
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _cedulaRecController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Cédula',
-                          labelStyle: TextStyle(color: base.COLOR_AZUL_CORP),
-                          prefixIcon: Icon(Icons.badge_outlined, color: base.COLOR_AZUL_CORP),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: base.COLOR_AZUL_CORP),
-                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: controller,
+                      enabled: !enviando,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => enviar(),
+                      decoration: InputDecoration(
+                        labelText: 'Cédula',
+                        labelStyle: TextStyle(color: base.COLOR_AZUL_CORP),
+                        prefixIcon: Icon(
+                          Icons.badge_outlined,
+                          color: base.COLOR_AZUL_CORP,
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: base.COLOR_AZUL_CORP),
                         ),
                       ),
+                    ),
+                    if (error.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.redAccent,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              error,
+                              style: const TextStyle(
+                                color: Color(0xFFC62828),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-                  ),
+                  ],
+                ),
                 actions: [
                   TextButton(
-                    onPressed: enviando
-                        ? null
-                        : () {
-                      FocusScope.of(dialogContext).unfocus();
-                      Navigator.of(dialogContext).pop();
-                    },
+                    onPressed:
+                        enviando
+                            ? null
+                            : () => Navigator.of(dialogContext).pop(),
                     child: const Text(
                       'Cancelar',
                       style: TextStyle(color: Colors.redAccent),
@@ -634,197 +791,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: base.COLOR_AZUL_CORP,
-                      foregroundColor: base.COLOR_BLANCO,
-                    ),
-                    onPressed: enviando
-                        ? null
-                        : () async {
-                      final cedula = _cedulaRecController.text.trim();
-
-                      if (cedula.isEmpty) {
-                        ScaffoldMessenger.of(parentContext).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ingrese su número de cédula.'),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setStateDialog(() => enviando = true);
-
-                      final correo = await _enviarRecuperacionClave(
-                        cedula: cedula,
-                      );
-
-                      if (!mounted) return;
-
-                      setStateDialog(() => enviando = false);
-
-                      if (correo != null && correo.isNotEmpty) {
-                        FocusScope.of(dialogContext).unfocus();
-                        Navigator.of(dialogContext).pop();
-
-                        ScaffoldMessenger.of(parentContext).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Se han enviado las instrucciones a su correo '
-                              '${_enmascararCorreo(correo)}',
-                            ),
-                            backgroundColor: base.COLOR_AZUL_VERDE,
-                            duration: const Duration(seconds: 5),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(parentContext).showSnackBar(
-                          const SnackBar(
-                            content: Text('⚠️ No se pudo enviar la solicitud.'),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    },
-                    child: enviando
-                        ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                        : Text('Enviar', style: TextStyle(color: base.COLOR_BLANCO)),
-                  ),
-                ],
-              );
-            },
-        );
-      },
-    );
-  }
-
-
-
-  // =========================
-  //  DIALOG RECUPERAR USUARIO
-  // =========================
-  Future<void> _mostrarDialogRecuperarUsuario() async {
-    final parentContext = context;
-
-    _cedulaRecUsuarioController.clear();
-
-    bool enviando = false;
-
-    await showDialog(
-      context: parentContext,
-      barrierDismissible: !enviando,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setStateDialog) {
-            return AlertDialog(
-              scrollable: true,
-              backgroundColor: base.COLOR_BLANCO,
-              title: Text(
-                'Recuperar usuario',
-                style: TextStyle(color: base.COLOR_AZUL_CORP),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Ingrese su número de cédula. Le enviaremos su usuario '
-                    'al correo registrado.',
-                    style: TextStyle(color: base.COLOR_AZUL_CORP, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _cedulaRecUsuarioController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Cédula',
-                      labelStyle: TextStyle(color: base.COLOR_AZUL_CORP),
-                      prefixIcon: Icon(Icons.badge_outlined,
-                          color: base.COLOR_AZUL_CORP),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: base.COLOR_AZUL_CORP),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: base.COLOR_AZUL_CORP.withOpacity(
+                        0.7,
                       ),
                     ),
+                    onPressed: enviando ? null : enviar,
+                    child:
+                        enviando
+                            ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text('Enviar'),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: enviando
-                      ? null
-                      : () {
-                    FocusScope.of(dialogContext).unfocus();
-                    Navigator.of(dialogContext).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.redAccent),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: base.COLOR_AZUL_CORP,
-                    foregroundColor: base.COLOR_BLANCO,
-                  ),
-                  onPressed: enviando
-                      ? null
-                      : () async {
-                    final cedula = _cedulaRecUsuarioController.text.trim();
-
-                    if (cedula.isEmpty) {
-                      ScaffoldMessenger.of(parentContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ingrese su número de cédula.'),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                      return;
-                    }
-
-                    setStateDialog(() => enviando = true);
-
-                    final correo = await _enviarRecuperacionUsuario(
-                      cedula: cedula,
-                    );
-
-                    if (!mounted) return;
-
-                    setStateDialog(() => enviando = false);
-
-                    if (correo != null && correo.isNotEmpty) {
-                      FocusScope.of(dialogContext).unfocus();
-                      Navigator.of(dialogContext).pop();
-
-                      ScaffoldMessenger.of(parentContext).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Se ha enviado su usuario al correo '
-                            '${_enmascararCorreo(correo)}',
-                          ),
-                          backgroundColor: base.COLOR_AZUL_VERDE,
-                          duration: const Duration(seconds: 5),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(parentContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('⚠️ No se pudo enviar la solicitud.'),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                    }
-                  },
-                  child: enviando
-                      ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : Text('Enviar',
-                          style: TextStyle(color: base.COLOR_BLANCO)),
-                ),
-              ],
             );
           },
         );
@@ -832,81 +818,68 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Solicita el envío del usuario por cédula.
-  /// Devuelve el correo al que se envió el mensaje, o null si falló.
-  Future<String?> _enviarRecuperacionUsuario({
+  /// Llama a `appOficial/<endpoint>` con la cédula.
+  ///
+  /// Respuesta esperada: {"correcto": bool, "mensaje": "...", "correo": "..."}.
+  /// Se respeta el `mensaje` del servidor cuando falla, y un `correcto: true`
+  /// sin correo sigue siendo un éxito (antes se tomaba como error).
+  Future<({bool correcto, String mensaje, String? correo})>
+  _solicitarRecuperacion({
+    required String endpoint,
     required String cedula,
   }) async {
-    const url = '${Base.URL_APPOFICIAL}/recuperar_usuario';
+    const fallaGenerica = 'No se pudo enviar la solicitud. Intente de nuevo.';
 
     try {
-      final resp = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'cedula': cedula}),
-      );
+      final resp = await http
+          .post(
+            Uri.parse('${Base.URL_APPOFICIAL}/$endpoint'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'cedula': cedula}),
+          )
+          .timeout(const Duration(seconds: 20));
 
-      if (resp.statusCode >= 200 && resp.statusCode < 300) {
-        return _extraerCorreo(resp.body);
+      debugPrint('🔑 $endpoint status=${resp.statusCode} body=${resp.body}');
+
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        return (correcto: false, mensaje: fallaGenerica, correo: null);
       }
 
-      debugPrint(
-        '❌ recuperarUsuario status=${resp.statusCode} body=${resp.body}',
-      );
-      return null;
-    } catch (e) {
-      debugPrint('⚠️ Error llamar recuperarUsuario: $e');
-      return null;
-    }
-  }
-
-  /// Solicita el cambio de contraseña por cédula.
-  /// Devuelve el correo al que se envió el mensaje, o null si falló.
-  Future<String?> _enviarRecuperacionClave({
-    required String cedula,
-  }) async {
-    const url = '${Base.URL_APPOFICIAL}/cambiar_contraseña';
-
-    try {
-      final resp = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'cedula': cedula}),
-      );
-
-      if (resp.statusCode >= 200 && resp.statusCode < 300) {
-        return _extraerCorreo(resp.body);
+      final data = jsonDecode(utf8.decode(resp.bodyBytes));
+      if (data is! Map) {
+        return (correcto: false, mensaje: fallaGenerica, correo: null);
       }
 
-      debugPrint(
-        '❌ cambiarContrasena status=${resp.statusCode} body=${resp.body}',
-      );
-      return null;
-    } catch (e) {
-      debugPrint('⚠️ Error llamar cambiarContrasena: $e');
-      return null;
-    }
-  }
+      final mensaje = (data['mensaje'] as String?)?.trim() ?? '';
+      final correo = (data['correo'] as String?)?.trim();
 
-  /// Extrae el correo de la respuesta del servicio.
-  /// Formato esperado: {"correcto": true, "mensaje": "...", "correo": "..."}
-  /// Devuelve el correo solo si "correcto" es true.
-  String? _extraerCorreo(String body) {
-    final texto = body.trim();
-    if (texto.isEmpty) return null;
-
-    try {
-      final data = jsonDecode(texto);
-      if (data is Map) {
-        if (data['correcto'] == false) return null;
-        final correo = data['correo'];
-        if (correo is String && correo.trim().isNotEmpty) return correo.trim();
+      if (data['correcto'] != true) {
+        return (
+          correcto: false,
+          mensaje: mensaje.isNotEmpty ? mensaje : fallaGenerica,
+          correo: null,
+        );
       }
-    } catch (e) {
-      debugPrint('⚠️ Respuesta no es JSON válido: $e');
-    }
 
-    return null;
+      return (
+        correcto: true,
+        mensaje: mensaje,
+        correo: correo != null && correo.isNotEmpty ? correo : null,
+      );
+    } on TimeoutException {
+      return (
+        correcto: false,
+        mensaje: 'El servidor no respondió. Revise su conexión.',
+        correo: null,
+      );
+    } catch (e) {
+      debugPrint('⚠️ Error en $endpoint: $e');
+      return (
+        correcto: false,
+        mensaje: 'No hay conexión con el servidor. Revise su red.',
+        correo: null,
+      );
+    }
   }
 
   /// Enmascara un correo: pruebaenvio@gmail.com -> pru*****o@gmail.com
@@ -937,43 +910,4 @@ class _LoginScreenState extends State<LoginScreen> {
     _timer?.cancel();
     super.dispose();
   }
-
-}
-
-// Curva ondulada
-class WaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    var path = Path();
-
-    path.lineTo(0, 0);
-    path.lineTo(0, 240);
-
-    var firstControlPoint = Offset(size.width * 0.25, 220);
-    var firstEndPoint = Offset(size.width * 0.5, 240);
-    path.quadraticBezierTo(
-      firstControlPoint.dx,
-      firstControlPoint.dy,
-      firstEndPoint.dx,
-      firstEndPoint.dy,
-    );
-
-    var secondControlPoint = Offset(size.width * 0.75, 260);
-    var secondEndPoint = Offset(size.width, 240);
-    path.quadraticBezierTo(
-      secondControlPoint.dx,
-      secondControlPoint.dy,
-      secondEndPoint.dx,
-      secondEndPoint.dy,
-    );
-
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

@@ -46,8 +46,9 @@ class WmsApi {
   /// un POST. No llevan `usuario_id` porque no dependen del chofer.
   static Future<RespuestaWms> get(String recurso) async {
     try {
-      final respuesta =
-          await cliente.get(Uri.parse('$_raiz/$recurso')).timeout(_timeout);
+      final respuesta = await cliente
+          .get(Uri.parse('$_raiz/$recurso'))
+          .timeout(_timeout);
       return _interpretar(recurso, respuesta);
     } catch (e) {
       debugPrint('WMS $recurso → excepción: $e');
@@ -97,7 +98,9 @@ class WmsApi {
     try {
       final sobre = json.decode(utf8.decode(respuesta.bodyBytes));
       if (sobre is! Map) {
-        return const RespuestaWms.fallo('El servidor devolvió algo inesperado.');
+        return const RespuestaWms.fallo(
+          'El servidor devolvió algo inesperado.',
+        );
       }
 
       final correcto = sobre['correcto'] == true;
@@ -171,21 +174,19 @@ class RespuestaWms {
   /// Solo cuando [ok] es false.
   final FalloWms? fallo;
 
-  const RespuestaWms.exito(this.datos, this.mensaje)
-      : ok = true,
-        fallo = null;
+  const RespuestaWms.exito(this.datos, this.mensaje) : ok = true, fallo = null;
 
   /// Rechazo del servidor: entendió la petición y la negó.
   const RespuestaWms.rechazo(this.mensaje)
-      : datos = null,
-        ok = false,
-        fallo = FalloWms.regla;
+    : datos = null,
+      ok = false,
+      fallo = FalloWms.regla;
 
   /// No se pudo hablar con el servidor, o lo que contestó no se entiende.
   const RespuestaWms.fallo(this.mensaje)
-      : datos = null,
-        ok = false,
-        fallo = FalloWms.transporte;
+    : datos = null,
+      ok = false,
+      fallo = FalloWms.transporte;
 
   /// Si vale la pena volver a intentar esta misma llamada más tarde.
   bool get reintentable => fallo == FalloWms.transporte;

@@ -37,9 +37,10 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
     final idUsuario = usuario?.id ?? 0;
 
     if (idUsuario != 0) {
-      final r = await context
-          .read<SorteoService>()
-          .verificarRegistroLocal(idUsuario, widget.sorteo.id);
+      final r = await context.read<SorteoService>().verificarRegistroLocal(
+        idUsuario,
+        widget.sorteo.id,
+      );
 
       setState(() => registrado = r);
     }
@@ -62,8 +63,11 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
           fit: BoxFit.cover,
         );
       } catch (_) {
-        imagenWidget =
-            const Icon(Icons.broken_image, size: 130, color: Colors.grey);
+        imagenWidget = const Icon(
+          Icons.broken_image,
+          size: 130,
+          color: Colors.grey,
+        );
       }
     } else {
       imagenWidget = const Icon(Icons.image, size: 130, color: Colors.grey);
@@ -80,121 +84,121 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: const Color(0xFFFFEBEE),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              children: [
-                Text(
-                  titulo,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  descripcion,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imagenWidget,
-            ),
-            const SizedBox(height: 25),
-
-            if (!registrado)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC62828),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () async {
-                    final auth = context.read<AuthService>();
-                    final usuario = auth.currentUser;
-                    final idUsuario = usuario?.id ?? 0;
-
-                    if (idUsuario == 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Usuario no válido.")),
-                      );
-                      return;
-                    }
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Registrándose al Sorteo"),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-
-                    await context.read<SorteoService>().marcarSorteoComoRegistro(
-                          idUsuario: idUsuario,
-                          idSorteo: widget.sorteo.id,
-                        );
-
-                    await Future.delayed(const Duration(seconds: 2));
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content:
-                            Text("✅ Registrado al Sorteo Correctamente"),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
-
-                    await Future.delayed(const Duration(seconds: 3));
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MenuScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Registrarse",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
+      // SafeArea: el botón va al pie y la barra de navegación de Android lo
+      // tapaba.
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    titulo,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    descripcion,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 18, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: imagenWidget,
+              ),
+              const SizedBox(height: 25),
+
+              if (!registrado)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC62828),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final auth = context.read<AuthService>();
+                      final usuario = auth.currentUser;
+                      final idUsuario = usuario?.id ?? 0;
+
+                      if (idUsuario == 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Usuario no válido.")),
+                        );
+                        return;
+                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Registrándose al Sorteo"),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+
+                      await context
+                          .read<SorteoService>()
+                          .marcarSorteoComoRegistro(
+                            idUsuario: idUsuario,
+                            idSorteo: widget.sorteo.id,
+                          );
+
+                      await Future.delayed(const Duration(seconds: 2));
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("✅ Registrado al Sorteo Correctamente"),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+
+                      await Future.delayed(const Duration(seconds: 3));
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MenuScreen()),
+                      );
+                    },
+                    child: const Text(
+                      "Registrarse",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-            if (registrado)
-              const Text(
-                "Ya estás registrado en este sorteo...",
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              if (registrado)
+                const Text(
+                  "Ya estás registrado en este sorteo...",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
 
-            const SizedBox(height: 10),
-          ],
+              const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );

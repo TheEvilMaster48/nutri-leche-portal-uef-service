@@ -1,7 +1,7 @@
 name: nutri
 description: Portal de Empleados Nutri Ecuador
 publish_to: 'none'
-version: 3.0.0+9
+version: 3.1.0+11
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -70,6 +70,11 @@ dependencies:
   # BADGE EN EL ÍCONO DE LA APP (pendientes en springboard iOS / launcher Android)
   app_badge_plus: ^1.2.2
   timezone: ^0.10.1
+  # GEOCODIFICACIÓN INVERSA (módulo Logo Nutri)
+  # Traduce las coordenadas del GPS al nombre de la ciudad. Usa el geocoder del
+  # sistema (Geocoder en Android, CLGeocoder en iOS), así que NO funciona sin
+  # datos: cuando falla, el campo queda para escribirlo a mano.
+  geocoding: ^5.0.0
 
   # OVERRIDE — FORZAR LA NUEVA VERSIÓN DEL PLUGIN
 dependency_overrides:
@@ -109,24 +114,51 @@ flutter:
 
 
 # CONFIGURACIÓN DE ÍCONO DE APP
+#
+# Las dos imágenes de abajo se generan a partir de `logo_azul.png` y no se
+# dibujan a mano: el logotipo es horizontal y el ícono es cuadrado, así que hay
+# que centrarlo con margen. `icono_app.png` lleva el fondo blanco incorporado;
+# `icono_app_foreground.png` va transparente y más chico porque Android recorta
+# el ícono adaptativo a círculo, cuadrado o «squircle» según el launcher y solo
+# garantiza el 66% central.
 flutter_launcher_icons:
   android: true
-  ios: true
-  image_path: "assets/icono/nutrileche.png"
+  # iOS se mantiene a mano en ios/Runner/Assets.xcassets/AppIcon.appiconset:
+  # lleva variantes para modo oscuro y tintado (iOS 18+) y un azul un poco más
+  # claro, porque iOS oscurece el ícono al dibujarlo. Si se pone en true, este
+  # paquete sobrescribe esas imágenes.
+  ios: false
+  image_path: "assets/icono/icono_app.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icono/nutrileche.png"
+  adaptive_icon_foreground: "assets/icono/icono_app_foreground.png"
+  # iOS rechaza íconos con canal alfa; la imagen ya va sin él, esto es seguro.
+  remove_alpha_ios: true
 
   web:
     generate: true
-    image_path: "assets/icono/nutrileche.png"
+    image_path: "assets/icono/icono_app.png"
     background_color: "#FFFFFF"
     theme_color: "#FFFFFF"
 
 # CONFIGURACIÓN DE PANTALLA DE CARGA (SPLASH)
+#
+# Dos imágenes porque son dos mecanismos distintos: hasta Android 11 (y en iOS
+# y web) el sistema dibuja `image` centrada sobre `color`; desde Android 12 la
+# pantalla de arranque la controla el sistema y exige un lienzo de 1152x1152
+# del que solo muestra el círculo central de 768 px.
+#
+# `android_gravity` pasó de `fill` a `center`: el logotipo es horizontal y
+# `fill` lo estiraba a pantalla completa, deformándolo.
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/icono/nutrileche.png
+  image: assets/icono/splash_logo.png
   android: true
   ios: true
   web: true
-  android_gravity: fill
+  android_gravity: center
+  ios_content_mode: center
+  web_image_mode: center
+
+  android_12:
+    image: assets/icono/splash_android12.png
+    color: "#FFFFFF"

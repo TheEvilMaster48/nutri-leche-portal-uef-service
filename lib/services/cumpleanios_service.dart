@@ -32,7 +32,6 @@ class CumpleaniosService extends ChangeNotifier {
         if (map["appEventoList"] != null &&
             map["appEventoList"] is List &&
             map["appEventoList"].isNotEmpty) {
-
           final List<dynamic> lista = map["appEventoList"];
 
           // Se descartan los eliminados: por estado (si el backend ya lo
@@ -41,11 +40,15 @@ class CumpleaniosService extends ChangeNotifier {
 
           _cumpleanios
             ..clear()
-            ..addAll(lista
-                .map((e) => Cumpleanios.fromJson(e))
-                .where((c) =>
-                    c.estado != estadoEliminado &&
-                    !ocultos.contains(c.idCumpleanios)));
+            ..addAll(
+              lista
+                  .map((e) => Cumpleanios.fromJson(e))
+                  .where(
+                    (c) =>
+                        c.estado != estadoEliminado &&
+                        !ocultos.contains(c.idCumpleanios),
+                  ),
+            );
 
           notifyListeners();
           debugPrint(lista.toString());
@@ -60,7 +63,8 @@ class CumpleaniosService extends ChangeNotifier {
     }
   }
 
-  Future<void> marcarCumpleaniosComoVisto({
+  /// Devuelve si el servidor lo registró.
+  Future<bool> marcarCumpleaniosComoVisto({
     required int idUsuario,
     required int idCumpleanios,
   }) async {
@@ -70,23 +74,24 @@ class CumpleaniosService extends ChangeNotifier {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "idUsuario": idUsuario,
-          "idEvento": idCumpleanios,
-        }),
+        body: jsonEncode({"idUsuario": idUsuario, "idEvento": idCumpleanios}),
       );
 
       if (response.statusCode == 200) {
-        final index =
-            _cumpleanios.indexWhere((c) => c.idCumpleanios == idCumpleanios);
+        final index = _cumpleanios.indexWhere(
+          (c) => c.idCumpleanios == idCumpleanios,
+        );
 
         if (index != -1) {
           _cumpleanios[index].estado = 1;
           notifyListeners();
         }
+        return true;
       }
+      return false;
     } catch (e) {
       debugPrint("ERROR HTTP AL MARCAR CUMPLEAÑOS COMO VISTO: $e");
+      return false;
     }
   }
 
@@ -99,8 +104,9 @@ class CumpleaniosService extends ChangeNotifier {
     required int idUsuario,
     required int idCumpleanios,
   }) async {
-    final index =
-        _cumpleanios.indexWhere((c) => c.idCumpleanios == idCumpleanios);
+    final index = _cumpleanios.indexWhere(
+      (c) => c.idCumpleanios == idCumpleanios,
+    );
     if (index != -1) {
       _cumpleanios.removeAt(index);
       notifyListeners();
@@ -137,7 +143,8 @@ class CumpleaniosService extends ChangeNotifier {
     try {
       final nuevo = Cumpleanios.fromJson(data);
 
-      if (_cumpleanios.any((c) => c.idCumpleanios == nuevo.idCumpleanios)) return;
+      if (_cumpleanios.any((c) => c.idCumpleanios == nuevo.idCumpleanios))
+        return;
 
       _cumpleanios.insert(0, nuevo);
       notifyListeners();

@@ -160,6 +160,9 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
   @override
   Widget build(BuildContext context) {
     final servicio = context.watch<CalendarioEventoService>();
+    // En iPhone con notch/Dynamic Island la SafeArea baja el header; el fondo
+    // azul tiene que crecer lo mismo o el título queda blanco sobre blanco.
+    final double topInset = MediaQuery.of(context).viewPadding.top;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -171,7 +174,7 @@ class _CalendarioEventosScreenState extends State<CalendarioEventosScreen> {
                 ClipPath(
                   clipper: CalendarioWaveClipper(),
                   child: Container(
-                    height: 120,
+                    height: 120 + topInset,
                     decoration: const BoxDecoration(
                       color: Color(0xFF0052A3),
                     ),

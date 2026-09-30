@@ -66,6 +66,43 @@ class _EventosPageState extends State<EventosPage> {
     });
   }
 
+  /// Los seleccionados que el usuario todavía no vio.
+  List<int> _sinVer(List<Evento> lista) => [
+    for (final x in lista)
+      if (x.estado == 0 && _seleccionados.contains(x.idEvento)) x.idEvento,
+  ];
+
+  /// Marca como vistos [ids] en el servidor. La selección se conserva para
+  /// que el usuario pueda eliminarlos a continuación.
+  Future<void> _marcarComoVistos(List<int> ids) async {
+    final service = context.read<EventoService>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    var fallidos = 0;
+    for (final id in ids) {
+      final ok = await service.marcarEventoComoVisto(
+        idUsuario: idUsuario,
+        idEvento: id,
+      );
+      if (!ok) fallidos++;
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          fallidos == 0
+              ? (ids.length == 1
+                  ? 'Marcada como vista'
+                  : '${ids.length} marcadas como vistas')
+              : 'No se pudieron marcar $fallidos. Revisa tu conexión.',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Elimina todo lo seleccionado con una sola confirmación.
   ///
   /// Se reusa `eliminarEvento` uno por uno: ya hace el borrado optimista, el
@@ -77,23 +114,38 @@ class _EventosPageState extends State<EventosPage> {
     final ids = _seleccionados.toList();
     if (ids.isEmpty) return;
 
+    // Solo se elimina lo que ya se vio. Si queda algo sin ver no se borra
+    // nada: se ofrece marcarlo y el usuario vuelve a eliminar.
+    final sinVer = _sinVer(service.eventos);
+    if (sinVer.isNotEmpty) {
+      if (await avisarNoVisto(context, cantidad: sinVer.length)) {
+        await _marcarComoVistos(sinVer);
+      }
+      return;
+    }
+    if (!mounted) return;
+
     final confirmado = await confirmarEliminacion(
       context,
-      titulo: ids.length == 1
-          ? 'Eliminar notificación'
-          : 'Eliminar ${ids.length} notificaciones',
-      mensaje: ids.length == 1
-          ? '¿Quieres quitar la notificación seleccionada de tu lista? '
-              'No volverá a aparecer en la app.'
-          : '¿Quieres quitar las ${ids.length} notificaciones seleccionadas de '
-              'tu lista? No volverán a aparecer en la app.',
+      titulo:
+          ids.length == 1
+              ? 'Eliminar notificación'
+              : 'Eliminar ${ids.length} notificaciones',
+      mensaje:
+          ids.length == 1
+              ? '¿Quieres quitar la notificación seleccionada de tu lista? '
+                  'No volverá a aparecer en la app.'
+              : '¿Quieres quitar las ${ids.length} notificaciones seleccionadas de '
+                  'tu lista? No volverán a aparecer en la app.',
     );
     if (!confirmado) return;
 
     var fallidos = 0;
     for (final id in ids) {
-      final ok =
-          await service.eliminarEvento(idUsuario: idUsuario, idEvento: id);
+      final ok = await service.eliminarEvento(
+        idUsuario: idUsuario,
+        idEvento: id,
+      );
       if (!ok) fallidos++;
     }
 
@@ -135,7 +187,6 @@ class _EventosPageState extends State<EventosPage> {
 
     return 1; // default: NO pendiente
   }
-
 
   @override
   void initState() {
@@ -191,9 +242,7 @@ class _EventosPageState extends State<EventosPage> {
             clipper: EventosWaveClipper(),
             child: Container(
               height: 120 + topInset,
-              decoration: BoxDecoration(
-                color: Base().COLOR_AZUL_CORP,
-              ),
+              decoration: BoxDecoration(color: Base().COLOR_AZUL_CORP),
             ),
           ),
 
@@ -203,165 +252,208 @@ class _EventosPageState extends State<EventosPage> {
               // En modo selección se reemplaza por la barra de acciones.
               Padding(
                 padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
-                child: _modoSeleccion
-                    ? Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white, size: 26),
-                            tooltip: 'Cancelar selección',
-                            onPressed: _salirDeSeleccion,
-                          ),
-                          Expanded(
-                            child: Text(
-                              '${_seleccionados.length} seleccionado'
-                              '${_seleccionados.length == 1 ? '' : 's'}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.select_all,
-                                color: Colors.white, size: 24),
-                            tooltip: 'Seleccionar todos',
-                            onPressed: () => _seleccionarTodos(eventos),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline,
-                              color: _seleccionados.isEmpty
-                                  ? Colors.white38
-                                  : Colors.white,
-                              size: 26,
-                            ),
-                            tooltip: 'Eliminar seleccionados',
-                            onPressed: _seleccionados.isEmpty
-                                ? null
-                                : _eliminarSeleccionados,
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back,
-                                color: Colors.white, size: 28),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'EVENTOS CORPORATIVOS',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ),
-                          // Entrada visible al borrado múltiple: el long-press
-                          // sobre una tarjeta hace lo mismo, pero no se ve.
-                          if (eventos.isNotEmpty)
+                child:
+                    _modoSeleccion
+                        ? Row(
+                          children: [
                             IconButton(
-                              icon: const Icon(Icons.checklist,
-                                  color: Colors.white, size: 26),
-                              tooltip: 'Seleccionar varios',
-                              onPressed: _activarModoSeleccion,
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                              tooltip: 'Cancelar selección',
+                              onPressed: _salirDeSeleccion,
                             ),
-                        ],
-                      ),
+                            Expanded(
+                              child: Text(
+                                '${_seleccionados.length} seleccionado'
+                                '${_seleccionados.length == 1 ? '' : 's'}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.select_all,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              tooltip: 'Seleccionar todos',
+                              onPressed: () => _seleccionarTodos(eventos),
+                            ),
+                            // Marcar como vistos: es el paso previo a eliminar lo que
+                            // todavía no se abrió.
+                            IconButton(
+                              icon: Icon(
+                                Icons.done_all,
+                                color:
+                                    _sinVer(eventos).isEmpty
+                                        ? Colors.white38
+                                        : Colors.white,
+                                size: 24,
+                              ),
+                              tooltip: 'Marcar como vistos',
+                              onPressed:
+                                  _sinVer(eventos).isEmpty
+                                      ? null
+                                      : () =>
+                                          _marcarComoVistos(_sinVer(eventos)),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color:
+                                    _seleccionados.isEmpty
+                                        ? Colors.white38
+                                        : Colors.white,
+                                size: 26,
+                              ),
+                              tooltip: 'Eliminar seleccionados',
+                              onPressed:
+                                  _seleccionados.isEmpty
+                                      ? null
+                                      : _eliminarSeleccionados,
+                            ),
+                          ],
+                        )
+                        : Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'EVENTOS CORPORATIVOS',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                            // Entrada visible al borrado múltiple: el long-press
+                            // sobre una tarjeta hace lo mismo, pero no se ve.
+                            if (eventos.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.checklist,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                                tooltip: 'Seleccionar varios',
+                                onPressed: _activarModoSeleccion,
+                              ),
+                          ],
+                        ),
               ),
 
-                Expanded(
-                  child: SafeArea(
-                    top: false,
-                    child: _cargando
-                      ? Center(
-                          child: CircularProgressIndicator(
-                            color: Base().COLOR_AZUL_CORP,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async {
-                            await context
-                                .read<EventoService>()
-                                .obtenerEventos(idUsuario: idUsuario);
-                          },
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: Column(
-                              children: [
-                                // Card con imagen y título
-                                Container(
-                                  margin: const EdgeInsets.all(16),
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE0E0E0),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Texto a la izquierda
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Eventos Corporativos',
-                                              style: TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.bold,
-                                                color: Base().COLOR_AZUL_CORP,
+              Expanded(
+                child: SafeArea(
+                  top: false,
+                  child:
+                      _cargando
+                          ? Center(
+                            child: CircularProgressIndicator(
+                              color: Base().COLOR_AZUL_CORP,
+                            ),
+                          )
+                          : RefreshIndicator(
+                            onRefresh: () async {
+                              await context
+                                  .read<EventoService>()
+                                  .obtenerEventos(idUsuario: idUsuario);
+                            },
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Column(
+                                children: [
+                                  // Card con imagen y título
+                                  Container(
+                                    margin: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE0E0E0),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Texto a la izquierda
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Eventos Corporativos',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Base().COLOR_AZUL_CORP,
+                                                ),
                                               ),
-                                            ),
-                                            SizedBox(height: 8),
-                                            Text(
-                                              'Revisa Todos los Eventos',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Base().COLOR_AZUL_CORP,
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'Revisa Todos los Eventos',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Base().COLOR_AZUL_CORP,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      // Imagen a la derecha alineada arriba
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.asset(
-                                          'assets/icono/detalleevento.jpg',
-                                          height: 120,
-                                          width: 120,
-                                          fit: BoxFit.contain,
+                                        const SizedBox(width: 16),
+                                        // Imagen a la derecha alineada arriba
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Image.asset(
+                                            'assets/icono/detalleevento.jpg',
+                                            height: 120,
+                                            width: 120,
+                                            fit: BoxFit.contain,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                
-                                // Título de la sección
-                                Container(
-                                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Eventos',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Base().COLOR_AZUL_CORP,
+                                      ],
                                     ),
                                   ),
-                                ),
-                                
-                                // Lista de eventos
-                                eventos.isEmpty
-                                    ? Container(
+
+                                  // Título de la sección
+                                  Container(
+                                    margin: const EdgeInsets.fromLTRB(
+                                      16,
+                                      8,
+                                      16,
+                                      16,
+                                    ),
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Eventos',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Base().COLOR_AZUL_CORP,
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Lista de eventos
+                                  eventos.isEmpty
+                                      ? Container(
                                         padding: const EdgeInsets.all(40),
                                         child: Center(
                                           child: Text(
@@ -374,36 +466,43 @@ class _EventosPageState extends State<EventosPage> {
                                           ),
                                         ),
                                       )
-                                    : Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      : Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
                                         child: Column(
-                                          children: eventos.map((evento) {
-                                            return _EventoItem(
-                                              evento: evento,
-                                              idUsuario: idUsuario,
-                                              modoSeleccion: _modoSeleccion,
-                                              seleccionado: _seleccionados
-                                                  .contains(evento.idEvento),
-                                              onIniciarSeleccion: () =>
-                                                  _iniciarSeleccion(
-                                                      evento.idEvento),
-                                              onAlternarSeleccion: () =>
-                                                  _alternarSeleccion(
-                                                      evento.idEvento),
-                                            );
-                                          }).toList(),
+                                          children:
+                                              eventos.map((evento) {
+                                                return _EventoItem(
+                                                  evento: evento,
+                                                  idUsuario: idUsuario,
+                                                  modoSeleccion: _modoSeleccion,
+                                                  seleccionado: _seleccionados
+                                                      .contains(
+                                                        evento.idEvento,
+                                                      ),
+                                                  onIniciarSeleccion:
+                                                      () => _iniciarSeleccion(
+                                                        evento.idEvento,
+                                                      ),
+                                                  onAlternarSeleccion:
+                                                      () => _alternarSeleccion(
+                                                        evento.idEvento,
+                                                      ),
+                                                );
+                                              }).toList(),
                                         ),
                                       ),
-                                
-                                const SizedBox(height: 20),
-                              ],
+
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -451,6 +550,16 @@ class _EventoItem extends StatelessWidget {
     final service = context.read<EventoService>();
     final messenger = ScaffoldMessenger.of(context);
 
+    if (evento.estado == 0) {
+      if (await avisarNoVisto(context)) {
+        await service.marcarEventoComoVisto(
+          idUsuario: idUsuario,
+          idEvento: evento.idEvento,
+        );
+      }
+      return;
+    }
+
     if (!await _confirmarEliminar(context)) return;
 
     await _eliminar(service, messenger);
@@ -489,11 +598,24 @@ class _EventoItem extends StatelessWidget {
       direction:
           modoSeleccion ? DismissDirection.none : DismissDirection.endToStart,
       background: const FondoEliminar(),
-      confirmDismiss: (_) => _confirmarEliminar(context),
-      onDismissed: (_) => _eliminar(
-        context.read<EventoService>(),
-        ScaffoldMessenger.of(context),
-      ),
+      // Sin ver no se desliza a eliminar: se ofrece marcarla y la tarjeta
+      // vuelve a su lugar.
+      confirmDismiss: (_) async {
+        if (evento.estado != 0) return _confirmarEliminar(context);
+        final service = context.read<EventoService>();
+        if (await avisarNoVisto(context)) {
+          await service.marcarEventoComoVisto(
+            idUsuario: idUsuario,
+            idEvento: evento.idEvento,
+          );
+        }
+        return false;
+      },
+      onDismissed:
+          (_) => _eliminar(
+            context.read<EventoService>(),
+            ScaffoldMessenger.of(context),
+          ),
       child: _buildTarjeta(context, isPendiente),
     );
   }
@@ -527,7 +649,9 @@ class _EventoItem extends StatelessWidget {
             );
 
             // Refresca lista para que cambie el estado en UI
-            await context.read<EventoService>().obtenerEventos(idUsuario: idUsuario);
+            await context.read<EventoService>().obtenerEventos(
+              idUsuario: idUsuario,
+            );
           } catch (e) {
             debugPrint("Error marcando visto: $e");
           }
@@ -537,13 +661,15 @@ class _EventoItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: seleccionado
-              ? Base().COLOR_AZUL_CORP.withOpacity(0.08)
-              : Colors.white,
+          color:
+              seleccionado
+                  ? Base().COLOR_AZUL_CORP.withOpacity(0.08)
+                  : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: seleccionado
-              ? Border.all(color: Base().COLOR_AZUL_CORP, width: 1.5)
-              : null,
+          border:
+              seleccionado
+                  ? Border.all(color: Base().COLOR_AZUL_CORP, width: 1.5)
+                  : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -616,20 +742,14 @@ class _EventoItem extends StatelessWidget {
 
                   Text(
                     evento.fecha,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Base().COLOR_GRIS,
-                    ),
+                    style: TextStyle(fontSize: 13, color: Base().COLOR_GRIS),
                   ),
 
                   if (evento.horaEvento.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       evento.horaEvento,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Base().COLOR_GRIS,
-                      ),
+                      style: TextStyle(fontSize: 13, color: Base().COLOR_GRIS),
                     ),
                   ],
                 ],
@@ -666,14 +786,13 @@ class _EventoItem extends StatelessWidget {
   }
 }
 
-
 class EventosWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    
+
     path.lineTo(0, size.height - 30);
-    
+
     var firstControlPoint = Offset(size.width * 0.25, size.height - 40);
     var firstEndPoint = Offset(size.width * 0.5, size.height - 30);
     path.quadraticBezierTo(
@@ -682,7 +801,7 @@ class EventosWaveClipper extends CustomClipper<Path> {
       firstEndPoint.dx,
       firstEndPoint.dy,
     );
-    
+
     var secondControlPoint = Offset(size.width * 0.75, size.height - 20);
     var secondEndPoint = Offset(size.width, size.height - 30);
     path.quadraticBezierTo(
@@ -691,10 +810,10 @@ class EventosWaveClipper extends CustomClipper<Path> {
       secondEndPoint.dx,
       secondEndPoint.dy,
     );
-    
+
     path.lineTo(size.width, 0);
     path.close();
-    
+
     return path;
   }
 

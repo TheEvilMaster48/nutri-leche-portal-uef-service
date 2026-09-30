@@ -76,6 +76,12 @@ PODS:
     - Flutter
   - flutter_pdfview (1.0.2):
     - Flutter
+  - geocoding_darwin (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - geolocator_apple (1.2.0):
+    - Flutter
+    - FlutterMacOS
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -153,6 +159,8 @@ DEPENDENCIES:
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_pdfview (from `.symlinks/plugins/flutter_pdfview/ios`)
+  - geocoding_darwin (from `.symlinks/plugins/geocoding_darwin/darwin`)
+  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - media_kit_libs_ios_video (from `.symlinks/plugins/media_kit_libs_ios_video/ios`)
   - media_kit_video (from `.symlinks/plugins/media_kit_video/ios`)
@@ -202,6 +210,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_pdfview:
     :path: ".symlinks/plugins/flutter_pdfview/ios"
+  geocoding_darwin:
+    :path: ".symlinks/plugins/geocoding_darwin/darwin"
+  geolocator_apple:
+    :path: ".symlinks/plugins/geolocator_apple/darwin"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   media_kit_libs_ios_video:
@@ -246,6 +258,8 @@ SPEC CHECKSUMS:
   flutter_local_notifications: a5a732f069baa862e728d839dd2ebb904737effb
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
   flutter_pdfview: 32bf27bda6fd85b9dd2c09628a824df5081246cf
+  geocoding_darwin: 968545604e6896deeef55517d53a81b3b9801971
+  geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 4f2618a4a1e762a1ee134a1e2323bba9843e06da
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326

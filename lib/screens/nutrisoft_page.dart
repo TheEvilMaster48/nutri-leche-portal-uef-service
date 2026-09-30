@@ -65,6 +65,43 @@ class _NutrisoftPageState extends State<NutrisoftPage> {
     });
   }
 
+  /// Los seleccionados que el usuario todavía no vio.
+  List<int> _sinVer(List<Nutrisoft> lista) => [
+    for (final x in lista)
+      if (x.pendiente && _seleccionados.contains(x.idMensaje)) x.idMensaje,
+  ];
+
+  /// Marca como vistos [ids] en el servidor. La selección se conserva para
+  /// que el usuario pueda eliminarlos a continuación.
+  Future<void> _marcarComoVistos(List<int> ids) async {
+    final service = context.read<NutrisoftService>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    var fallidos = 0;
+    for (final id in ids) {
+      final ok = await service.marcarComoVisto(
+        idUsuario: idUsuario,
+        idMensaje: id,
+      );
+      if (!ok) fallidos++;
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          fallidos == 0
+              ? (ids.length == 1
+                  ? 'Marcada como vista'
+                  : '${ids.length} marcadas como vistas')
+              : 'No se pudieron marcar $fallidos. Revisa tu conexión.',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Elimina todo lo seleccionado con una sola confirmación. Reusa
   /// `eliminarNutrisoft` uno por uno: el backend no tiene borrado en lote.
   Future<void> _eliminarSeleccionados() async {
@@ -73,16 +110,29 @@ class _NutrisoftPageState extends State<NutrisoftPage> {
     final ids = _seleccionados.toList();
     if (ids.isEmpty) return;
 
+    // Solo se elimina lo que ya se vio. Si queda algo sin ver no se borra
+    // nada: se ofrece marcarlo y el usuario vuelve a eliminar.
+    final sinVer = _sinVer(service.items);
+    if (sinVer.isNotEmpty) {
+      if (await avisarNoVisto(context, cantidad: sinVer.length)) {
+        await _marcarComoVistos(sinVer);
+      }
+      return;
+    }
+    if (!mounted) return;
+
     final confirmado = await confirmarEliminacion(
       context,
-      titulo: ids.length == 1
-          ? 'Eliminar notificación'
-          : 'Eliminar ${ids.length} notificaciones',
-      mensaje: ids.length == 1
-          ? '¿Quieres quitar la notificación seleccionada de tu lista? '
-              'No volverá a aparecer en la app.'
-          : '¿Quieres quitar las ${ids.length} notificaciones seleccionadas de '
-              'tu lista? No volverán a aparecer en la app.',
+      titulo:
+          ids.length == 1
+              ? 'Eliminar notificación'
+              : 'Eliminar ${ids.length} notificaciones',
+      mensaje:
+          ids.length == 1
+              ? '¿Quieres quitar la notificación seleccionada de tu lista? '
+                  'No volverá a aparecer en la app.'
+              : '¿Quieres quitar las ${ids.length} notificaciones seleccionadas de '
+                  'tu lista? No volverán a aparecer en la app.',
     );
     if (!confirmado) return;
 
@@ -183,165 +233,203 @@ class _NutrisoftPageState extends State<NutrisoftPage> {
               // acciones sobre lo marcado.
               Padding(
                 padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
-                child: _modoSeleccion
-                    ? Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white, size: 26),
-                            tooltip: 'Cancelar selección',
-                            onPressed: _salirDeSeleccion,
-                          ),
-                          Expanded(
-                            child: Text(
-                              '${_seleccionados.length} seleccionado'
-                              '${_seleccionados.length == 1 ? '' : 's'}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.select_all,
-                                color: Colors.white, size: 24),
-                            tooltip: 'Seleccionar todos',
-                            onPressed: () => _seleccionarTodos(items),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline,
-                              color: _seleccionados.isEmpty
-                                  ? Colors.white38
-                                  : Colors.white,
-                              size: 26,
-                            ),
-                            tooltip: 'Eliminar seleccionados',
-                            onPressed: _seleccionados.isEmpty
-                                ? null
-                                : _eliminarSeleccionados,
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back,
-                                color: Colors.white, size: 28),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'NUTRISOFT',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ),
-                          // Entrada visible al borrado múltiple: el long-press
-                          // sobre una tarjeta hace lo mismo, pero no se ve.
-                          if (items.isNotEmpty)
+                child:
+                    _modoSeleccion
+                        ? Row(
+                          children: [
                             IconButton(
-                              icon: const Icon(Icons.checklist,
-                                  color: Colors.white, size: 26),
-                              tooltip: 'Seleccionar varios',
-                              onPressed: _activarModoSeleccion,
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                              tooltip: 'Cancelar selección',
+                              onPressed: _salirDeSeleccion,
                             ),
-                        ],
-                      ),
+                            Expanded(
+                              child: Text(
+                                '${_seleccionados.length} seleccionado'
+                                '${_seleccionados.length == 1 ? '' : 's'}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.select_all,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              tooltip: 'Seleccionar todos',
+                              onPressed: () => _seleccionarTodos(items),
+                            ),
+                            // Marcar como vistos: es el paso previo a eliminar lo que
+                            // todavía no se abrió.
+                            IconButton(
+                              icon: Icon(
+                                Icons.done_all,
+                                color:
+                                    _sinVer(items).isEmpty
+                                        ? Colors.white38
+                                        : Colors.white,
+                                size: 24,
+                              ),
+                              tooltip: 'Marcar como vistos',
+                              onPressed:
+                                  _sinVer(items).isEmpty
+                                      ? null
+                                      : () => _marcarComoVistos(_sinVer(items)),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color:
+                                    _seleccionados.isEmpty
+                                        ? Colors.white38
+                                        : Colors.white,
+                                size: 26,
+                              ),
+                              tooltip: 'Eliminar seleccionados',
+                              onPressed:
+                                  _seleccionados.isEmpty
+                                      ? null
+                                      : _eliminarSeleccionados,
+                            ),
+                          ],
+                        )
+                        : Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'NUTRISOFT',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                            // Entrada visible al borrado múltiple: el long-press
+                            // sobre una tarjeta hace lo mismo, pero no se ve.
+                            if (items.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.checklist,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                                tooltip: 'Seleccionar varios',
+                                onPressed: _activarModoSeleccion,
+                              ),
+                          ],
+                        ),
               ),
 
               Expanded(
                 child: SafeArea(
                   top: false,
-                  child: _cargando
-                      ? Center(
-                          child: CircularProgressIndicator(
-                            color: Base().COLOR_AZUL_CORP,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () async {
-                            await context
-                                .read<NutrisoftService>()
-                                .obtenerNutrisoft(idUsuario: idUsuario);
-                          },
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: Column(
-                              children: [
-                                // Encabezado del módulo
-                                Container(
-                                  margin: const EdgeInsets.all(16),
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE0E0E0),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Nutrisoft',
-                                              style: TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.bold,
-                                                color: Base().COLOR_AZUL_CORP,
+                  child:
+                      _cargando
+                          ? Center(
+                            child: CircularProgressIndicator(
+                              color: Base().COLOR_AZUL_CORP,
+                            ),
+                          )
+                          : RefreshIndicator(
+                            onRefresh: () async {
+                              await context
+                                  .read<NutrisoftService>()
+                                  .obtenerNutrisoft(idUsuario: idUsuario);
+                            },
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Column(
+                                children: [
+                                  // Encabezado del módulo
+                                  Container(
+                                    margin: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE0E0E0),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Nutrisoft',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Base().COLOR_AZUL_CORP,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Comunicados del sistema',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Base().COLOR_AZUL_CORP,
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Comunicados del sistema',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Base().COLOR_AZUL_CORP,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(12),
-                                        child: Image.asset(
-                                          'assets/icono/logo_azul.png',
-                                          height: 120,
-                                          width: 120,
-                                          fit: BoxFit.contain,
+                                        const SizedBox(width: 16),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Image.asset(
+                                            'assets/icono/logo_azul.png',
+                                            height: 120,
+                                            width: 120,
+                                            fit: BoxFit.contain,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                Container(
-                                  margin:
-                                      const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Notificaciones',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Base().COLOR_AZUL_CORP,
+                                      ],
                                     ),
                                   ),
-                                ),
 
-                                items.isEmpty
-                                    ? Container(
+                                  Container(
+                                    margin: const EdgeInsets.fromLTRB(
+                                      16,
+                                      8,
+                                      16,
+                                      16,
+                                    ),
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Notificaciones',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Base().COLOR_AZUL_CORP,
+                                      ),
+                                    ),
+                                  ),
+
+                                  items.isEmpty
+                                      ? Container(
                                         padding: const EdgeInsets.all(40),
                                         child: Center(
                                           child: Text(
@@ -354,33 +442,37 @@ class _NutrisoftPageState extends State<NutrisoftPage> {
                                           ),
                                         ),
                                       )
-                                    : Padding(
+                                      : Padding(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 16),
+                                          horizontal: 16,
+                                        ),
                                         child: Column(
-                                          children: items.map((item) {
-                                            return _NutrisoftItem(
-                                              item: item,
-                                              idUsuario: idUsuario,
-                                              modoSeleccion: _modoSeleccion,
-                                              seleccionado: _seleccionados
-                                                  .contains(item.idMensaje),
-                                              onIniciarSeleccion: () =>
-                                                  _iniciarSeleccion(
-                                                      item.idMensaje),
-                                              onAlternarSeleccion: () =>
-                                                  _alternarSeleccion(
-                                                      item.idMensaje),
-                                            );
-                                          }).toList(),
+                                          children:
+                                              items.map((item) {
+                                                return _NutrisoftItem(
+                                                  item: item,
+                                                  idUsuario: idUsuario,
+                                                  modoSeleccion: _modoSeleccion,
+                                                  seleccionado: _seleccionados
+                                                      .contains(item.idMensaje),
+                                                  onIniciarSeleccion:
+                                                      () => _iniciarSeleccion(
+                                                        item.idMensaje,
+                                                      ),
+                                                  onAlternarSeleccion:
+                                                      () => _alternarSeleccion(
+                                                        item.idMensaje,
+                                                      ),
+                                                );
+                                              }).toList(),
                                         ),
                                       ),
 
-                                const SizedBox(height: 20),
-                              ],
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                 ),
               ),
             ],
@@ -423,6 +515,16 @@ class _NutrisoftItem extends StatelessWidget {
     final service = context.read<NutrisoftService>();
     final messenger = ScaffoldMessenger.of(context);
 
+    if (item.pendiente) {
+      if (await avisarNoVisto(context)) {
+        await service.marcarComoVisto(
+          idUsuario: idUsuario,
+          idMensaje: item.idMensaje,
+        );
+      }
+      return;
+    }
+
     if (!await _confirmarEliminar(context)) return;
 
     await _eliminar(service, messenger);
@@ -459,11 +561,24 @@ class _NutrisoftItem extends StatelessWidget {
       direction:
           modoSeleccion ? DismissDirection.none : DismissDirection.endToStart,
       background: const FondoEliminar(),
-      confirmDismiss: (_) => _confirmarEliminar(context),
-      onDismissed: (_) => _eliminar(
-        context.read<NutrisoftService>(),
-        ScaffoldMessenger.of(context),
-      ),
+      // Sin ver no se desliza a eliminar: se ofrece marcarla y la tarjeta
+      // vuelve a su lugar.
+      confirmDismiss: (_) async {
+        if (!item.pendiente) return _confirmarEliminar(context);
+        final service = context.read<NutrisoftService>();
+        if (await avisarNoVisto(context)) {
+          await service.marcarComoVisto(
+            idUsuario: idUsuario,
+            idMensaje: item.idMensaje,
+          );
+        }
+        return false;
+      },
+      onDismissed:
+          (_) => _eliminar(
+            context.read<NutrisoftService>(),
+            ScaffoldMessenger.of(context),
+          ),
       child: _buildTarjeta(context, isPendiente),
     );
   }
@@ -481,9 +596,7 @@ class _NutrisoftItem extends StatelessWidget {
 
         await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => DetalleNutrisoftScreen(item: item),
-          ),
+          MaterialPageRoute(builder: (_) => DetalleNutrisoftScreen(item: item)),
         );
 
         if (!context.mounted) return;
@@ -506,13 +619,15 @@ class _NutrisoftItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: seleccionado
-              ? Base().COLOR_AZUL_CORP.withOpacity(0.08)
-              : Colors.white,
+          color:
+              seleccionado
+                  ? Base().COLOR_AZUL_CORP.withOpacity(0.08)
+                  : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: seleccionado
-              ? Border.all(color: Base().COLOR_AZUL_CORP, width: 1.5)
-              : null,
+          border:
+              seleccionado
+                  ? Border.all(color: Base().COLOR_AZUL_CORP, width: 1.5)
+                  : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -578,10 +693,7 @@ class _NutrisoftItem extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       item.descripcion,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Base().COLOR_GRIS,
-                      ),
+                      style: TextStyle(fontSize: 13, color: Base().COLOR_GRIS),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

@@ -32,7 +32,6 @@ class EventoService extends ChangeNotifier {
         if (map["appEventoList"] != null &&
             map["appEventoList"] is List &&
             map["appEventoList"].isNotEmpty) {
-
           final List<dynamic> lista = map["appEventoList"];
 
           // El push identifica el evento con `idCabecera`. Este log dice, corto
@@ -41,8 +40,10 @@ class EventoService extends ChangeNotifier {
           if (primero is Map) {
             debugPrint('EVENTOS: llaves del WS = ${primero.keys.toList()}');
           }
-          debugPrint('EVENTOS: ids (idEvento/idCabecera) = '
-              '${lista.whereType<Map>().map((e) => "${e['idEvento']}/${e['idCabecera']}").toList()}');
+          debugPrint(
+            'EVENTOS: ids (idEvento/idCabecera) = '
+            '${lista.whereType<Map>().map((e) => "${e['idEvento']}/${e['idCabecera']}").toList()}',
+          );
 
           // Se descartan los eliminados: por estado (si el backend ya lo
           // marca) y por la lista local de ocultos.
@@ -50,11 +51,15 @@ class EventoService extends ChangeNotifier {
 
           _eventos
             ..clear()
-            ..addAll(lista
-                .map((e) => Evento.fromJson(e))
-                .where((e) =>
-                    e.estado != estadoEliminado &&
-                    !ocultos.contains(e.idEvento)));
+            ..addAll(
+              lista
+                  .map((e) => Evento.fromJson(e))
+                  .where(
+                    (e) =>
+                        e.estado != estadoEliminado &&
+                        !ocultos.contains(e.idEvento),
+                  ),
+            );
 
           notifyListeners();
           debugPrint("EVENTOS RECIBIDOS (${_eventos.length})");
@@ -62,8 +67,10 @@ class EventoService extends ChangeNotifier {
           // La lista se deja como está (comportamiento previo), pero se avisa:
           // un listado vacío explica por sí solo que el deep-link del push no
           // encuentre el evento.
-          debugPrint('EVENTOS: el WS no devolvió eventos para idUsuario='
-              '$idUsuario → ${map["mensaje"]}');
+          debugPrint(
+            'EVENTOS: el WS no devolvió eventos para idUsuario='
+            '$idUsuario → ${map["mensaje"]}',
+          );
         }
       } else {
         debugPrint("ERROR HTTP: ${response.statusCode}");
@@ -73,7 +80,8 @@ class EventoService extends ChangeNotifier {
     }
   }
 
-  Future<void> marcarEventoComoVisto({
+  /// Devuelve si el servidor lo registró.
+  Future<bool> marcarEventoComoVisto({
     required int idUsuario,
     required int idEvento,
   }) async {
@@ -83,10 +91,7 @@ class EventoService extends ChangeNotifier {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "idUsuario": idUsuario,
-          "idEvento": idEvento,
-        }),
+        body: jsonEncode({"idUsuario": idUsuario, "idEvento": idEvento}),
       );
 
       if (response.statusCode == 200) {
@@ -96,9 +101,12 @@ class EventoService extends ChangeNotifier {
           _eventos[index].estado = 1;
           notifyListeners();
         }
+        return true;
       }
+      return false;
     } catch (e) {
       debugPrint("ERROR HTTP AL MARCAR EVENTO COMO VISTO: $e");
+      return false;
     }
   }
 

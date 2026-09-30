@@ -77,10 +77,11 @@ class CatalogoEventoService extends ChangeNotifier {
       return false;
     }
 
-    final lista = respuesta.lista
-        .map(EventoRuta.fromJson)
-        .where((e) => e.id > 0 && e.nombre.isNotEmpty)
-        .toList();
+    final lista =
+        respuesta.lista
+            .map(EventoRuta.fromJson)
+            .where((e) => e.id > 0 && e.nombre.isNotEmpty)
+            .toList();
 
     if (lista.isEmpty) {
       _error = 'El servidor no devolvió eventos.';
@@ -112,9 +113,11 @@ class CatalogoEventoService extends ChangeNotifier {
 
       _eventos
         ..clear()
-        ..addAll(decodificado
-            .whereType<Map>()
-            .map((e) => EventoRuta.fromJson(e.cast<String, dynamic>())));
+        ..addAll(
+          decodificado.whereType<Map>().map(
+            (e) => EventoRuta.fromJson(e.cast<String, dynamic>()),
+          ),
+        );
       _ordenar();
 
       final fecha = prefs.getString(_claveCacheFecha);

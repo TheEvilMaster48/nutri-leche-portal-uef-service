@@ -22,7 +22,7 @@ class TelefonoValidator {
 
   static String formatearTelefono(String telefono, String prefijo) {
     final telefonoLimpio = telefono.replaceAll(RegExp(r'[\s-]'), '');
-    
+
     // Formatear según el país
     if (prefijo == '+593') {
       // Ecuador: 09X XXX XXXX
@@ -30,7 +30,7 @@ class TelefonoValidator {
         return '${telefonoLimpio.substring(0, 2)} ${telefonoLimpio.substring(2, 5)} ${telefonoLimpio.substring(5)}';
       }
     }
-    
+
     return telefonoLimpio;
   }
 }

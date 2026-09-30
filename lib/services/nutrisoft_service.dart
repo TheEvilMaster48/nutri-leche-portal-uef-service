@@ -74,7 +74,8 @@ class NutrisoftService extends ChangeNotifier {
     }
   }
 
-  Future<void> marcarComoVisto({
+  /// Devuelve si el servidor lo registró.
+  Future<bool> marcarComoVisto({
     required int idUsuario,
     required int idMensaje,
   }) async {
@@ -84,10 +85,7 @@ class NutrisoftService extends ChangeNotifier {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "idUsuario": idUsuario,
-          "idMensaje": idMensaje,
-        }),
+        body: jsonEncode({"idUsuario": idUsuario, "idMensaje": idMensaje}),
       );
 
       if (response.statusCode == 200) {
@@ -97,9 +95,12 @@ class NutrisoftService extends ChangeNotifier {
           _items[index].visto = 1;
           notifyListeners();
         }
+        return true;
       }
+      return false;
     } catch (e) {
       debugPrint("ERROR HTTP AL MARCAR NUTRISOFT COMO VISTO: $e");
+      return false;
     }
   }
 

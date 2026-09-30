@@ -66,6 +66,44 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
     });
   }
 
+  /// Los seleccionados que el usuario todavía no vio.
+  List<int> _sinVer(List<Cumpleanios> lista) => [
+    for (final x in lista)
+      if (x.estado == 0 && _seleccionados.contains(x.idCumpleanios))
+        x.idCumpleanios,
+  ];
+
+  /// Marca como vistos [ids] en el servidor. La selección se conserva para
+  /// que el usuario pueda eliminarlos a continuación.
+  Future<void> _marcarComoVistos(List<int> ids) async {
+    final service = context.read<CumpleaniosService>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    var fallidos = 0;
+    for (final id in ids) {
+      final ok = await service.marcarCumpleaniosComoVisto(
+        idUsuario: idUsuario,
+        idCumpleanios: id,
+      );
+      if (!ok) fallidos++;
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          fallidos == 0
+              ? (ids.length == 1
+                  ? 'Marcada como vista'
+                  : '${ids.length} marcadas como vistas')
+              : 'No se pudieron marcar $fallidos. Revisa tu conexión.',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Elimina todo lo seleccionado con una sola confirmación. Reusa
   /// `eliminarCumpleanios` uno por uno: el backend no tiene borrado en lote.
   Future<void> _eliminarSeleccionados() async {
@@ -74,16 +112,29 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
     final ids = _seleccionados.toList();
     if (ids.isEmpty) return;
 
+    // Solo se elimina lo que ya se vio. Si queda algo sin ver no se borra
+    // nada: se ofrece marcarlo y el usuario vuelve a eliminar.
+    final sinVer = _sinVer(service.cumpleanios);
+    if (sinVer.isNotEmpty) {
+      if (await avisarNoVisto(context, cantidad: sinVer.length)) {
+        await _marcarComoVistos(sinVer);
+      }
+      return;
+    }
+    if (!mounted) return;
+
     final confirmado = await confirmarEliminacion(
       context,
-      titulo: ids.length == 1
-          ? 'Eliminar notificación'
-          : 'Eliminar ${ids.length} notificaciones',
-      mensaje: ids.length == 1
-          ? '¿Quieres quitar la notificación seleccionada de tu lista? '
-              'No volverá a aparecer en la app.'
-          : '¿Quieres quitar las ${ids.length} notificaciones seleccionadas de '
-              'tu lista? No volverán a aparecer en la app.',
+      titulo:
+          ids.length == 1
+              ? 'Eliminar notificación'
+              : 'Eliminar ${ids.length} notificaciones',
+      mensaje:
+          ids.length == 1
+              ? '¿Quieres quitar la notificación seleccionada de tu lista? '
+                  'No volverá a aparecer en la app.'
+              : '¿Quieres quitar las ${ids.length} notificaciones seleccionadas de '
+                  'tu lista? No volverán a aparecer en la app.',
     );
     if (!confirmado) return;
 
@@ -167,24 +218,26 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
             clipper: CumpleanosWaveClipper(),
             child: Container(
               height: 120 + topInset,
-              decoration: const BoxDecoration(
-                color: Color(0xFF0052A3),
-              ),
+              decoration: const BoxDecoration(color: Color(0xFF0052A3)),
             ),
           ),
 
           Column(
             children: [
-                // Header. En modo selección cede el lugar a la barra de
-                // acciones sobre lo marcado.
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
-                  child: _modoSeleccion
-                      ? Row(
+              // Header. En modo selección cede el lugar a la barra de
+              // acciones sobre lo marcado.
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, topInset + 12, 16, 12),
+                child:
+                    _modoSeleccion
+                        ? Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.close,
-                                  color: Colors.white, size: 26),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 26,
+                              ),
                               tooltip: 'Cancelar selección',
                               onPressed: _salirDeSeleccion,
                             ),
@@ -200,31 +253,58 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.select_all,
-                                  color: Colors.white, size: 24),
+                              icon: const Icon(
+                                Icons.select_all,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                               tooltip: 'Seleccionar todos',
                               onPressed: () => _seleccionarTodos(cumpleanios),
+                            ),
+                            // Marcar como vistos: es el paso previo a eliminar lo que
+                            // todavía no se abrió.
+                            IconButton(
+                              icon: Icon(
+                                Icons.done_all,
+                                color:
+                                    _sinVer(cumpleanios).isEmpty
+                                        ? Colors.white38
+                                        : Colors.white,
+                                size: 24,
+                              ),
+                              tooltip: 'Marcar como vistos',
+                              onPressed:
+                                  _sinVer(cumpleanios).isEmpty
+                                      ? null
+                                      : () => _marcarComoVistos(
+                                        _sinVer(cumpleanios),
+                                      ),
                             ),
                             IconButton(
                               icon: Icon(
                                 Icons.delete_outline,
-                                color: _seleccionados.isEmpty
-                                    ? Colors.white38
-                                    : Colors.white,
+                                color:
+                                    _seleccionados.isEmpty
+                                        ? Colors.white38
+                                        : Colors.white,
                                 size: 26,
                               ),
                               tooltip: 'Eliminar seleccionados',
-                              onPressed: _seleccionados.isEmpty
-                                  ? null
-                                  : _eliminarSeleccionados,
+                              onPressed:
+                                  _seleccionados.isEmpty
+                                      ? null
+                                      : _eliminarSeleccionados,
                             ),
                           ],
                         )
-                      : Row(
+                        : Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.arrow_back,
-                                  color: Colors.white, size: 28),
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 28,
+                              ),
                               onPressed: () => Navigator.pop(context),
                             ),
                             const SizedBox(width: 8),
@@ -243,174 +323,196 @@ class _CumpleaniosScreenState extends State<CumpleaniosScreen> {
                             // long-press hace lo mismo, pero no se ve.
                             if (cumpleanios.isNotEmpty)
                               IconButton(
-                                icon: const Icon(Icons.checklist,
-                                    color: Colors.white, size: 26),
+                                icon: const Icon(
+                                  Icons.checklist,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
                                 tooltip: 'Seleccionar varios',
                                 onPressed: _activarModoSeleccion,
                               ),
                           ],
                         ),
-                ),
+              ),
 
-                Expanded(
-                  child: SafeArea(
-                    top: false,
-                    child: _cargando
-                      ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF0052A3),
-                    ),
-                  )
-                      : RefreshIndicator(
-                    onRefresh: () async {
-                      await context
-                          .read<CumpleaniosService>()
-                          .obtenerCumpleanios(idUsuario: idUsuario);
-                    },
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        children: [
-                          // Card con imagen y título
-                          Container(
-                            margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE0E0E0),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Texto a la izquierda
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Cumpleaños',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF0052A3),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        'Revisa Todos los Cumpleaños',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF666666),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-
-                                      // ✅ TEXTO PENDIENTES
-                                      if (pendientes > 0)
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "Pendientes: $pendientes" ,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF0052A3),
-                                              ),
-                                            ),
-
-                                          ],
-                                        )
-                                      else
-                                        const Text(
-                                          "No tienes pendientes",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Color(0xFF666666),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                // Imagen a la derecha
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    'assets/icono/cumpleanosdetalle.jpg',
-                                    height: 120,
-                                    width: 120,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Título de la sección
-                          Container(
-                            margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                const Text(
-                                  'Cumpleaños',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0052A3),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-
-
-                              ],
-                            ),
-                          ),
-
-                          // Lista de cumpleaños
-                          cumpleanios.isEmpty
-                              ? Container(
-                            padding: const EdgeInsets.all(40),
-                            child: const Center(
-                              child: Text(
-                                'No hay cumpleaños disponibles actualmente.',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Color(0xFF666666),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+              Expanded(
+                child: SafeArea(
+                  top: false,
+                  child:
+                      _cargando
+                          ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF0052A3),
                             ),
                           )
-                              : Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
-                              children: cumpleanios.map((cumple) {
-                                return _CumpleanosItem(
-                                  cumpleanios: cumple,
-                                  idUsuario: idUsuario,
-                                  modoSeleccion: _modoSeleccion,
-                                  seleccionado: _seleccionados
-                                      .contains(cumple.idCumpleanios),
-                                  onIniciarSeleccion: () =>
-                                      _iniciarSeleccion(cumple.idCumpleanios),
-                                  onAlternarSeleccion: () =>
-                                      _alternarSeleccion(cumple.idCumpleanios),
-                                );
-                              }).toList(),
+                          : RefreshIndicator(
+                            onRefresh: () async {
+                              await context
+                                  .read<CumpleaniosService>()
+                                  .obtenerCumpleanios(idUsuario: idUsuario);
+                            },
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Column(
+                                children: [
+                                  // Card con imagen y título
+                                  Container(
+                                    margin: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE0E0E0),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Texto a la izquierda
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'Cumpleaños',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF0052A3),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              const Text(
+                                                'Revisa Todos los Cumpleaños',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF666666),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 10),
+
+                                              // ✅ TEXTO PENDIENTES
+                                              if (pendientes > 0)
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      "Pendientes: $pendientes",
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Color(
+                                                          0xFF0052A3,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              else
+                                                const Text(
+                                                  "No tienes pendientes",
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Color(0xFF666666),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        // Imagen a la derecha
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: Image.asset(
+                                            'assets/icono/cumpleanosdetalle.jpg',
+                                            height: 120,
+                                            width: 120,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Título de la sección
+                                  Container(
+                                    margin: const EdgeInsets.fromLTRB(
+                                      16,
+                                      8,
+                                      16,
+                                      16,
+                                    ),
+                                    alignment: Alignment.centerLeft,
+                                    child: Row(
+                                      children: [
+                                        const Text(
+                                          'Cumpleaños',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF0052A3),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Lista de cumpleaños
+                                  cumpleanios.isEmpty
+                                      ? Container(
+                                        padding: const EdgeInsets.all(40),
+                                        child: const Center(
+                                          child: Text(
+                                            'No hay cumpleaños disponibles actualmente.',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              color: Color(0xFF666666),
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      )
+                                      : Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
+                                        child: Column(
+                                          children:
+                                              cumpleanios.map((cumple) {
+                                                return _CumpleanosItem(
+                                                  cumpleanios: cumple,
+                                                  idUsuario: idUsuario,
+                                                  modoSeleccion: _modoSeleccion,
+                                                  seleccionado: _seleccionados
+                                                      .contains(
+                                                        cumple.idCumpleanios,
+                                                      ),
+                                                  onIniciarSeleccion:
+                                                      () => _iniciarSeleccion(
+                                                        cumple.idCumpleanios,
+                                                      ),
+                                                  onAlternarSeleccion:
+                                                      () => _alternarSeleccion(
+                                                        cumple.idCumpleanios,
+                                                      ),
+                                                );
+                                              }).toList(),
+                                        ),
+                                      ),
+
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
                             ),
                           ),
-
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -449,6 +551,16 @@ class _CumpleanosItem extends StatelessWidget {
     final service = context.read<CumpleaniosService>();
     final messenger = ScaffoldMessenger.of(context);
 
+    if (cumpleanios.estado == 0) {
+      if (await avisarNoVisto(context)) {
+        await service.marcarCumpleaniosComoVisto(
+          idUsuario: idUsuario,
+          idCumpleanios: cumpleanios.idCumpleanios,
+        );
+      }
+      return;
+    }
+
     if (!await _confirmarEliminar(context)) return;
 
     await _eliminar(service, messenger);
@@ -485,11 +597,24 @@ class _CumpleanosItem extends StatelessWidget {
       direction:
           modoSeleccion ? DismissDirection.none : DismissDirection.endToStart,
       background: const FondoEliminar(),
-      confirmDismiss: (_) => _confirmarEliminar(context),
-      onDismissed: (_) => _eliminar(
-        context.read<CumpleaniosService>(),
-        ScaffoldMessenger.of(context),
-      ),
+      // Sin ver no se desliza a eliminar: se ofrece marcarla y la tarjeta
+      // vuelve a su lugar.
+      confirmDismiss: (_) async {
+        if (cumpleanios.estado != 0) return _confirmarEliminar(context);
+        final service = context.read<CumpleaniosService>();
+        if (await avisarNoVisto(context)) {
+          await service.marcarCumpleaniosComoVisto(
+            idUsuario: idUsuario,
+            idCumpleanios: cumpleanios.idCumpleanios,
+          );
+        }
+        return false;
+      },
+      onDismissed:
+          (_) => _eliminar(
+            context.read<CumpleaniosService>(),
+            ScaffoldMessenger.of(context),
+          ),
       child: _buildTarjeta(context, esPendiente),
     );
   }
@@ -529,13 +654,15 @@ class _CumpleanosItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: seleccionado
-              ? Base().COLOR_AZUL_CORP.withOpacity(0.08)
-              : Colors.white,
+          color:
+              seleccionado
+                  ? Base().COLOR_AZUL_CORP.withOpacity(0.08)
+                  : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: seleccionado
-              ? Border.all(color: Base().COLOR_AZUL_CORP, width: 1.5)
-              : null,
+          border:
+              seleccionado
+                  ? Border.all(color: Base().COLOR_AZUL_CORP, width: 1.5)
+                  : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -596,7 +723,6 @@ class _CumpleanosItem extends StatelessWidget {
                           ),
                         ),
                       ),
-
                     ],
                   ),
                   const SizedBox(height: 6),
