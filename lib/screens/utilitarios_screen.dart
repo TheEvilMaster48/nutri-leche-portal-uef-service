@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/cierre_sesion.dart';
 import '../services/perfil_service.dart';
 import '../widget/barra_inferior.dart';
+import '../widget/boton_chatbot.dart';
 import '../widget/logo_nutri.dart';
 import '../widget/tarjeta_menu.dart';
 
@@ -28,18 +29,13 @@ class UtilitariosScreen extends StatefulWidget {
   static bool tieneModuloRebranding(Usuario? usuario) =>
       tieneAcceso(usuario, 'APP-REBRANDING');
 
+  @visibleForTesting
+  static bool tieneModuloAlimentacion(Usuario? usuario) =>
+      tieneAcceso(usuario, 'APP-ALIMENTACION');
+
   @override
   State<UtilitariosScreen> createState() => _UtilitariosScreenState();
 
-  /// Si [codigo] está entre los permisos del usuario, **escrito exactamente
-  /// igual**.
-  ///
-  /// `accesos` llega como lista en texto separada por comas —«Vehiculos,
-  /// APPKM, SGD SGSI, APP-VIAJES»—, a veces entre corchetes. Se separa **solo
-  /// por comas** (los códigos llevan guiones y espacios) y cada permiso tiene
-  /// que ser idéntico al buscado, mayúsculas incluidas: no basta con que
-  /// contenga `APP`, ni sirve `app-viajes` o `APP-VIAJES2`. Solo se quitan los
-  /// espacios que rodean a cada permiso, que son parte del separador.
   @visibleForTesting
   static bool tieneAcceso(Usuario? usuario, String codigo) {
     final accesos = usuario?.accesos ?? '';
@@ -108,7 +104,7 @@ class _UtilitariosScreenState extends State<UtilitariosScreen> {
                 ),
                 Expanded(
                   child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 160),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
@@ -142,6 +138,7 @@ class _UtilitariosScreenState extends State<UtilitariosScreen> {
             bottom: 0,
             child: BarraInferior(activa: PestanaInferior.utilitarios),
           ),
+          const BotonChatbot(),
         ],
       ),
     );
@@ -172,6 +169,14 @@ class _UtilitariosScreenState extends State<UtilitariosScreen> {
           'icono': Icons.storefront_outlined,
           'color': PaletaMenu.verde,
           'ruta': '/logo_nutri',
+        },
+      if (UtilitariosScreen.tieneModuloAlimentacion(usuario))
+        {
+          'titulo': 'Alimentación',
+          'subtitulo': 'Reserva tu alimentación',
+          'icono': Icons.restaurant_menu,
+          'color': PaletaMenu.verde,
+          'ruta': '/reservas',
         },
     ];
   }

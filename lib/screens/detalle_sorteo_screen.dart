@@ -6,6 +6,7 @@ import '../models/sorteo.dart';
 import '../services/sorteo_service.dart';
 import '../services/auth_service.dart';
 import '../screens/menu.dart';
+import '../widget/tamano_imagen.dart';
 
 class DetalleSorteoScreen extends StatefulWidget {
   final Sorteo sorteo;
@@ -61,6 +62,7 @@ class _DetalleSorteoScreenState extends State<DetalleSorteoScreen> {
           width: 260,
           height: 260,
           fit: BoxFit.cover,
+          cacheWidth: pixelesPara(context, 260),
         );
       } catch (_) {
         imagenWidget = const Icon(

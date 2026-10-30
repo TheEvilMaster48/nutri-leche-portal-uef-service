@@ -41,6 +41,8 @@ import 'screens/perfil.dart';
 import 'screens/viajes_pendientes_screen.dart';
 import 'screens/logo_nutri_screen.dart';
 import 'screens/utilitarios_screen.dart';
+import 'screens/chatbot_screen.dart';
+import 'screens/reservas_comedor_screen.dart';
 import 'firebase_options.dart';
 
 class MyHttpOverrides extends HttpOverrides {
@@ -54,12 +56,26 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
+/// Si la pantalla es de teléfono: el lado corto mide menos de 600 dp, el
+/// umbral de Android para "pantalla grande".
+bool esTelefono() {
+  final vistas = WidgetsBinding.instance.platformDispatcher.views;
+  if (vistas.isEmpty) return true;
+  final vista = vistas.first;
+  final lados = vista.physicalSize / vista.devicePixelRatio;
+  return lados.shortestSide < 600;
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Toda la app en vertical. También está fijado en el AndroidManifest y en
-  // el Info.plist, que rigen antes de que arranque Flutter (splash).
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Vertical solo en teléfonos. En tablets y plegables (lado corto >= 600 dp)
+  // se deja girar: Play Console pide quitar las restricciones de orientación
+  // en pantallas grandes, y Android 16 igual las ignora ahí. Por eso ya no va
+  // `screenOrientation` en el AndroidManifest.
+  if (esTelefono()) {
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
 
   // Borde a borde en todas las versiones de Android, no solo desde la 15
   // (donde el sistema ya lo impone al apuntar a SDK 35+). Así la app se ve
@@ -161,6 +177,8 @@ class MyApp extends StatelessWidget {
             '/rutas': (context) => const ViajesPendientesScreen(),
             '/logo_nutri': (context) => const LogoNutriScreen(),
             '/utilitarios': (context) => const UtilitariosScreen(),
+            '/chatbot': (context) => const ChatbotScreen(),
+            '/reservas': (context) => const ReservasComedorScreen(),
           },
         );
       },

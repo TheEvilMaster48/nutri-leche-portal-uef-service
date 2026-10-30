@@ -9,6 +9,7 @@ import 'cumpleanios_service.dart';
 import 'evento_service.dart';
 import 'nutrisoft_service.dart';
 import 'push_service.dart';
+import 'qr_store.dart';
 import 'reaccion_service.dart';
 import 'registro_logo_service.dart';
 import 'sorteo_service.dart';
@@ -67,6 +68,9 @@ Future<void> cerrarSesion(BuildContext context, {String? motivo}) async {
   await BadgeService.limpiar();
   // La caché de reacciones es por usuario: se descarta al salir.
   await reacciones.limpiar();
+  // El QR guardado para usarse sin internet es personal: no se deja en el
+  // teléfono para el siguiente usuario.
+  await QrStore.limpiar();
 
   // Resto de datos de la sesión que quedaban en memoria.
   eventos.limpiar();

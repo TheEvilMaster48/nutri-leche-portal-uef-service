@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -24,6 +24,34 @@ enum FalloUbicacion {
 
   /// Cualquier otra cosa.
   error,
+}
+
+/// Módulo que pide la ubicación.
+///
+/// iOS admite un solo texto de permiso para toda la app (`Info.plist`), así
+/// que lo específico de cada módulo se dice dentro de la app: en los mensajes
+/// de error de [UbicacionService.obtener] y en la explicación previa al
+/// diálogo del sistema ([UbicacionService.explicarSiHaceFalta]).
+enum ModuloUbicacion {
+  rutas(
+    nombre: 'Rutas',
+    proposito: 'registrar dónde inicias y finalizas cada evento de tu ruta',
+  ),
+  logoNutri(
+    nombre: 'Logo Nutri',
+    proposito: 'registrar dónde se captura el material de marca',
+  ),
+  alimentacion(
+    nombre: 'Alimentación',
+    proposito: 'confirmar que estás en el comedor al reservar tu alimentación',
+  );
+
+  const ModuloUbicacion({required this.nombre, required this.proposito});
+
+  final String nombre;
+
+  /// Completa «Usamos tu ubicación para …».
+  final String proposito;
 }
 
 /// Posición puntual, o el motivo por el que no hay.
@@ -87,16 +115,20 @@ class UbicacionService {
   ///
   /// No lanza excepciones: todo error vuelve como [ResultadoUbicacion] con su
   /// [FalloUbicacion] y un mensaje ya redactado.
-  static Future<ResultadoUbicacion> obtener() async {
+  ///
+  /// Los mensajes nombran para qué usa la ubicación [modulo].
+  static Future<ResultadoUbicacion> obtener({
+    required ModuloUbicacion modulo,
+  }) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        return const ResultadoUbicacion.error(
+        return ResultadoUbicacion.error(
           FalloUbicacion.servicioApagado,
-          'El GPS está apagado. Actívalo para registrar el evento.',
+          'El GPS está apagado. Actívalo para ${modulo.proposito}.',
         );
       }
 
-      final permiso = await _resolverPermiso();
+      final permiso = await _resolverPermiso(modulo);
       if (permiso != null) return permiso;
 
       final posicion = await Geolocator.getCurrentPosition(
@@ -143,7 +175,9 @@ class UbicacionService {
   }
 
   /// Devuelve `null` si el permiso está concedido; el fallo si no.
-  static Future<ResultadoUbicacion?> _resolverPermiso() async {
+  static Future<ResultadoUbicacion?> _resolverPermiso(
+    ModuloUbicacion modulo,
+  ) async {
     var permiso = await Geolocator.checkPermission();
 
     if (permiso == LocationPermission.denied) {
@@ -156,17 +190,17 @@ class UbicacionService {
         return null;
 
       case LocationPermission.deniedForever:
-        return const ResultadoUbicacion.error(
+        return ResultadoUbicacion.error(
           FalloUbicacion.permisoNegadoParaSiempre,
           'El permiso de ubicación está bloqueado. Habilítalo en los ajustes '
-          'del teléfono para poder registrar eventos.',
+          'del teléfono para ${modulo.proposito}.',
         );
 
       case LocationPermission.denied:
       case LocationPermission.unableToDetermine:
-        return const ResultadoUbicacion.error(
+        return ResultadoUbicacion.error(
           FalloUbicacion.permisoNegado,
-          'Se necesita el permiso de ubicación para registrar el evento.',
+          '${modulo.nombre} necesita tu ubicación para ${modulo.proposito}.',
         );
     }
   }
@@ -261,6 +295,51 @@ class UbicacionService {
   static bool esVieja(DateTime momento, {DateTime? ahora}) {
     final referencia = ahora ?? DateTime.now();
     return referencia.difference(momento.toLocal()) > antiguedadMaxima;
+  }
+
+  /// Explica para qué usa [modulo] la ubicación **antes** del diálogo del
+  /// sistema, que en iOS lleva un texto único para toda la app.
+  ///
+  /// Solo se muestra si el permiso todavía no se ha pedido o se negó una vez
+  /// (si ya está concedido, o bloqueado para siempre, no aporta nada). Devuelve
+  /// `false` si el usuario eligió «Ahora no»: entonces no se pide el permiso.
+  static Future<bool> explicarSiHaceFalta(
+    BuildContext context,
+    ModuloUbicacion modulo,
+  ) async {
+    final LocationPermission permiso;
+    try {
+      permiso = await Geolocator.checkPermission();
+    } catch (e) {
+      debugPrint('UBICACIÓN: no se pudo revisar el permiso → $e');
+      return true;
+    }
+    if (permiso != LocationPermission.denied) return true;
+    if (!context.mounted) return false;
+
+    final continuar = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogo) => AlertDialog(
+            icon: const Icon(Icons.location_on_outlined, size: 36),
+            title: const Text('¿Para qué usamos tu ubicación?'),
+            content: Text(
+              'En ${modulo.nombre} usamos tu ubicación para ${modulo.proposito}. '
+              'Solo se toma en este momento, mientras la app está abierta.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogo).pop(false),
+                child: const Text('Ahora no'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogo).pop(true),
+                child: const Text('Continuar'),
+              ),
+            ],
+          ),
+    );
+    return continuar ?? false;
   }
 
   /// Abre los ajustes donde el usuario puede desbloquear el permiso.

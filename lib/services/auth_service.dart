@@ -9,6 +9,7 @@ import 'package:universal_html/js.dart' as js;
 import '../base/base.dart';
 import '../models/usuario.dart';
 import 'push_service.dart';
+import 'qr_store.dart';
 
 class AuthService extends ChangeNotifier {
   Usuario? _currentUser;
@@ -152,6 +153,8 @@ class AuthService extends ChangeNotifier {
 
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('currentUser', json.encode(user.toJson()));
+            // QR del perfil disponible sin internet desde el primer login.
+            await QrStore.guardar(user.id, user.cedula);
 
             showNotification("Bienvenido ${user.nombre}", "success");
             notifyListeners();
@@ -288,6 +291,8 @@ class AuthService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('currentUser', json.encode(nuevoUsuario.toJson()));
+      // Solo pisa el QR guardado si llegó una cédula: ver [QrStore].
+      await QrStore.guardar(nuevoUsuario.id, nuevoUsuario.cedula);
     } catch (e) {
       if (kDebugMode) {
         print("⚠️ Error al guardar usuario actualizado: $e");
@@ -304,6 +309,8 @@ class AuthService extends ChangeNotifier {
         final decoded = json.decode(userData);
         _currentUser = Usuario.fromJson(decoded);
         notifyListeners();
+        // Sesiones abiertas antes de existir el QR offline: se guarda ya.
+        await QrStore.guardar(_currentUser!.id, _currentUser!.cedula);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -323,6 +330,8 @@ class AuthService extends ChangeNotifier {
         final decoded = json.decode(userData);
         _currentUser = Usuario.fromJson(decoded);
         notifyListeners();
+        // Sesiones abiertas antes de existir el QR offline: se guarda ya.
+        await QrStore.guardar(_currentUser!.id, _currentUser!.cedula);
         return true;
       }
     } catch (e) {

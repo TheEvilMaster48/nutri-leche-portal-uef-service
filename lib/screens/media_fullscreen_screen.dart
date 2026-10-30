@@ -3,6 +3,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import '../widget/controles_video.dart';
+import '../widget/tamano_imagen.dart';
+
 /// Visor a pantalla completa para imágenes/GIF y videos (streaming por URL).
 class MediaFullscreenScreen extends StatefulWidget {
   final String url;
@@ -77,6 +80,9 @@ class _MediaFullscreenScreenState extends State<MediaFullscreenScreen> {
       child: CachedNetworkImage(
         imageUrl: widget.url,
         fit: BoxFit.contain,
+        // El doble de la pantalla: deja ampliar con el zoom sin perder
+        // nitidez y sin decodificar la foto original completa.
+        memCacheWidth: anchoPantallaPx(context) * 2,
         errorWidget: (_, __, ___) => const Icon(
           Icons.broken_image,
           color: Colors.white54,
@@ -92,9 +98,21 @@ class _MediaFullscreenScreenState extends State<MediaFullscreenScreen> {
     if (_videoController == null) {
       return const CircularProgressIndicator(color: Colors.white);
     }
-    return Video(
-      controller: _videoController!,
-      fit: BoxFit.contain,
+    // Los mismos controles que en el detalle del evento (±10 s y barra),
+    // en lugar de los de media_kit, para que se maneje igual en los dos.
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Video(
+            controller: _videoController!,
+            controls: NoVideoControls,
+            fit: BoxFit.contain,
+          ),
+        ),
+        Positioned.fill(
+          child: SafeArea(child: ControlesVideo(player: _player!)),
+        ),
+      ],
     );
   }
 }

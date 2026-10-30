@@ -624,7 +624,9 @@ class ViajeChoferService extends ChangeNotifier {
   Future<Position?> _ubicacionSiSePuede(bool conUbicacion) async {
     if (!conUbicacion) return null;
 
-    final ubicacion = await UbicacionService.obtener();
+    final ubicacion = await UbicacionService.obtener(
+      modulo: ModuloUbicacion.rutas,
+    );
     if (ubicacion.ok) return ubicacion.posicion;
 
     debugPrint(

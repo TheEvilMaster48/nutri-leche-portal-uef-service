@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../models/evento.dart';
 import '../models/usuario.dart';
 import 'evento_detalle_screen.dart';
+import '../widget/tamano_imagen.dart';
 
 class EventosScreen extends StatefulWidget {
   const EventosScreen({super.key});
@@ -188,6 +189,7 @@ class _EventosScreenState extends State<EventosScreen> {
                                     fit: BoxFit.cover,
                                     height: 160,
                                     width: double.infinity,
+                                    cacheWidth: anchoPantallaPx(context),
                                   ),
                                 ),
                               ),

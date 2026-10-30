@@ -5,6 +5,7 @@ import '../services/cierre_sesion.dart';
 import '../services/perfil_service.dart';
 import '../models/usuario.dart';
 import '../widget/barra_inferior.dart';
+import '../widget/boton_chatbot.dart';
 import '../widget/tarjeta_menu.dart';
 import '../widget/logo_nutri.dart';
 import '../widget/saludo_usuario.dart';
@@ -75,7 +76,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 160),
                       child: Column(
                         children: [
                           // El logotipo, igual que en el menú, en lugar de la
@@ -248,6 +249,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             bottom: 0,
             child: BarraInferior(activa: PestanaInferior.perfil),
           ),
+          const BotonChatbot(),
         ],
       ),
     );

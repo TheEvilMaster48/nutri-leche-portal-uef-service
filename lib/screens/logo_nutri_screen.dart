@@ -16,6 +16,7 @@ import '../services/parametro_service.dart';
 import '../services/registro_logo_service.dart';
 import '../services/registro_logo_store.dart';
 import '../services/ubicacion_service.dart';
+import '../widget/tamano_imagen.dart';
 
 /// Módulo Logo Nutri: captura de material con evidencia fotográfica.
 ///
@@ -186,8 +187,27 @@ class _FormularioTabState extends State<_FormularioTab> {
 
   Future<void> _ubicar() async {
     if (_buscandoUbicacion) return;
+    // Primero se explica para qué es; con «Ahora no» no se pide el permiso
+    // y la tarjeta de ubicación queda con el aviso y «Reintentar».
+    final continuar = await UbicacionService.explicarSiHaceFalta(
+      context,
+      ModuloUbicacion.logoNutri,
+    );
+    if (!mounted) return;
+    if (!continuar) {
+      setState(() {
+        _ubicacion = ResultadoUbicacion.error(
+          FalloUbicacion.permisoNegado,
+          '${ModuloUbicacion.logoNutri.nombre} necesita tu ubicación para '
+          '${ModuloUbicacion.logoNutri.proposito}.',
+        );
+      });
+      return;
+    }
     setState(() => _buscandoUbicacion = true);
-    final resultado = await UbicacionService.obtener();
+    final resultado = await UbicacionService.obtener(
+      modulo: ModuloUbicacion.logoNutri,
+    );
     if (!mounted) return;
     setState(() {
       _ubicacion = resultado;
@@ -1002,6 +1022,7 @@ class _Fotos extends StatelessWidget {
                   width: 88,
                   height: 88,
                   fit: BoxFit.cover,
+                  cacheWidth: pixelesPara(context, 88),
                 ),
               ),
               Positioned(
@@ -1415,7 +1436,13 @@ class _Miniatura extends StatelessWidget {
         }
         return ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.file(archivo, width: 64, height: 64, fit: BoxFit.cover),
+          child: Image.file(
+            archivo,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            cacheWidth: pixelesPara(context, 64),
+          ),
         );
       },
     );

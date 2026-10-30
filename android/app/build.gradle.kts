@@ -34,6 +34,8 @@ android {
 
     dependencies {
         coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+        // enableEdgeToEdge() de MainActivity.
+        implementation("androidx.activity:activity-ktx:1.10.1")
     }
 
     defaultConfig {
@@ -59,6 +61,15 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // R8: reduce y optimiza el código y quita recursos sin usar (lo
+            // recomienda Play Console por memoria y rendimiento). Las reglas
+            // para lo que se usa por reflexión van en proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

@@ -5,6 +5,7 @@ import '../models/cumpleanios.dart';
 import '../models/reaccion.dart';
 import '../widget/barra_reacciones.dart';
 import '../widget/texto_con_enlaces.dart';
+import '../widget/tamano_imagen.dart';
 
 class DetalleCumpleaniosScreen extends StatelessWidget {
   final Cumpleanios cumple;
@@ -126,6 +127,7 @@ class DetalleCumpleaniosScreen extends StatelessWidget {
                                     height: 220,
                                     width: double.infinity,
                                     fit: BoxFit.cover,
+                                    memCacheWidth: anchoPantallaPx(context),
                                     placeholder: (context, url) {
                                       return Container(
                                         height: 220,

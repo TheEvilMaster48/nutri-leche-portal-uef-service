@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:nutri/base/base.dart';
 
 import '../models/nutrisoft.dart';
+import '../widget/adjunto_multimedia.dart';
 import '../widget/texto_con_enlaces.dart';
 
-/// Detalle de una notificación Nutrisoft: solo título y descripción.
-///
-/// No hay imágenes, videos ni PDFs (a diferencia de [DetalleEventoScreen]), así
-/// que la pantalla es puramente texto y no necesita estado.
+/// Detalle de una notificación Nutrisoft: título, descripción y el adjunto
+/// (imagen, PDF o video) si lo trae, mostrado igual que en el detalle de
+/// eventos.
 class DetalleNutrisoftScreen extends StatelessWidget {
   const DetalleNutrisoftScreen({
     super.key,
@@ -49,8 +49,11 @@ class DetalleNutrisoftScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back,
-                          color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 8),
@@ -88,36 +91,47 @@ class DetalleNutrisoftScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.titulo,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Base().COLOR_AZUL_CORP,
-                                  height: 1.3,
-                                ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.titulo,
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Base().COLOR_AZUL_CORP,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    height: 3,
+                                    decoration: BoxDecoration(
+                                      color: Base().COLOR_AZUL_CORP,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  _buildDescripcion(),
+                                  if (_mostrarBotonViaje) ...[
+                                    const SizedBox(height: 20),
+                                    _buildBotonViaje(context),
+                                  ],
+                                ],
                               ),
-                              const SizedBox(height: 10),
-                              Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: Base().COLOR_AZUL_CORP,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              _buildDescripcion(),
-                              if (_mostrarBotonViaje) ...[
-                                const SizedBox(height: 20),
-                                _buildBotonViaje(context),
-                              ],
-                            ],
-                          ),
+                            ),
+                            // Solo ocupa espacio si el mensaje trae adjunto.
+                            AdjuntoMultimedia(
+                              url: item.archivoPath,
+                              titulo: item.titulo,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -178,8 +192,11 @@ class DetalleNutrisoftScreen extends StatelessWidget {
               color: Base().COLOR_AZUL_CORP.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.description,
-                color: Base().COLOR_AZUL_CORP, size: 20),
+            child: Icon(
+              Icons.description,
+              color: Base().COLOR_AZUL_CORP,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

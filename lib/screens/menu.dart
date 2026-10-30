@@ -15,6 +15,7 @@ import '../services/badge_service.dart';
 import '../services/notification_bus.dart';
 import '../widget/logo_nutri.dart';
 import '../widget/barra_inferior.dart';
+import '../widget/boton_chatbot.dart';
 import '../widget/tarjeta_menu.dart';
 import '../widget/saludo_usuario.dart';
 
@@ -260,7 +261,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
                 ),
                 Expanded(
                   child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 160),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       mainAxisSpacing: 14,
@@ -295,6 +296,7 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
             bottom: 0,
             child: BarraInferior(activa: PestanaInferior.inicio),
           ),
+          const BotonChatbot(),
         ],
       ),
     );

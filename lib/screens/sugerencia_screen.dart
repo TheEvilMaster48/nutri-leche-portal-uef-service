@@ -11,6 +11,7 @@ import '../base/base.dart';
 import '../models/sugerencia.dart';
 import '../services/sugerencia_service.dart';
 import '../core/notification_banner.dart';
+import '../widget/tamano_imagen.dart';
 
 class SugerenciaScreen extends StatefulWidget {
   const SugerenciaScreen({super.key});
@@ -549,6 +550,10 @@ class _SugerenciaScreenState extends State<SugerenciaScreen> {
                                             fit: BoxFit.cover,
                                             width: double.infinity,
                                             height: double.infinity,
+                                            // Miniatura de la cuadrícula: con
+                                            // media pantalla de ancho sobra.
+                                            cacheWidth:
+                                                anchoPantallaPx(context) ~/ 2,
                                           ),
                                         ),
                                         Positioned(

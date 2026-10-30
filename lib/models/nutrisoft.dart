@@ -1,14 +1,20 @@
 /// Mensaje del módulo Nutrisoft.
 ///
-/// A diferencia de `Evento` solo trae título y descripción: no hay imágenes,
-/// videos, archivos ni fecha/hora. El resto del ciclo (pendiente → visto →
-/// eliminado) es idéntico al de eventos.
+/// A diferencia de `Evento` no trae fecha/hora: solo título, descripción y,
+/// opcionalmente, un adjunto (imagen, PDF o video) en [archivoPath]. El resto
+/// del ciclo (pendiente → visto → eliminado) es idéntico al de eventos.
 ///
 /// El backend los llama "mensajes" (REST `appMensaje`), de ahí [idMensaje].
 class Nutrisoft {
   final int idMensaje;
   final String titulo;
   final String descripcion;
+
+  /// URL del adjunto (imagen, PDF o video), igual que `Evento.imagenPath`.
+  ///
+  /// Puede venir vacía o con textos tipo "null": quien la pinta
+  /// (`AdjuntoMultimedia`) ya descarta lo que no sea una URL a un archivo.
+  final String? archivoPath;
 
   /// Campo `visto` tal como lo manda el backend: 0 = no visto, 1 = visto.
   ///
@@ -61,6 +67,7 @@ class Nutrisoft {
     required this.idMensaje,
     required this.titulo,
     required this.descripcion,
+    this.archivoPath,
     this.visto = 0,
   });
 
@@ -68,6 +75,7 @@ class Nutrisoft {
         'idMensaje': idMensaje,
         'titulo': titulo,
         'descripcion': descripcion,
+        'archivoPath': archivoPath,
         'visto': visto,
       };
 
@@ -83,6 +91,18 @@ class Nutrisoft {
       descripcion:
           (json['descripcion'] ?? json['mensaje'] ?? json['detalle'] ?? '')
               .toString(),
+      // `ObtenerMensajes` manda la URL en `documento` (y repetida en
+      // `imagenBase64`); el resto son los alias de eventos por si cambia.
+      archivoPath: (json['documento'] ??
+              json['archivoPath'] ??
+              json['imagenPath'] ??
+              json['imagen'] ??
+              json['imagenBase64'] ??
+              json['imagen_url'] ??
+              json['archivo'] ??
+              json['urlArchivo'] ??
+              json['adjunto'])
+          ?.toString(),
       visto: rawVisto != null ? int.tryParse(rawVisto.toString()) ?? 0 : 0,
     );
   }

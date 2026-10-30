@@ -1,7 +1,7 @@
 name: nutri
 description: Portal de Empleados Nutri Ecuador
 publish_to: 'none'
-version: 3.2.0+12
+version: 3.3.0+13
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -75,6 +75,7 @@ dependencies:
   # sistema (Geocoder en Android, CLGeocoder en iOS), así que NO funciona sin
   # datos: cuando falla, el campo queda para escribirlo a mano.
   geocoding: ^5.0.0
+  qr_flutter: ^4.1.0
 
   # OVERRIDE — FORZAR LA NUEVA VERSIÓN DEL PLUGIN
 dependency_overrides:
